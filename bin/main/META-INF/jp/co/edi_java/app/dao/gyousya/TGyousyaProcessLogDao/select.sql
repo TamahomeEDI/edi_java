@@ -1,0 +1,1 @@
+select * from T_GYOUSYA_PROCESS_LOG where GYOUSYA_CODE = /*gyousyaCode*/0;

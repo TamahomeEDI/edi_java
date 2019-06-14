@@ -1,0 +1,1 @@
+delete from COPY_M_EIGYOUSYO_GROUP;

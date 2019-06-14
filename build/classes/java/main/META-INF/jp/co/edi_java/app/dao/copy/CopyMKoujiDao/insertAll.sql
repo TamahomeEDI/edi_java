@@ -1,0 +1,1 @@
+insert into COPY_M_KOUJI select * from M_KOUJI;

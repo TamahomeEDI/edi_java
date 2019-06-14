@@ -1,0 +1,1 @@
+select * from T_KAIKEI_KIJUN where HASH_CODE = /*hashCode*/0;

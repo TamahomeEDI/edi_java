@@ -1,0 +1,1 @@
+select * from M_KAREKI where FILE_CODE = /*fileCode*/0;;

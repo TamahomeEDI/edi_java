@@ -1,0 +1,1 @@
+select * from T_CLOUD_SIGN where FILE_ID = /*fileId*/0;

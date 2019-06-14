@@ -1,0 +1,1 @@
+select * from M_SAIMOKU_KOUSYU WHERE SAKUJYO_FLG = 0;

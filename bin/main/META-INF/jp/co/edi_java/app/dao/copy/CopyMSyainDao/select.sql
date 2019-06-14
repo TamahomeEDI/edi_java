@@ -1,0 +1,1 @@
+select * from COPY_M_SYAIN where SYAIN_CODE = /*syainCode*/0;

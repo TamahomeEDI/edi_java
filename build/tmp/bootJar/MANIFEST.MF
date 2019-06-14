@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Start-Class: jp.co.edi_java.app.SpringBootFwApplication
+Main-Class: org.springframework.boot.loader.JarLauncher
+

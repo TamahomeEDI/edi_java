@@ -1,0 +1,1 @@
+select * from COPY_M_KAREKI where KAREKI_BOX_CODE = /*karekiBoxCode*/0;

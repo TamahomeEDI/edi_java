@@ -1,0 +1,1 @@
+insert into COPY_M_SYAIN select * from M_SYAIN;

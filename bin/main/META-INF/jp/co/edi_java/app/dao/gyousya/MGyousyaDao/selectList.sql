@@ -1,0 +1,1 @@
+select * from M_GYOUSYA where EIGYOUSYO_CODE = /*eigyousyoCode*/0;

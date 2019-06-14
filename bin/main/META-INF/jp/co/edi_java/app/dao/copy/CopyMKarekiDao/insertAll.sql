@@ -1,0 +1,1 @@
+insert into COPY_M_KAREKI select * from M_KAREKI;

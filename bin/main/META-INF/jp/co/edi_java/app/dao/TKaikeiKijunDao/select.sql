@@ -1,0 +1,1 @@
+select * from T_KAIKEI_KIJUN where GYOUSYA_CODE = /*gyousyaCode*/0;

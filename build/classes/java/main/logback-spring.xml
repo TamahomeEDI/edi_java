@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- デフォルト設定読み込み -->
+    <include resource="org/springframework/boot/logging/logback/base.xml" />
+
+	<property name="dirpath" value="./logs/" />
+    <property name="appname" value="ediapp" />
+
+    <!--ローカル環境用設定 -->
+    <springProfile name="local">
+		<property name="LOG_LEVEL" value="info" />
+    </springProfile>
+
+    <!--develop環境用設定 -->
+    <springProfile name="dev">
+        <property name="LOG_LEVEL" value="info" />
+    </springProfile>
+
+    <!--production環境用設定 -->
+    <springProfile name="pro">
+        <property name="LOG_LEVEL" value="info" />
+    </springProfile>
+
+    <!-- コンソール出力 -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy/MM/dd HH:mm:ss} %-5level [%thread] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- アプリケーションログのファイル書き出し -->
+    <appender name="APPLIATION_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!--ファイル名 -->
+        <file>${dirpath}${appname}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${dirpath}${appname}-%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy/MM/dd HH:mm:ss} %-5level [%thread] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- バッチログのファイル書き出し -->
+    <appender name="BATCH_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!--ファイル名 -->
+        <file>${dirpath}${appname}-batch.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${dirpath}${appname}-batch-%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy/MM/dd HH:mm:ss} %-5level [%thread] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--ログレベルと使用出力ルール -->
+    <root level="${LOG_LEVEL}">
+    	<appender-ref ref="STDOUT" />
+    	<appender-ref ref="APPLIATION_LOG" />
+    </root>
+
+    <logger name="batch.logger" level="${LOG_LEVEL}">
+        <appender-ref ref="BATCH_LOG" />
+    </logger>
+
+
+</configuration>

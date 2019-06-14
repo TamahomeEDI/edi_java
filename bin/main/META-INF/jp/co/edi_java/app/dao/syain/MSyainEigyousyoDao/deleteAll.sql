@@ -1,0 +1,1 @@
+delete from M_SYAIN_EIGYOUSYO;

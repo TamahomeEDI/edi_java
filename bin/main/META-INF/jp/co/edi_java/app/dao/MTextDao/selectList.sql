@@ -1,0 +1,1 @@
+select * from M_TEXT where FORM_TYPE = /*formType*/0 order by FORM_KBN asc;

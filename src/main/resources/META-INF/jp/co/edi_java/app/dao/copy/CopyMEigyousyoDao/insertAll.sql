@@ -1,0 +1,1 @@
+insert into COPY_M_EIGYOUSYO select * from M_EIGYOUSYO;

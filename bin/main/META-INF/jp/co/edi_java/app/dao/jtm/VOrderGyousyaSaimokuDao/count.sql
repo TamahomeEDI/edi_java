@@ -1,0 +1,1 @@
+select COUNT(KOUJI_CODE) from V_ORDER_KOUJI;

@@ -1,0 +1,1 @@
+select * from COPY_M_SYAIN_EIGYOUSYO where SYAIN_CODE = /*syainCode*/0 and EIGYOUSYO_CODE = /*eigyousyoCode*/0 and EIGYOUSYO_GROUP_CODE = /*eigyousyoGroupCode*/0;

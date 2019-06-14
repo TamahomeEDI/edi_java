@@ -1,0 +1,1 @@
+select * from T_WORK_REPORT_ITEM where WORK_REPORT_NUMBER = /*workReportNumber*/0;

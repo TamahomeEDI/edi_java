@@ -1,0 +1,1 @@
+delete from COPY_M_SAIMOKU_KOUSYU;

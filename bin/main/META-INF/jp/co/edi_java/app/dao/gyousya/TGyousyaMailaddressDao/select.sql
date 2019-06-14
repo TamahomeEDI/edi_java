@@ -1,0 +1,1 @@
+select * from T_GYOUSYA_MAILADDRESS where MAILADDRESS = /*mailaddress*/0;

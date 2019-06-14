@@ -1,0 +1,1 @@
+select COUNT(KAREKI_BOX_CODE) from V_ORDER_KAREKI;

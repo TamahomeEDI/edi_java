@@ -1,0 +1,1 @@
+insert into COPY_M_SAIMOKU_KOUSYU select * from M_SAIMOKU_KOUSYU;

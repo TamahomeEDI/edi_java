@@ -1,0 +1,1 @@
+select MAILADDRESS from T_GYOUSYA_MAILADDRESS where GYOUSYA_CODE = /*gyousyaCode*/0 and SEND_FLG = '1';

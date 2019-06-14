@@ -1,0 +1,1 @@
+select * from M_EIGYOUSYO_GROUP where EIGYOUSYO_GROUP_CODE in /*groupCodeList*/(0,1);

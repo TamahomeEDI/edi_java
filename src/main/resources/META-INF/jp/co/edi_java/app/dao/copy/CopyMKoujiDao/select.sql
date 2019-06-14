@@ -1,0 +1,1 @@
+select * from COPY_M_KOUJI where KOUJI_CODE = /*koujiCode*/0;

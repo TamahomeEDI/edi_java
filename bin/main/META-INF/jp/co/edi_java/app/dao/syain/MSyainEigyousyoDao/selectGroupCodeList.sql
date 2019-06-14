@@ -1,0 +1,1 @@
+select EIGYOUSYO_GROUP_CODE from M_SYAIN_EIGYOUSYO where SYAIN_CODE = /*syainCode*/0 group by EIGYOUSYO_GROUP_CODE;

@@ -1,0 +1,18 @@
+SELECT
+	KOU.KOUJI_CODE,
+	KOU.KOUJI_NAME,
+	KOU.KOUJI_STATUS_NAME,
+	KOU.TYAKKOU_DATE,
+	KOU.SYUNKOU_DATE,
+	KOU.HIKIWATASI_DATE,
+	EIG.EIGYOUSYO_NAME,
+	SYA.SYAIN_NAME
+FROM
+	M_KOUJI KOU
+LEFT OUTER JOIN M_EIGYOUSYO EIG ON EIG.EIGYOUSYO_CODE = KOU.EIGYOUSYO_CODE
+LEFT OUTER JOIN M_SYAIN SYA ON SYA.SYAIN_CODE = KOU.TANTOU_SYAIN_CODE
+WHERE
+	KOU.KOUJI_CODE like /*@prefix(koujiCode)*/'smith' escape '$'
+	/*%if koujiName != null && koujiName != ""*/
+	and (KOU.KOUJI_NAME like /*@infix(koujiName)*/'smith' escape '$' or KOU.KEIYAKUSYA_KANA like /*@infix(koujiName)*/'smith' escape '$')
+	/*%end*/;

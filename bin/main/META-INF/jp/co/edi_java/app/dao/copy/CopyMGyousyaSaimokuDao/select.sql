@@ -1,0 +1,1 @@
+select * from COPY_M_GYOUSYA_SAIMOKU where GYOUSYA_CODE = /*gyousyaCode*/0 and SAIMOKU_KOUSYU_CODE = /*saimokuKousyuCode*/0;

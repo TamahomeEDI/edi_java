@@ -1,0 +1,1 @@
+delete from COPY_M_GYOUSYA_EIGYOUSYO;
