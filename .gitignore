@@ -1,0 +1,10 @@
+.gradle
+/bin/
+/logs/
+.springBeans
+/build/classes
+/build/resports
+/build/resources
+/build/test-results
+/build/tmp
+/build/libs
