@@ -47,4 +47,12 @@ public interface SearchDao {
 	@Select
     List<TestEntity> selectInspectionReceipt();
 
+	// チェックリスト出力用
+	@Select
+	List<SearchOrderInfoDto> getOrderInfoList(List<String> orderNumber);
+	@Select
+	List<SearchOrderInfoDto> selectOrderInfoList(List<String> orderNumber, SearchForm params);
+	@Select
+	List<SearchKoujiInfoDto> getKoujiInfoList(List<String> koujiCodeList, String koujiName);
+
 }
