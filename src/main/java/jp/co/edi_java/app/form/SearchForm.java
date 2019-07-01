@@ -104,5 +104,4 @@ public class SearchForm extends BaseForm {
 
 	public String inspectionReceiptMonth;
 
-
 }

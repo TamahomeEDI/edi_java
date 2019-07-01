@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -235,11 +236,19 @@ public class OrderService {
 		String orderNumber = form.getOrderNumber();
 		String title = "";
 		String fileName = "";
+		String eigyousyoName = (Objects.nonNull(form.getEigyousyoName())) ?  form.getEigyousyoName() : "";
+		String saimokuKousyuName = (Objects.nonNull(form.getSaimokuKousyuName())) ?  form.getSaimokuKousyuName() : "";
+		String koujiName = (Objects.nonNull(form.getKoujiName())) ?  form.getKoujiName() : "";
+		// メールタイトル、ファイル名の生成
 		if(formType.equals(CloudSignApi.FORM_TYPE_ORDER)) {
-			title = CloudSignApi.PREFIX_TITLE_CONFIRMATION + form.getGyousyaCode() + "_" + orderNumber;
+			// 2019/6/24 クラウドサインメール件名変更対応(業者コード→支店名)
+			// title = CloudSignApi.PREFIX_TITLE_CONFIRMATION + form.getGyousyaCode() + "_" + orderNumber;
+			title = CloudSignApi.PREFIX_TITLE_CONFIRMATION + eigyousyoName + "_" + saimokuKousyuName + "_" + koujiName + "_" + orderNumber;
 			fileName = CloudSignApi.PREFIX_FILE_CONFIRMATION + form.getGyousyaCode() + "_" + orderNumber;
 		}else {
-			title = CloudSignApi.PREFIX_TITLE_CANCEL + form.getGyousyaCode() + "_" + orderNumber;
+			// 2019/6/24 クラウドサインメール件名変更対応(業者コード→支店名)
+			// title = CloudSignApi.PREFIX_TITLE_CANCEL + form.getGyousyaCode() + "_" + orderNumber;
+			title = CloudSignApi.PREFIX_TITLE_CANCEL + eigyousyoName + "_" + saimokuKousyuName + "_" + koujiName + "_" + orderNumber;
 			fileName = CloudSignApi.PREFIX_FILE_CANCEL + form.getGyousyaCode() + "_" + orderNumber;
 		}
 
