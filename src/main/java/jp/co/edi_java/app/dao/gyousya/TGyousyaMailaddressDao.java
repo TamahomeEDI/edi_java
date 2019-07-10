@@ -30,6 +30,9 @@ public interface TGyousyaMailaddressDao {
     List<TGyousyaMailaddressEntity> selectAll(String gyousyaCode);
 
 	@Select
+    List<TGyousyaMailaddressEntity> selectListByMultiCode(List<String> gyousyaCodeList);
+
+	@Select
     int countByMailaddress(String mailaddress, String gyousyaCode);
 
 	@Select

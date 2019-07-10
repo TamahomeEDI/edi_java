@@ -40,5 +40,8 @@ public class OrderForm extends BaseForm {
 
     public String koujiName;
 
+    // 2019/7/3 一括発注
+    public List<String> orderNumberList;
+
 
 }

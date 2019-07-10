@@ -23,6 +23,9 @@ public interface MSyainDao {
 	MSyainEntity select(String syainCode);
 
 	@Select
+	List<MSyainEntity> selectListByMultiCode(List<String> syainCodeList);
+
+	@Select
 	List<MSyainEntity> selectListByEigyousyo(String eigyousyoCode);
 
 	@Select

@@ -23,6 +23,9 @@ public interface MKoujiDao {
 	MKoujiEntity select(String koujiCode);
 
 	@Select
+	List<MKoujiEntity> selectListByMultiCode(List<String> koujiCodeList);
+
+	@Select
 	List<MKoujiEntity> selectList(String eigyousyoCode, String syainCode, String kanseiKbn, String projectTypeCode);
 
 	@Insert(excludeNull = true)

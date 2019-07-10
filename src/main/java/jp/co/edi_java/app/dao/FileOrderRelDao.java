@@ -21,6 +21,9 @@ public interface FileOrderRelDao {
 	@Select
 	List<FileOrderRelEntity> selectList(String orderNumber);
 
+	@Select
+	List<FileOrderRelEntity> selectListByMultiNum(List<String> orderNumberList);
+
 	@Insert(excludeNull = true)
     int insert(FileOrderRelEntity entity);
 

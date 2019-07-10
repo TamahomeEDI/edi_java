@@ -1,5 +1,7 @@
 package jp.co.edi_java.app.dao.gyousya;
 
+import java.util.List;
+
 import org.seasar.doma.Dao;
 import org.seasar.doma.Insert;
 import org.seasar.doma.Select;
@@ -19,6 +21,9 @@ public interface TGyousyaAccountDao {
 
 	@Select
 	TGyousyaAccountEntity select(String gyousyaCode);
+
+	@Select
+	List<TGyousyaAccountEntity> selectListByMultiCode(List<String> gyousyaCodeList);
 
 	@Select
 	TGyousyaAccountEntity selectByToken(String token);

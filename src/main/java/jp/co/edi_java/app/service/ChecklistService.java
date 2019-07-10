@@ -207,6 +207,7 @@ public class ChecklistService {
 
 			//EDIにデータが存在しない
 			if(searchOrderInfoDto == null) {
+
 				//業者の場合、未発注(発注日が00000000または空文字)データを除外
 				if(userFlg.equals(USER_FLG_PARTNER) && (StringUtils.isNullString(orderDate) || orderDate.equals(ORDER_DATE_VALUE_NOT_ORDERING))) {
 					continue;

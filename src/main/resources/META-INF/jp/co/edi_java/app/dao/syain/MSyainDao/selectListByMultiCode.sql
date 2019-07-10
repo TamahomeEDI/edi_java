@@ -1,0 +1,1 @@
+select * from M_SYAIN where SYAIN_CODE in /*syainCodeList*/(0) AND TAISYOKU_FLG = 0;
