@@ -100,6 +100,9 @@ public class SapApiConsts {
 	public static String PARAMS_ID_ZZANMG = "ZZANMG";		//残数量
 	public static String PARAMS_ID_ZZANKN = "ZZANKN";		//残金額
 
+	//発注日連携
+	public static String PARAMS_ID_ZHTYDT = "ZHTYDT";		//残金額
+
 
 	/**
 	 * OUTPUT

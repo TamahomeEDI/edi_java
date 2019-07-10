@@ -131,6 +131,36 @@ public class MailService {
 				MailContents.getWorkReportRemandBody(workReport.getWorkReportNumber(), gyousya.getGyousyaName(), workReport.getUserBikou()));
 	}
 
+    /*
+     * 08_請書受領通知
+     */
+	public void sendMailConfirmationAgree(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber) {
+		sendMail(to,
+				cc,
+				MailContents.getConfirmationAgreeSubject(),
+				MailContents.getConfirmationAgreeBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber));
+	}
+
+    /*
+     * 09-1_納品受領通知
+     */
+	public void sendMailDelivery(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber) {
+		sendMail(to,
+				cc,
+				MailContents.getDeliveryWorkReportSubject(),
+				MailContents.getDeliveryBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber));
+	}
+
+    /*
+     * 09-2_出来高受領通知
+     */
+	public void sendMailWorkReport(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String workReportNumber) {
+		sendMail(to,
+				cc,
+				MailContents.getDeliveryWorkReportSubject(),
+				MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber));
+	}
+
 
 
 

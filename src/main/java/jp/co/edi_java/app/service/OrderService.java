@@ -76,10 +76,22 @@ public class OrderService {
 		return ret;
 	}
 
-	@SuppressWarnings("unchecked")
 	public SapOrderDto get(String orderNumber) {
-		//発注詳細取得
+		//発注詳細取得（SAP）
 		Map<String, Object> data = SapApi.orderDetail(orderNumber);
+		//基本情報取得
+		SapOrderDto ret = getHeader(data, orderNumber);
+		//明細一覧取得
+		List<SapOrderDetailDto> itemList = getItemList(data);
+		ret.setItemList(itemList);
+		//添付ファイル一覧取得
+		List<Map<String, Object>> fileList = getFileIdList(orderNumber);
+		ret.setFileList(fileList);
+		return ret;
+	}
+
+	@SuppressWarnings("unchecked")
+	public SapOrderDto getHeader(Map<String, Object> data, String orderNumber) {
 		//発注詳細は1件の場合と複数件の場合がある（複数件の場合はマイナス発注有）
 		Object sapObj = data.get(SapApiConsts.PARAMS_KEY_T_E_01004);
 		Map<String, Object> retDetail = null;
@@ -105,7 +117,6 @@ public class OrderService {
 		else {
 			retDetail = (Map<String, Object>) sapObj;
 		}
-//		Map<String, Object> retDetail = SapApiAnalyzer.analyzeResult(data, SapApiConsts.PARAMS_KEY_T_E_01004);
 		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
@@ -113,7 +124,6 @@ public class OrderService {
 
 		//表示に必要な情報を取得
 		TOrderEntity orderInfo = tOrderDao.select(orderNumber);
-		List<Map<String, Object>> fileList = getFileIdList(orderNumber);
 		String orderDate = retDetail.get(SapApiConsts.PARAMS_ID_ZORDDT).toString();
 
 		SapOrderDto ret = new SapOrderDto();
@@ -143,6 +153,12 @@ public class OrderService {
 		ret.setDeliveryAmountTax(Integer.valueOf(retDetail.get(SapApiConsts.PARAMS_ID_ZUKKZG).toString()));
 		ret.setSettlementCompFlg(retDetail.get(SapApiConsts.PARAMS_ID_ZSKFLG).toString());
 		ret.setOrderSettlementFlg(retDetail.get(SapApiConsts.PARAMS_ID_ZHCSSF).toString());
+		ret.setOrderInfo(orderInfo);
+		return ret;
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<SapOrderDetailDto> getItemList(Map<String, Object> data) {
 		ArrayList<SapOrderDetailDto> itemList = new ArrayList<SapOrderDetailDto>();
 
 		Object obj = data.get(SapApiConsts.PARAMS_KEY_T_E_01002);
@@ -169,10 +185,7 @@ public class OrderService {
 			dto.setRemainAmount(Integer.valueOf(map.get(SapApiConsts.PARAMS_ID_ZZANKN).toString()));
 			itemList.add(dto);
 		}
-		ret.setItemList(itemList);
-		ret.setOrderInfo(orderInfo);
-		ret.setFileList(fileList);
-		return ret;
+		return itemList;
 	}
 
 	public String update(OrderForm form) {
@@ -255,9 +268,9 @@ public class OrderService {
 		Map<String, Object> documentRet = CloudSignApi.postDocuments(title, "", "", null, false);
 		String documentId = documentRet.get("id").toString();
 
-//		if(StringUtils.isNullString(documentId)) {
-//			throw new CoreRuntimeException("documentId not found");
-//		}
+		if(StringUtils.isNullString(documentId)) {
+			throw new CoreRuntimeException("documentId not found");
+		}
 
 		String mailaddress = form.getMailaddress();
 		int plus = mailaddress.indexOf("+");
@@ -268,9 +281,9 @@ public class OrderService {
 			mailaddress = mailaddressBefore + mailaddressAfter;
 		}
 
-//		if(StringUtils.isNullString(mailaddress)) {
-//			throw new CoreRuntimeException("mailaddress not found");
-//		}
+		if(StringUtils.isNullString(mailaddress)) {
+			throw new CoreRuntimeException("mailaddress not found");
+		}
 
 		CloudSignApi.postParticipants(documentId, mailaddress, form.getGyousyaName());
 
@@ -293,15 +306,17 @@ public class OrderService {
 		tCloudSignDao.insert(entity);
 	}
 
-//	public Map<String, Object> confirmation(OrderForm form) {
-//		Map<String, Object> data = SapApi.confirmation(form.getOrderNumber(), form.getEigyousyoCode(), form.getSyainCode());
-//		Map<String, Object> result = SapApiAnalyzer.analyzeResult(data, SapApiConsts.PARAMS_KEY_T_IE_03002);
-//		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
-//		if(!SapApiAnalyzer.chkResultInfo(resultInfo)) {
-//			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-//		}
-//		return result;
-//	}
+	//発注日をSAPへ連携
+	public void setOrderDate(String orderNumber) {
+		TOrderEntity orderInfo = selectInfo(orderNumber);
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		String orderDate = sdf.format(orderInfo.getConfirmationRequestDate());
+		Map<String, Object> data = SapApi.setOrderDate(orderNumber, orderInfo.getKoujiCode(), orderDate);
+		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
+		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+		}
+	}
 
 
 }

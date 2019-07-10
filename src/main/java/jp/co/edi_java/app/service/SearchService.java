@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import jp.co.edi_java.app.dao.MKoujiDao;
 import jp.co.edi_java.app.dao.SearchDao;
+import jp.co.edi_java.app.dao.TCloudSignDao;
 import jp.co.edi_java.app.dao.TDeliveryDao;
 import jp.co.edi_java.app.dao.TOrderDao;
 import jp.co.edi_java.app.dao.TWorkReportDao;
@@ -20,6 +21,7 @@ import jp.co.edi_java.app.dto.SearchEstimateDto;
 import jp.co.edi_java.app.dto.SearchKoujiInfoDto;
 import jp.co.edi_java.app.dto.SearchOrderInfoDto;
 import jp.co.edi_java.app.dto.SearchWorkReportDto;
+import jp.co.edi_java.app.entity.TCloudSignEntity;
 import jp.co.edi_java.app.form.SearchForm;
 import jp.co.edi_java.app.util.sap.SapApi;
 import jp.co.edi_java.app.util.sap.SapApiAnalyzer;
@@ -47,19 +49,25 @@ public class SearchService {
     public TWorkReportDao tWorkReportDao;
 
 	@Autowired
+    public TCloudSignDao tCloudSignDao;
+
+	@Autowired
     public MailService mailService;
 
 	public static String USER_FLG_TAMA = "1";
 	public static String USER_FLG_PARTNER = "0";
 
-	public static String ORDER_STATUS_NOT_ORDERING = "0";
-	public static String ORDER_STATUS_ORDERING = "1";
+	private String ORDER_STATUS_NOT_ORDERING = "0";
+	private String ORDER_STATUS_ORDERING = "1";
 
 	//未発注の発注日（00000000）
-	public static String ORDER_DATE_VALUE_NOT_ORDERING = "00000000";
+	private String ORDER_DATE_VALUE_NOT_ORDERING = "00000000";
 
 	//発注精算フラグ（マイナス発注）
-	public static String ORDER_SETTLEMENT_FLG_VALUE_X = "X";
+	private String ORDER_SETTLEMENT_FLG_VALUE_X = "X";
+
+	//クラウドサイン種別
+	private String CLOUD_SIGN_FORM_TYPE_ORDER = "1";
 
 	SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 
@@ -131,6 +139,9 @@ public class SearchService {
 				SearchOrderInfoDto searchOrderInfoDto = searchDao.selectOrderInfo(orderNumber, form, orderDate);
 				//工事検索情報取得
 				SearchKoujiInfoDto searchKoujiInfoDto = searchDao.selectKoujiInfo(koujiCode, form.getKoujiName());
+				//クラウドサイン情報取得
+				TCloudSignEntity cloudSignInfo = tCloudSignDao.selectNewest(orderNumber, CLOUD_SIGN_FORM_TYPE_ORDER);
+				String documentId = null;
 
 				//EDIにデータが存在しない
 				if(searchOrderInfoDto == null) {
@@ -203,6 +214,12 @@ public class SearchService {
 					dto.setKoujiInfo(searchKoujiInfoDto);
 					dto.setSettlementCompFlg(map.get(SapApiConsts.PARAMS_ID_ZSKFLG).toString());
 					dto.setOrderSettlementFlg(map.get(SapApiConsts.PARAMS_ID_ZHCSSF).toString());
+					/** ヒアリング対応 ⑤発注メールの有効期限切れ対応 */
+					if(cloudSignInfo != null && (searchOrderInfoDto != null &&
+					   searchOrderInfoDto.getConfirmationRequestDate() != null && searchOrderInfoDto.getConfirmationAgreeDate() == null)) {
+						documentId = cloudSignInfo.getFileId();
+					}
+					dto.setDocumentId(documentId);
 					ret.add(dto);
 				}
 			}

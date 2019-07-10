@@ -38,7 +38,9 @@ public class OrderController extends BaseController {
 	/** 請書発行 */
 	@RequestMapping("/confirmation")
 	public ResponseEntity confirmation(@Validated OrderForm form) {
+		String orderNumber = form.getOrderNumber();
 		orderService.confirmationInfo(form);
+		orderService.setOrderDate(orderNumber);
 		orderService.conectCloudSign(form, CloudSignApi.FORM_TYPE_ORDER);
 		super.setResponseData("ret", "OK");
 		return super.response();

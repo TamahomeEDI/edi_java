@@ -28,11 +28,12 @@ public class SapApi {
 
 	//モジュール名
 	public static String PARAMS_VALUE_MODULE_UPD_UKESHO = "Z_JRI15P203_1003_UPD_UKESHO";		//請書登録
-	public static String PARAMS_VALUE_MODULE_REQ_INSDATA = "Z_JRI15P203_0803_REQ_INSDATA";	//納品・出来高報告受入登録	※初期開発では使わない
+	public static String PARAMS_VALUE_MODULE_REQ_INSDATA = "Z_JRI15P203_0803_REQ_INSDATA";		//納品・出来高報告受入登録	※初期開発では使わない
 	public static String PARAMS_VALUE_MODULE_INS_KENSHU = "Z_JRI15P203_1103_INS_KENSHU";		//検収明細登録
 	public static String PARAMS_VALUE_MODULE_SEL_DATA = "Z_JRI15P206_0103_SEL_DATA";			//発注取消合意書登録
-	public static String PARAMS_VALUE_MODULE_GET_WBSLIST = "Z_JRI15P207_0101_GET_WBSLIST";	//発注一覧取得
+	public static String PARAMS_VALUE_MODULE_GET_WBSLIST = "Z_JRI15P207_0101_GET_WBSLIST";		//発注一覧取得
 	public static String PARAMS_VALUE_MODULE_GET_WBSLIST2 = "Z_JRI15P207_0103_GET_WBSLIST2";	//発注詳細取得
+	public static String PARAMS_VALUE_MODULE_SET_ZHTYDT = "Z_JRI15P207_0104_SET_ZHTYDT";		//発注日連携
 
 	private static String PARAMS_VALUE_ZSCRID = "P30006";	//画面ID
 	private static String PARAMS_VALUE_ZAPLID = "0";		//アプリケーションID（FAX=0）
@@ -362,6 +363,18 @@ public class SapApi {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSNKRD_T, completionDateTo);
 		}
 		return params.getParams();
+	}
+
+	//発注日連携
+	public static Map<String, Object> setOrderDate(String orderNumber, String koujiCode, String orderDate) {
+		HttpRequestParams params = new HttpRequestParams();
+		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_SET_ZHTYDT);
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_SEBELN, orderNumber);
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_ZWRKCD, koujiCode);
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_ZHTYDT, orderDate);
+		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
+		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
+		return parsedList;
 	}
 
 }

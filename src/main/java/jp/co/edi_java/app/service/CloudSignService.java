@@ -1,24 +1,52 @@
 package jp.co.edi_java.app.service;
 
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
+import jp.co.edi_java.app.dao.MEigyousyoDao;
+import jp.co.edi_java.app.dao.MKoujiDao;
 import jp.co.edi_java.app.dao.TCloudSignDao;
 import jp.co.edi_java.app.dao.TOrderDao;
+import jp.co.edi_java.app.dao.gyousya.MGyousyaDao;
+import jp.co.edi_java.app.dao.syain.MSyainDao;
+import jp.co.edi_java.app.dto.SapOrderDto;
+import jp.co.edi_java.app.entity.MEigyousyoEntity;
+import jp.co.edi_java.app.entity.MKoujiEntity;
 import jp.co.edi_java.app.entity.TCloudSignEntity;
 import jp.co.edi_java.app.entity.TOrderEntity;
+import jp.co.edi_java.app.entity.syain.MSyainEntity;
 import jp.co.edi_java.app.util.cloudsign.CloudSignApi;
 import jp.co.edi_java.app.util.file.FileApi;
+import jp.co.edi_java.app.util.sap.SapApi;
 
 @Service
 @Scope("request")
 public class CloudSignService {
+
+	@Autowired
+    public OrderService orderService;
+
+	@Autowired
+    public MailService mailService;
+
+	@Autowired
+    public MKoujiDao mKoujiDao;
+
+	@Autowired
+    public MEigyousyoDao mEigyousyoDao;
+
+	@Autowired
+    public MSyainDao mSyainDao;
 
 	@Autowired
     public TCloudSignDao tCloudSignDao;
@@ -26,9 +54,19 @@ public class CloudSignService {
 	@Autowired
     public TOrderDao tOrderDao;
 
+	@Autowired
+    public MGyousyaDao mGyousyaDao;
+
 	public static String FILE_FLG_OFF = "0";
 	public static String FILE_FLG_ON = "1";
 	public static String FILE_FLG_REJECT = "2";
+
+	private static String STG_FLG;
+	private static String STG_FLG_ON = "1";
+
+	private CloudSignService(@Value("${stg.flg}") String flg) {
+		STG_FLG = flg;
+	}
 
 	//クラウドサイン連携情報の取得
 	public TCloudSignEntity select(String fileId) {
@@ -38,6 +76,23 @@ public class CloudSignService {
 	//クラウドサイン連携情報のリスト取得
 	public List<TCloudSignEntity> selectFileIdList(String formType) {
 		return tCloudSignDao.selectNotAgreeList(formType);
+	}
+
+	//クラウドサインリマインド対象のリスト取得
+	public List<TCloudSignEntity> selectRemindList() {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		//本日の日付を取得
+		Date nowDate = new Date();
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(nowDate);
+		cal.add(Calendar.DAY_OF_MONTH, -7);
+		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		String applicationDateFrom = sdf.format(cal.getTime());
+		cal.add(Calendar.DAY_OF_MONTH, 1);
+		String applicationDateTo = sdf.format(cal.getTime());
+		return tCloudSignDao.selectRemindList(applicationDateFrom, applicationDateTo);
 	}
 
 	//合意日の更新
@@ -129,6 +184,8 @@ public class CloudSignService {
 				String driveFileId = postRet.get("file_id").toString();
 				updateOrderAgree(order, driveFileId, formType);
 
+				sendConfirmationAgreeMail(orderNumber);
+
 				agreeCount++;
 
 			}
@@ -149,6 +206,45 @@ public class CloudSignService {
 		count.put("agreeCount", agreeCount);
 		count.put("dismissalCount", dismissalCount);
 		return count;
+	}
+
+	//発注請書受入時にメールを送信
+	public void sendConfirmationAgreeMail(String orderNumber) {
+		//発注詳細取得（SAP）
+		Map<String, Object> data = SapApi.orderDetail(orderNumber);
+		//基本情報取得
+		SapOrderDto dto = orderService.getHeader(data, orderNumber);
+		//工事情報取得
+		MKoujiEntity kouji = mKoujiDao.select(dto.getOrderInfo().getKoujiCode());
+		//支店情報取得
+		MEigyousyoEntity eigyousyo = mEigyousyoDao.select(kouji.getEigyousyoCode());
+		//社員情報取得
+		MSyainEntity syain = mSyainDao.select(kouji.getTantouSyainCode());
+		//CC
+		String cc = null;
+		if(!STG_FLG.equals(STG_FLG_ON)) {
+			cc = "jimu-" + eigyousyo.getEigyousyoCode() + "@tamahome.jp";
+		}else {
+			cc = MailService.STG_CC_MAIL;
+		}
+
+		//メール送信
+		mailService.sendMailConfirmationAgree(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), dto.getGyousyaName(), orderNumber);
+	}
+
+	public int remindList(List<TCloudSignEntity> fileList) {
+		int count = 0;
+		for (TCloudSignEntity tCloudSignEntity : fileList) {
+			//再送する
+			CloudSignApi.postDocumentId(tCloudSignEntity.getFileId());
+			count++;
+		}
+		return count;
+	}
+
+	public void remind(String documentId) {
+		//再送する
+		CloudSignApi.postDocumentId(documentId);
 	}
 
 }

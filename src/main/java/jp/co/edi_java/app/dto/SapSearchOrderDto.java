@@ -45,5 +45,7 @@ public class SapSearchOrderDto {
 
     public String orderSettlementFlg;
 
+    public String documentId;
+
 
 }
