@@ -121,6 +121,18 @@ public class OrderService {
 		return ret;
 	}
 
+	@SuppressWarnings("unchecked")
+	public SapOrderDto getHeader(Map<String, Object> data, String orderNumber) {
+
+		Map<String, Object> retDetail = getSapData(data);
+
+		//表示に必要な情報を取得
+		TOrderEntity orderInfo = tOrderDao.select(orderNumber);
+		SapOrderDto ret = getSapOrderDto(retDetail, orderInfo);
+
+		return ret;
+	}
+
 	/**
 	 * 一括発注用
 	 * @param orderNumberList
@@ -154,21 +166,22 @@ public class OrderService {
 			Map<String, Object> data = SapApi.orderDetail(orderNumber);
 			Map<String, Object> retDetail = getSapData(data);
 			TOrderEntity orderInfo = orderInfoMap.get(orderNumber);
-			List<Map<String, Object>> fileList = fileListMap.get(orderNumber);
-			// 明細取得
-			Object obj = data.get(SapApiConsts.PARAMS_KEY_T_E_01002);
-			List<Map<String, Object>> retItemList = new ArrayList<>();
-			if(obj instanceof List) {
-				retItemList = (List<Map<String, Object>>)obj;
-			}else {
-				retItemList.add((Map<String, Object>)obj);
-			}
-			SapOrderDto ret = getSapOrderDto(retDetail, retItemList, orderInfo, fileList);
 
+			SapOrderDto ret = getSapOrderDto(retDetail, orderInfo);
+
+			//明細一覧取得
+			List<SapOrderDetailDto> itemList = getItemList(data);
+			ret.setItemList(itemList);
+			//ファイル一覧設定
+			List<Map<String, Object>> fileList = fileListMap.get(orderNumber);
+			ret.setFileList(fileList);
+
+			//工事コードキャッシュ
 			if (!existsKouji.containsKey(ret.getKoujiCode())) {
 				koujiCodeList.add(ret.getKoujiCode());
 				existsKouji.put(ret.getKoujiCode(),true);
 			}
+			//業者コードキャッシュ
 			if (!existsGyousya.containsKey(ret.getGyousyaCode())) {
 				gyousyaCodeList.add(ret.getGyousyaCode());
 				existsGyousya.put(ret.getGyousyaCode(),true);
@@ -262,73 +275,6 @@ public class OrderService {
 			order.setMailaddressList(mailaddr);
 		}
 		return orderList;
-	}
-
-	@SuppressWarnings("unchecked")
-	public SapOrderDto getHeader(Map<String, Object> data, String orderNumber) {
-		//発注詳細は1件の場合と複数件の場合がある（複数件の場合はマイナス発注有）
-		Object sapObj = data.get(SapApiConsts.PARAMS_KEY_T_E_01004);
-		Map<String, Object> retDetail = null;
-		//オブジェクトがListの場合
-		if(sapObj instanceof List){
-			List<Map<String, Object>> retDetailList = (List<Map<String, Object>>) sapObj;
-			//発注詳細分チェックする
-			for (Map<String, Object> detail : retDetailList) {
-				//発注精算フラグ取得
-				String orderSettlementFlg = detail.get(SapApiConsts.PARAMS_ID_ZHCSSF).toString();
-				//マイナス発注じゃなかったら発注詳細とする
-				if(!(!StringUtils.isNullString(orderSettlementFlg) && orderSettlementFlg.equals(ORDER_SETTLEMENT_FLG_VALUE_X))) {
-					retDetail = detail;
-					break;
-				}
-			}
-			//発注詳細が存在しなかったら
-			if(retDetail == null) {
-				throw new CoreRuntimeException(ResponseCode.ERROR_CODE_1000);
-			}
-		}
-		//List以外の場合
-		else {
-			retDetail = (Map<String, Object>) sapObj;
-		}
-		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
-		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-		}
-
-		//表示に必要な情報を取得
-		TOrderEntity orderInfo = tOrderDao.select(orderNumber);
-		String orderDate = retDetail.get(SapApiConsts.PARAMS_ID_ZORDDT).toString();
-
-		SapOrderDto ret = new SapOrderDto();
-		ret.setOrderNumber(retDetail.get(SapApiConsts.PARAMS_ID_SEBELN).toString());
-		ret.setDeliveryStatus(retDetail.get(SapApiConsts.PARAMS_ID_ZNKFLG).toString());
-		ret.setGyousyaCode(retDetail.get(SapApiConsts.PARAMS_ID_ZGYSCD).toString());
-		ret.setGyousyaName(retDetail.get(SapApiConsts.PARAMS_ID_ZGYSNM).toString());
-		ret.setKoujiCode(retDetail.get(SapApiConsts.PARAMS_ID_ZWRKCD).toString());
-		ret.setSapOrderDate(orderDate);
-		//SAPで発注済みのものはそれを優先
-		if(!StringUtils.isNullString(orderDate) && !orderDate.equals(ORDER_DATE_VALUE_NOT_ORDERING)) {
-			ret.setOrderDate(orderDate);
-		}
-		//EDIで発注済みのもので発注依頼日がnullでない場合はそれを優先
-		else if(orderInfo != null && orderInfo.getConfirmationRequestDate() != null) {
-			ret.setOrderDate(sdf.format(orderInfo.getConfirmationRequestDate()));
-		}
-		//上記以外はSAPのデータを設定
-		else {
-			ret.setOrderDate(orderDate);
-		}
-		ret.setSaimokuKousyuCode(retDetail.get(SapApiConsts.PARAMS_ID_ZSMKNO).toString());
-		ret.setSaimokuKousyuName(retDetail.get(SapApiConsts.PARAMS_ID_ZSMKSY).toString());
-		ret.setOrderAmount(Integer.valueOf(retDetail.get(SapApiConsts.PARAMS_ID_ZHTKGK).toString()));
-		ret.setOrderAmountTax(Integer.valueOf(retDetail.get(SapApiConsts.PARAMS_ID_ZHTKZG).toString()));
-		ret.setDeliveryAmount(Integer.valueOf(retDetail.get(SapApiConsts.PARAMS_ID_ZUKKGK).toString()));
-		ret.setDeliveryAmountTax(Integer.valueOf(retDetail.get(SapApiConsts.PARAMS_ID_ZUKKZG).toString()));
-		ret.setSettlementCompFlg(retDetail.get(SapApiConsts.PARAMS_ID_ZSKFLG).toString());
-		ret.setOrderSettlementFlg(retDetail.get(SapApiConsts.PARAMS_ID_ZHCSSF).toString());
-		ret.setOrderInfo(orderInfo);
-		return ret;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -535,7 +481,6 @@ public class OrderService {
 		else {
 			retDetail = (Map<String, Object>) sapObj;
 		}
-//		Map<String, Object> retDetail = SapApiAnalyzer.analyzeResult(data, SapApiConsts.PARAMS_KEY_T_E_01004);
 		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
@@ -548,12 +493,10 @@ public class OrderService {
 	 * 発注情報を取得する
 	 *
 	 * @param retDetail
-	 * @param retItemList
 	 * @param orderInfo
-	 * @param fileList
 	 * @return SapOrderDto
 	 */
-	private SapOrderDto getSapOrderDto(Map<String, Object> retDetail, List<Map<String, Object>> retItemList, TOrderEntity orderInfo, List<Map<String, Object>> fileList) {
+	private SapOrderDto getSapOrderDto(Map<String, Object> retDetail, TOrderEntity orderInfo) {
 		SapOrderDto ret = new SapOrderDto();
 		String orderDate = retDetail.get(SapApiConsts.PARAMS_ID_ZORDDT).toString();
 		ret.setOrderNumber(retDetail.get(SapApiConsts.PARAMS_ID_SEBELN).toString());
@@ -582,28 +525,7 @@ public class OrderService {
 		ret.setDeliveryAmountTax(Integer.valueOf(retDetail.get(SapApiConsts.PARAMS_ID_ZUKKZG).toString()));
 		ret.setSettlementCompFlg(retDetail.get(SapApiConsts.PARAMS_ID_ZSKFLG).toString());
 		ret.setOrderSettlementFlg(retDetail.get(SapApiConsts.PARAMS_ID_ZHCSSF).toString());
-
-		ArrayList<SapOrderDetailDto> itemList = new ArrayList<SapOrderDetailDto>();
-
-		//データの詰め替え＆必要なデータ取得
-		for (Map<String, Object> map : retItemList) {
-			SapOrderDetailDto dto = new SapOrderDetailDto();
-			dto.setName(map.get(SapApiConsts.PARAMS_ID_MAKTX).toString());
-			dto.setPrice(map.get(SapApiConsts.PARAMS_ID_ZHTTNK).toString());
-			dto.setQuantity(map.get(SapApiConsts.PARAMS_ID_ZMENGE).toString());
-			dto.setUnit(map.get(SapApiConsts.PARAMS_ID_ZTANIN).toString());
-			dto.setAmount(Integer.valueOf(map.get(SapApiConsts.PARAMS_ID_ZHTKGK).toString()));
-			dto.setAmountTax(Integer.valueOf(map.get(SapApiConsts.PARAMS_ID_ZHTKZG).toString()));
-			dto.setAmountTaxInclud(Integer.valueOf(map.get(SapApiConsts.PARAMS_ID_ZHTKZTG).toString()));
-			dto.setDeliveryQuantity(map.get(SapApiConsts.PARAMS_ID_ZUKEMG).toString());
-			dto.setDeliveryAmount(Integer.valueOf(map.get(SapApiConsts.PARAMS_ID_ZUKEKN).toString()));
-			dto.setRemainQuantity(map.get(SapApiConsts.PARAMS_ID_ZZANMG).toString());
-			dto.setRemainAmount(Integer.valueOf(map.get(SapApiConsts.PARAMS_ID_ZZANKN).toString()));
-			itemList.add(dto);
-		}
-		ret.setItemList(itemList);
 		ret.setOrderInfo(orderInfo);
-		ret.setFileList(fileList);
 
 		return ret;
 	}
