@@ -27,6 +27,13 @@ public class OrderController extends BaseController {
 		return super.response();
 	}
 
+	/** 発注情報取得 */
+	@RequestMapping("/multiget")
+	public ResponseEntity multiget(@Validated OrderForm form) {
+		super.setResponseData("ret", orderService.multiGet(form.getOrderNumberList()));
+		return super.response();
+	}
+
 	/** 発注情報更新 */
 	@RequestMapping("/update")
 	public ResponseEntity update(@Validated OrderForm form) {
