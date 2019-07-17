@@ -1,12 +1,16 @@
 package jp.co.edi_java.app.service;
 
 import java.sql.Timestamp;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +32,11 @@ import jp.co.edi_java.app.entity.syain.MSyainEntity;
 import jp.co.edi_java.app.util.cloudsign.CloudSignApi;
 import jp.co.edi_java.app.util.file.FileApi;
 import jp.co.edi_java.app.util.sap.SapApi;
+import jp.co.edi_java.app.util.sap.SapApiAnalyzer;
+import jp.co.edi_java.app.util.sap.SapApiConsts;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @Scope("request")
 public class CloudSignService {
@@ -184,6 +192,60 @@ public class CloudSignService {
 				String driveFileId = postRet.get("file_id").toString();
 				updateOrderAgree(order, driveFileId, formType);
 
+				// sap 請書未受領一覧検索
+				Map<String, Object> nonJyuryouData = SapApi.selectUkeshoJyuryou(order.getKoujiCode(), order.getUpdateUser());
+
+				//請書未受領一覧検索結果取得
+				Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(nonJyuryouData);
+				if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+					log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+					//throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+				}
+				List<Map<String, Object>> sapList = new ArrayList<>();
+				Object sap = nonJyuryouData.get(SapApiConsts.PARAMS_KEY_T_E_04002);
+				if(Objects.nonNull(sap)) {
+					//1件より多い場合
+					if(sap instanceof List) {
+						sapList = (List<Map<String, Object>>)sap;
+					}
+					//1件の場合
+					else {
+						sapList.add((Map<String, Object>)sap);
+					}
+				}
+				// 請書未受領更新
+				SimpleDateFormat sdfDate = new SimpleDateFormat("yyyyMMdd");
+				SimpleDateFormat sdfTime = new SimpleDateFormat("HHmmss");
+				log.info("external interface sapApi selectUkeshoJyuryou: " + orderNumber);
+				for (Map<String, Object> sapObj : sapList) {
+					//対象の発注番号と一致するものを更新
+					log.info("external interface in for: " + orderNumber);
+					if (Objects.nonNull(sapObj.get(SapApiConsts.PARAMS_ID_EBELN))) {
+						if (sapObj.get(SapApiConsts.PARAMS_ID_EBELN).toString().equals(orderNumber)) {
+
+							String lastUpdateDate = sapObj.get(SapApiConsts.PARAMS_ID_AEDAT).toString();
+							String lastUpdateTime = sapObj.get(SapApiConsts.PARAMS_ID_AEZEIT).toString();
+							Date updateDate = parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+							Date updateTime = parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+							if (Objects.nonNull(updateDate)) {
+								lastUpdateDate = sdfDate.format(updateDate);
+							}
+							if (Objects.nonNull(updateTime)) {
+								lastUpdateTime = sdfTime.format(updateTime);
+							}
+							log.info("external interface sapApi setOrderNumberByUkeshoJyuryou: " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime);
+							Map<String, Object> result = SapApi.setOrderNumberByUkeshoJyuryou(orderNumber, lastUpdateDate, lastUpdateTime);
+							resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
+							if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+								log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+								//throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+							}
+							break;
+						}
+					}
+				}
+
+				// メール送信
 				sendConfirmationAgreeMail(orderNumber);
 
 				agreeCount++;
@@ -245,6 +307,17 @@ public class CloudSignService {
 	public void remind(String documentId) {
 		//再送する
 		CloudSignApi.postDocumentId(documentId);
+	}
+
+	private Date parseDateStringToDate(String date, String format, Locale loc) {
+		Date ret = null;
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat(format, loc);
+			ret = sdf.parse(date);
+		} catch (ParseException e) {
+			log.info(e.getMessage());
+		}
+		return ret;
 	}
 
 }

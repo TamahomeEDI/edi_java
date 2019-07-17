@@ -20,14 +20,17 @@ FROM
 LEFT OUTER JOIN M_EIGYOUSYO EIG ON EIG.EIGYOUSYO_CODE = KOU.EIGYOUSYO_CODE
 LEFT OUTER JOIN M_SYAIN SYA ON SYA.SYAIN_CODE = KOU.TANTOU_SYAIN_CODE
 WHERE
-	/*%for koujiCode : koujiCodeList*/
+	(/*%for koujiCode : koujiCodeList*/
 		KOU.KOUJI_CODE like /*@prefix(koujiCode)*/'smith' escape '$'
 		/*%if koujiCode_has_next */
 			/*# "or" */
 		/*%end */
-	/*%end */
+	/*%end */)
+	/*%if eigyousyoCode != null && eigyousyoCode != ""*/
+		and KOU.EIGYOUSYO_CODE = /*eigyousyoCode*/0
+	/*%end*/
 	/*%if koujiName != null && koujiName != ""*/
-	and (KOU.KOUJI_NAME like /*@infix(koujiName)*/'smith' escape '$' or KOU.KEIYAKUSYA_KANA like /*@infix(koujiName)*/'smith' escape '$')
+		and (KOU.KOUJI_NAME like /*@infix(koujiName)*/'smith' escape '$' or KOU.KEIYAKUSYA_KANA like /*@infix(koujiName)*/'smith' escape '$')
 	/*%end*/;
 
 

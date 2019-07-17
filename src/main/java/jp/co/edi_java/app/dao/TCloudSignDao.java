@@ -26,6 +26,9 @@ public interface TCloudSignDao {
 	TCloudSignEntity selectNewest(String orderNumber, String formType);
 
 	@Select
+	List<TCloudSignEntity> selectNewestList(List<String> orderNumber, String formType);
+
+	@Select
 	List<TCloudSignEntity> selectNotAgreeList(String formType);
 
 	@Select

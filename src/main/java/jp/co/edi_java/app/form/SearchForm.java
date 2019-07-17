@@ -86,6 +86,8 @@ public class SearchForm extends BaseForm {
 
     public String orderCancelAgreeDateTo;
 
+    public String loginUserCode;
+
 	//納品・出来高情報検索
     public String receptionStatus;
 

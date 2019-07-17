@@ -30,6 +30,9 @@ public interface SearchDao {
 	int countEstimate(SearchForm params);
 
 	@Select
+	int countKoujiInfo(String koujiCode, String koujiName, String eigyousyoCode);
+
+	@Select
 	SearchOrderInfoDto selectOrderInfo(String orderNumber, SearchForm params, String orderDate);
 
 	@Select
@@ -53,6 +56,6 @@ public interface SearchDao {
 	@Select
 	List<SearchOrderInfoDto> selectOrderInfoList(List<String> orderNumber, SearchForm params);
 	@Select
-	List<SearchKoujiInfoDto> getKoujiInfoList(List<String> koujiCodeList, String koujiName);
+	List<SearchKoujiInfoDto> getKoujiInfoList(List<String> koujiCodeList, String koujiName, String eigyousyoCode);
 
 }
