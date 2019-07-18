@@ -179,7 +179,7 @@ public class CloudSignService {
 				//連携テーブルの更新
 				update(documentId);
 
-				if (Objects.nonNull(ret.get("files"))) {
+				if (Objects.isNull(ret.get("files"))) {
 					log.info("can not get files from cloudsign: " + orderNumber);
 				} else {
 					//ファイルを取得しdriveと連携
