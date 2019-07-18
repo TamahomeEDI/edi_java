@@ -262,31 +262,34 @@ public class ChecklistService {
 		String staffReceiptFlg = Objects.nonNull(soinfDto.getStaffReceiptFlg()) ? soinfDto.getStaffReceiptFlg() : "";
 		String confirmationFlg = Objects.nonNull(soinfDto.getConfirmationFlg()) ? soinfDto.getConfirmationFlg() : "";
 		orderDate = Objects.nonNull(orderDate) ? orderDate : "";
+		soinfDto.setOrderStatus("0");
 		if (remandFlg.equals("1")) {
 			soinfDto.setOrderStatus("5");
-		} else if (confirmationFlg.equals("0")) {
-			if (Objects.isNull(soinfDto.getConfirmationRequestDate())) {
-				soinfDto.setOrderStatus("0");
-				if (! orderDate.equals(ORDER_DATE_VALUE_NOT_ORDERING)) {
+		} else {
+			if (confirmationFlg.equals("0")) {
+				if (Objects.isNull(soinfDto.getConfirmationRequestDate())) {
+					soinfDto.setOrderStatus("0");
+					if (! orderDate.equals(ORDER_DATE_VALUE_NOT_ORDERING)) {
+						soinfDto.setOrderStatus("1");
+					}
+				} else {
 					soinfDto.setOrderStatus("1");
 				}
+			} else if (confirmationFlg.equals("1")) {
+				if (Objects.isNull(soinfDto.getWorkNumber())) {
+					soinfDto.setOrderStatus("2");
+				}
+			} else if (Objects.nonNull(soinfDto.getWorkNumber())) {
+				if (staffReceiptFlg.equals("0")) {
+					soinfDto.setOrderStatus("3");
+				}
+			} else if (staffReceiptFlg.equals("1")) {
+				if (remandFlg.equals("0")) {
+					soinfDto.setOrderStatus("4");
+				}
 			} else {
-				soinfDto.setOrderStatus("1");
+				soinfDto.setOrderStatus("0");
 			}
-		} else if (confirmationFlg.equals("1")) {
-			if (Objects.isNull(soinfDto.getWorkNumber())) {
-				soinfDto.setOrderStatus("2");
-			}
-		} else if (Objects.nonNull(soinfDto.getWorkNumber())) {
-			if (staffReceiptFlg.equals("0")) {
-				soinfDto.setOrderStatus("3");
-			}
-		} else if (staffReceiptFlg.equals("1")) {
-			if (remandFlg.equals("0")) {
-				soinfDto.setOrderStatus("4");
-			}
-		} else {
-			soinfDto.setOrderStatus("0");
 		}
 	}
 
