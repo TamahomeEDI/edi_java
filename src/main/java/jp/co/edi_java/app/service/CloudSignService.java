@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TimeZone;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -156,8 +157,8 @@ public class CloudSignService {
 	public Map<String, Object> chkFileList(List<TCloudSignEntity> fileList, String formType) {
 		int agreeCount = 0;
 		int dismissalCount = 0;
+		log.info("call chkFileList");
 		for (TCloudSignEntity tCloudSignEntity : fileList) {
-
 			//発注情報の取得
 			String orderNumber = tCloudSignEntity.getOrderNumber();
 			TOrderEntity order = tOrderDao.select(orderNumber);
@@ -165,86 +166,50 @@ public class CloudSignService {
 			//連携書類情報の取得
 			String documentId = tCloudSignEntity.getFileId();
 			Map<String, Object> ret = CloudSignApi.getDocumentId(documentId);
-
+			if (Objects.isNull(ret) || Objects.isNull(ret.get("status"))) {
+				log.info("can not get documentId from cloudsign : " + orderNumber + " " + documentId);
+				continue;
+			}
 			//ステータス 1…保留、2…同意、3…却下
 			String status = ret.get("status").toString();
 
 			//同意の場合
 			if(status.equals(CloudSignApi.STATUS_AGREE)) {
-
+				log.info("status is agree : " + orderNumber);
 				//連携テーブルの更新
 				update(documentId);
 
-				//ファイルを取得しdriveと連携
-				List<Map<String, Object>> files = (List<Map<String, Object>>)ret.get("files");
-				String fileId = files.get(0).get("id").toString();
-				String fileName = fileId + ".pdf";
-				String filePath = CloudSignApi.getFile(documentId, fileId, fileName);
-				String fileNo = "";
-				if(formType.equals(CloudSignApi.FORM_TYPE_ORDER)) {
-					fileNo = FileApi.FILE_NO_CONFRIMATION;
-				}else if(formType.equals(CloudSignApi.FORM_TYPE_CANCEL)){
-					fileNo = FileApi.FILE_NO_CANCEL;
-				}
-				Map<String, Object> postRet = FileApi.postFile(order.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, fileNo, null, filePath, fileName, "pdf");
-
-				//発注テーブルの更新
-				String driveFileId = postRet.get("file_id").toString();
-				updateOrderAgree(order, driveFileId, formType);
-
-				// sap 請書未受領一覧検索
-				Map<String, Object> nonJyuryouData = SapApi.selectUkeshoJyuryou(order.getKoujiCode(), order.getUpdateUser());
-
-				//請書未受領一覧検索結果取得
-				Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(nonJyuryouData);
-				if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-					log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-					//throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-				}
-				List<Map<String, Object>> sapList = new ArrayList<>();
-				Object sap = nonJyuryouData.get(SapApiConsts.PARAMS_KEY_T_E_04002);
-				if(Objects.nonNull(sap)) {
-					//1件より多い場合
-					if(sap instanceof List) {
-						sapList = (List<Map<String, Object>>)sap;
-					}
-					//1件の場合
-					else {
-						sapList.add((Map<String, Object>)sap);
-					}
-				}
-				// 請書未受領更新
-				SimpleDateFormat sdfDate = new SimpleDateFormat("yyyyMMdd");
-				SimpleDateFormat sdfTime = new SimpleDateFormat("HHmmss");
-				log.info("external interface sapApi selectUkeshoJyuryou: " + orderNumber);
-				for (Map<String, Object> sapObj : sapList) {
-					//対象の発注番号と一致するものを更新
-					log.info("external interface in for: " + orderNumber);
-					if (Objects.nonNull(sapObj.get(SapApiConsts.PARAMS_ID_EBELN))) {
-						if (sapObj.get(SapApiConsts.PARAMS_ID_EBELN).toString().equals(orderNumber)) {
-
-							String lastUpdateDate = sapObj.get(SapApiConsts.PARAMS_ID_AEDAT).toString();
-							String lastUpdateTime = sapObj.get(SapApiConsts.PARAMS_ID_AEZEIT).toString();
-							Date updateDate = parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
-							Date updateTime = parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
-							if (Objects.nonNull(updateDate)) {
-								lastUpdateDate = sdfDate.format(updateDate);
-							}
-							if (Objects.nonNull(updateTime)) {
-								lastUpdateTime = sdfTime.format(updateTime);
-							}
-							log.info("external interface sapApi setOrderNumberByUkeshoJyuryou: " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime);
-							Map<String, Object> result = SapApi.setOrderNumberByUkeshoJyuryou(orderNumber, lastUpdateDate, lastUpdateTime);
-							resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
-							if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-								log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-								//throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-							}
-							break;
+				if (Objects.nonNull(ret.get("files"))) {
+					log.info("can not get files from cloudsign: " + orderNumber);
+				} else {
+					//ファイルを取得しdriveと連携
+					List<Map<String, Object>> files = (List<Map<String, Object>>)ret.get("files");
+					if (Objects.nonNull(files) && !files.isEmpty()) {
+						String fileId = files.get(0).get("id").toString();
+						String fileName = fileId + ".pdf";
+						String filePath = CloudSignApi.getFile(documentId, fileId, fileName);
+						String fileNo = "";
+						if(formType.equals(CloudSignApi.FORM_TYPE_ORDER)) {
+							fileNo = FileApi.FILE_NO_CONFRIMATION;
+						}else if(formType.equals(CloudSignApi.FORM_TYPE_CANCEL)){
+							fileNo = FileApi.FILE_NO_CANCEL;
 						}
+
+						Map<String, Object> postRet = FileApi.postFile(order.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, fileNo, null, filePath, fileName, "pdf");
+
+						if (Objects.nonNull(postRet)) {
+							//発注テーブルの更新
+							String driveFileId = postRet.get("file_id").toString();
+							updateOrderAgree(order, driveFileId, formType);
+						} else {
+							log.info("can not post files to google drive: " + orderNumber);
+						}
+					} else {
+						log.info("files is empty: " + orderNumber);
 					}
 				}
-
+				//請書受領連携
+				sendOrderNumber(order);
 				// メール送信
 				sendConfirmationAgreeMail(orderNumber);
 
@@ -253,7 +218,7 @@ public class CloudSignService {
 			}
 			//却下の場合
 			else if(status.equals(CloudSignApi.STATUS_DISMISSAL)) {
-
+				log.info("status is dismissal : " + orderNumber);
 				//連携テーブルの更新（削除）
 				delete(documentId);
 				//発注テーブルの更新（申請前に戻す）
@@ -263,6 +228,7 @@ public class CloudSignService {
 
 			}
 			//確認中の場合はなにもしない
+			log.info("status is confirming : " + orderNumber);
 		}
 		Map<String, Object> count = new HashMap<>();
 		count.put("agreeCount", agreeCount);
@@ -309,6 +275,64 @@ public class CloudSignService {
 		CloudSignApi.postDocumentId(documentId);
 	}
 
+	private void sendOrderNumber(TOrderEntity order) {
+		String orderNumber = order.getOrderNumber();
+		String koujiCode = order.getKoujiCode();
+		String updateUser = order.getUpdateUser();
+		// sap 請書未受領一覧検索
+		log.info("selectUkeshoJyuryou: " + koujiCode + " " + updateUser);
+		Map<String, Object> nonJyuryouData = SapApi.selectUkeshoJyuryou(koujiCode, updateUser);
+		//請書未受領一覧検索結果取得
+		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(nonJyuryouData);
+		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+			log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+			return;
+			//throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+		}
+		List<Map<String, Object>> sapList = new ArrayList<>();
+		Object sap = nonJyuryouData.get(SapApiConsts.PARAMS_KEY_T_E_04002);
+		if(Objects.nonNull(sap)) {
+			//1件より多い場合
+			if(sap instanceof List) {
+				sapList = (List<Map<String, Object>>)sap;
+			}
+			//1件の場合
+			else {
+				sapList.add((Map<String, Object>)sap);
+			}
+		}
+		// 請書未受領更新
+		for (Map<String, Object> sapObj : sapList) {
+			//対象の発注番号と一致するものを更新
+			if (Objects.nonNull(sapObj.get(SapApiConsts.PARAMS_ID_EBELN))) {
+				if (sapObj.get(SapApiConsts.PARAMS_ID_EBELN).toString().equals(orderNumber)) {
+					String lastUpdateDate = sapObj.get(SapApiConsts.PARAMS_ID_AEDAT).toString();
+					String lastUpdateTime = sapObj.get(SapApiConsts.PARAMS_ID_AEZEIT).toString();
+					log.info("before setOrderNumberByUkeshoJyuryou: " + koujiCode + " " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime);
+					// Sapへ請書未受領データの排他制御用変更日付、変更時間がEnglishロケールフォーマットのため変換が必要
+					Date updateDate = parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+					Date updateTime = parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+					if (Objects.nonNull(updateDate)) {
+						// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
+						lastUpdateDate = formatDateToString(updateDate, "yyyyMMdd", "JST");
+					}
+					if (Objects.nonNull(updateTime)) {
+						// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
+						lastUpdateTime = formatDateToString(updateTime, "HH:mm:ss", "JST");
+					}
+					log.info("setOrderNumberByUkeshoJyuryou: " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime);
+					Map<String, Object> result = SapApi.setOrderNumberByUkeshoJyuryou(orderNumber, lastUpdateDate, lastUpdateTime);
+					resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
+					if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+						log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+						//throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+					}
+					break;
+				}
+			}
+		}
+	}
+
 	private Date parseDateStringToDate(String date, String format, Locale loc) {
 		Date ret = null;
 		try {
@@ -318,6 +342,11 @@ public class CloudSignService {
 			log.info(e.getMessage());
 		}
 		return ret;
+	}
+	private String formatDateToString(Date date, String format, String timezone) {
+		SimpleDateFormat sdf = new SimpleDateFormat(format);
+		sdf.setTimeZone(TimeZone.getTimeZone(timezone));
+		return sdf.format(date);
 	}
 
 }

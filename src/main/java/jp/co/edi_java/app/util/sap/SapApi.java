@@ -271,6 +271,8 @@ public class SapApi {
 		params.addParam(SapApiConsts.PARAMS_KEY_T_I_09001  + "." + SapApiConsts.PARAMS_ID_EBELN, orderNumber);
 		params.addParam(SapApiConsts.PARAMS_KEY_T_I_09001  + "." + SapApiConsts.PARAMS_ID_AEDAT, lastUpdateDate);
 		params.addParam(SapApiConsts.PARAMS_KEY_T_I_09001  + "." + SapApiConsts.PARAMS_ID_AEZEIT, lastUpdateTime);
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_09001  + "." + SapApiConsts.PARAMS_ID_ZFAXJU, PARAMS_VALUE_ZFAXJU);
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_09001  + "." + SapApiConsts.PARAMS_ID_ZGENJU, PARAMS_VALUE_ZGENJU);
 		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
 		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
 		return parsedList;
