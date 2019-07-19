@@ -45,8 +45,24 @@ public class SearchController extends BaseController {
 		List<SapSearchOrderDto> orderList = searchService.getOrder(form);
 		super.setResponseData("ret", orderList);
 		super.setResponseData("totalCount", orderList.size());
-		Map<String, Object> sap = searchService.getSap(form);
-		super.setResponseData("sap", sap);
+		super.setResponseData("limitOver", false);
+		//Map<String, Object> sap = searchService.getSap(form);
+		//super.setResponseData("sap", sap);
+		return super.response();
+	}
+
+	/** 発注情報検索 */
+	@RequestMapping("/getOrderByKouji")
+	public ResponseEntity getOrderByKouji(@Validated SearchForm form) {
+		Map<String, Object> ret = searchService.getOrderByKouji(form);
+		if (ret.get("limitOver").equals(true)) {
+			super.setResponseData("limitOver", true);
+		} else {
+			List<SapSearchOrderDto> orderList = (List<SapSearchOrderDto>)ret.get("orderList");
+			super.setResponseData("ret", orderList);
+			super.setResponseData("totalCount", orderList.size());
+			super.setResponseData("limitOver", false);
+		}
 		return super.response();
 	}
 

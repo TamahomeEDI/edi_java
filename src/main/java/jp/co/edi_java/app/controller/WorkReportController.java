@@ -36,8 +36,10 @@ public class WorkReportController extends BaseController {
 			return super.response();
 		}
 
+		String workReportNumber = workReportService.regist(form);
+		workReportService.sendMailWorkReport(workReportNumber, form.getUserId());
 		//出来高番号返却
-		super.setResponseData("ret", workReportService.regist(form));
+		super.setResponseData("ret", workReportNumber);
 		return super.response();
 	}
 

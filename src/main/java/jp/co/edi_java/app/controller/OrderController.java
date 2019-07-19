@@ -27,6 +27,13 @@ public class OrderController extends BaseController {
 		return super.response();
 	}
 
+	/** 発注情報取得 */
+	@RequestMapping("/multiget")
+	public ResponseEntity multiget(@Validated OrderForm form) {
+		super.setResponseData("ret", orderService.multiGet(form.getOrderNumberList()));
+		return super.response();
+	}
+
 	/** 発注情報更新 */
 	@RequestMapping("/update")
 	public ResponseEntity update(@Validated OrderForm form) {
@@ -38,7 +45,9 @@ public class OrderController extends BaseController {
 	/** 請書発行 */
 	@RequestMapping("/confirmation")
 	public ResponseEntity confirmation(@Validated OrderForm form) {
+		String orderNumber = form.getOrderNumber();
 		orderService.confirmationInfo(form);
+		orderService.setOrderDate(orderNumber);
 		orderService.conectCloudSign(form, CloudSignApi.FORM_TYPE_ORDER);
 		super.setResponseData("ret", "OK");
 		return super.response();

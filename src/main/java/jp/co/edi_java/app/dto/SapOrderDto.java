@@ -3,7 +3,13 @@ package jp.co.edi_java.app.dto;
 import java.util.List;
 import java.util.Map;
 
+import jp.co.edi_java.app.entity.MEigyousyoEntity;
+import jp.co.edi_java.app.entity.MKoujiEntity;
 import jp.co.edi_java.app.entity.TOrderEntity;
+import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
+import jp.co.edi_java.app.entity.gyousya.TGyousyaAccountEntity;
+import jp.co.edi_java.app.entity.gyousya.TGyousyaMailaddressEntity;
+import jp.co.edi_java.app.entity.syain.MSyainEntity;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -46,5 +52,18 @@ public class SapOrderDto {
     public TOrderEntity orderInfo;
 
     public List<Map<String, Object>> fileList;
+
+    // 2019/7/3 一括発注
+    public MKoujiEntity koujiInfo;
+
+    public MEigyousyoEntity eigyousyoInfo;
+
+    public MSyainEntity syainInfo;
+
+    public MGyousyaEntity gyousyaInfo;
+
+    public TGyousyaAccountEntity partnerAccount;
+
+    public List<TGyousyaMailaddressEntity> mailaddressList;
 
 }

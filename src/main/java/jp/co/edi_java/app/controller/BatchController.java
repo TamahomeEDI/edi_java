@@ -288,6 +288,31 @@ public class BatchController extends BaseController {
 		return super.response();
 	}
 
+	/**
+	 * クラウドサインリマインド機能
+	 * ヒアリング対応 ⑤発注メールの有効期限切れ対応
+	 * 7日経っても承認していない業者へバッチで一括送信
+	 */
+	@RequestMapping("/remindCloudSign")
+	public ResponseEntity remindCloudSign() {
+		try {
+			long start = System.currentTimeMillis();
+
+			//発注請書のID一覧取得
+			List<TCloudSignEntity> remindList = cloudSignService.selectRemindList();
+			//メールを送信
+			int count = cloudSignService.remindList(remindList);
+
+			long end = System.currentTimeMillis();
+			super.setResponseData("count",count);
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+//			String msg = SystemLoggingUtil.getStackTraceString(e);
+//			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
 
 
 

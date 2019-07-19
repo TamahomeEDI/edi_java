@@ -36,7 +36,12 @@ public class DeliveryController extends BaseController {
 		}
 
 		//納品番号返却
-		super.setResponseData("ret", deliveryService.regist(form));
+		String deliveryNumber = deliveryService.regist(form);
+
+		//納品受領通知
+		deliveryService.sendMailDelivery(deliveryNumber, form.getGyousyaCode());
+
+		super.setResponseData("ret", deliveryNumber);
 		return super.response();
 	}
 

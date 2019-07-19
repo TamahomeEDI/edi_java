@@ -26,6 +26,9 @@ public interface MGyousyaDao {
 	MGyousyaEntity select(String gyousyaCode);
 
 	@Select
+	List<MGyousyaEntity> selectListByMultiCode(List<String> gyousyaCodeList);
+
+	@Select
 	List<MGyousyaEntity> selectList(String eigyousyoCode);
 
 	@Select

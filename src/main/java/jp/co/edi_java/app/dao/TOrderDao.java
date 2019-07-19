@@ -1,5 +1,7 @@
 package jp.co.edi_java.app.dao;
 
+import java.util.List;
+
 import org.seasar.doma.Dao;
 import org.seasar.doma.Delete;
 import org.seasar.doma.Insert;
@@ -20,6 +22,9 @@ public interface TOrderDao {
 
 	@Select
 	TOrderEntity select(String orderNumber);
+
+	@Select
+	List<TOrderEntity> selectList(List<String> orderNumberList);
 
 //	@Select
 //	TOrderEntity search(String orderNumber, String cancelKbn);

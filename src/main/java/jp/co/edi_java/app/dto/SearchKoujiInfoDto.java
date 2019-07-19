@@ -15,16 +15,32 @@ public class SearchKoujiInfoDto {
 
     public String koujiName;
 
+    public String koujiStatus;
+
     public String koujiStatusName;
+
+    public String tyakkouDateY;
 
     public String tyakkouDate;
 
+    public String syunkouDateY;
+
     public String syunkouDate;
+
+    public String hikiwatasiDateY;
 
     public String hikiwatasiDate;
 
+    public String eigyousyoCode;
+
     public String eigyousyoName;
 
+    public String tantouSyainCode;
+
     public String syainName;
+
+    public String kentikutiYuubin;
+
+    public String kentikutiJyuusyo;
 
 }

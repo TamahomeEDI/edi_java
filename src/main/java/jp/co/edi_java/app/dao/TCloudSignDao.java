@@ -23,7 +23,16 @@ public interface TCloudSignDao {
 	TCloudSignEntity select(String fileId);
 
 	@Select
+	TCloudSignEntity selectNewest(String orderNumber, String formType);
+
+	@Select
+	List<TCloudSignEntity> selectNewestList(List<String> orderNumber, String formType);
+
+	@Select
 	List<TCloudSignEntity> selectNotAgreeList(String formType);
+
+	@Select
+	List<TCloudSignEntity> selectRemindList(String applicationDateFrom, String applicationDateTo);
 
 	@Insert(excludeNull = true)
     int insert(TCloudSignEntity entity);
