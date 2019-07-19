@@ -5,18 +5,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
+import jp.co.edi_java.app.dao.MEigyousyoDao;
+import jp.co.edi_java.app.dao.MKoujiDao;
 import jp.co.edi_java.app.dao.TDeliveryDao;
 import jp.co.edi_java.app.dao.TDeliveryItemDao;
 import jp.co.edi_java.app.dao.gyousya.MGyousyaDao;
 import jp.co.edi_java.app.dao.gyousya.TGyousyaMailaddressDao;
+import jp.co.edi_java.app.dao.syain.MSyainDao;
 import jp.co.edi_java.app.dto.ApprovalDto;
 import jp.co.edi_java.app.dto.DeliveryDto;
+import jp.co.edi_java.app.entity.MEigyousyoEntity;
+import jp.co.edi_java.app.entity.MKoujiEntity;
 import jp.co.edi_java.app.entity.TDeliveryEntity;
 import jp.co.edi_java.app.entity.TDeliveryItemEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
+import jp.co.edi_java.app.entity.syain.MSyainEntity;
 import jp.co.edi_java.app.form.DeliveryForm;
 import jp.co.keepalive.springbootfw.util.consts.CommonConsts;
 import jp.co.keepalive.springbootfw.util.dxo.BeanUtils;
@@ -35,10 +42,26 @@ public class DeliveryService {
     public TDeliveryItemDao tDeliveryItemDao;
 
 	@Autowired
+    public MKoujiDao mKoujiDao;
+
+	@Autowired
+    public MEigyousyoDao mEigyousyoDao;
+
+	@Autowired
+    public MSyainDao mSyainDao;
+
+	@Autowired
     public MGyousyaDao mGyousyaDao;
 
 	@Autowired
     public TGyousyaMailaddressDao tGyousyaMailaddressDao;
+
+	private static String STG_FLG;
+	private static String STG_FLG_ON = "1";
+
+	private DeliveryService(@Value("${stg.flg}") String flg) {
+		STG_FLG = flg;
+	}
 
 	public TDeliveryEntity get(String deliveryNumber) {
 		return tDeliveryDao.select(deliveryNumber);
@@ -170,6 +193,30 @@ public class DeliveryService {
 				*/
 			}
 		}
+	}
+
+	//納品書登録時にメールを送信
+	public void sendMailDelivery(String deliveryNumber, String gyousyaCode) {
+		//納品情報取得
+		TDeliveryEntity delivery = get(deliveryNumber);
+		//工事情報取得
+		MKoujiEntity kouji = mKoujiDao.select(delivery.getKoujiCode());
+		//支店情報取得
+		MEigyousyoEntity eigyousyo = mEigyousyoDao.select(kouji.getEigyousyoCode());
+		//社員情報取得
+		MSyainEntity syain = mSyainDao.select(kouji.getTantouSyainCode());
+		//業者情報取得
+		MGyousyaEntity gyousya = mGyousyaDao.select(gyousyaCode);
+		//CC
+		String cc = null;
+		if(!STG_FLG.equals(STG_FLG_ON)) {
+			cc = "jimu-" + eigyousyo.getEigyousyoCode() + "@tamahome.jp";
+		}else {
+			cc = MailService.STG_CC_MAIL;
+		}
+
+		//メール送信
+		mailService.sendMailDelivery(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), deliveryNumber);
 	}
 
 }

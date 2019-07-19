@@ -301,6 +301,92 @@ public class MailContents {
                 + "何卒宜しくお願い申し上げます。\n";
     }
 
+    /*
+     * 08_請書受領
+     * to 社員
+     */
+    public static String getConfirmationAgreeSubject() {
+        return PREFIX + "【請書受領のお知らせ】 TH-EDI";
+    }
+
+    public static String getConfirmationAgreeBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber) {
+        return ""
+                + "\n"
+                + "------------------------------------------------------------------\n"
+                + "本メールはTH-EDIシステムから自動送信されています。\n"
+                + "------------------------------------------------------------------\n"
+                + "\n"
+                + eigyousyoName + " 支店\n"
+                + syainName + " 様\n"
+                + "\n"
+                + "請書を受領しました。\n"
+                + "\n"
+                + "工事名：" + koujiName + "\n"
+                + "業者名：" + gyousyaName + "\n"
+                + "発注番号：" + orderNumber + "\n"
+                + "\n"
+                + "\n"
+                + "\n"
+                + "\n"
+                + BASE_URL + "/user/order/detail/?orderNumber=" + orderNumber + "\n";
+    }
+
+    /*
+     * 09-1_納品受領
+     * to 社員
+     */
+    public static String getDeliveryWorkReportSubject() {
+        return PREFIX + "【納品出来高報告のお知らせ】 TH-EDI";
+    }
+
+    public static String getDeliveryBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber) {
+        return ""
+                + "\n"
+                + "------------------------------------------------------------------\n"
+                + "本メールはTH-EDIシステムから自動送信されています。\n"
+                + "------------------------------------------------------------------\n"
+                + "\n"
+                + eigyousyoName + " 支店\n"
+                + syainName + " 様\n"
+                + "\n"
+                + "納品出来高報告を受領しました。\n"
+                + "\n"
+                + "工事名：" + koujiName + "\n"
+                + "業者名：" + gyousyaName + "\n"
+                + "発注番号：" + orderNumber + "\n"
+                + "\n"
+                + "\n"
+                + "\n"
+                + "\n"
+                + BASE_URL + "/partner/delivery/detail/?deliveryNumber=" + deliveryNumber + "\n";
+    }
+
+    /*
+     * 09-2_出来高受領
+     * to 社員
+     */
+    public static String getWorkReportBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String workReportNumber) {
+        return ""
+                + "\n"
+                + "------------------------------------------------------------------\n"
+                + "本メールはTH-EDIシステムから自動送信されています。\n"
+                + "------------------------------------------------------------------\n"
+                + "\n"
+                + eigyousyoName + " 支店\n"
+                + syainName + " 様\n"
+                + "\n"
+                + "納品出来高報告を受領しました。\n"
+                + "\n"
+                + "工事名：" + koujiName + "\n"
+                + "業者名：" + gyousyaName + "\n"
+                + "発注番号：" + orderNumber + "\n"
+                + "\n"
+                + "\n"
+                + "\n"
+                + "\n"
+                + BASE_URL + "/partner/workreport/detail/?workReportNumber=" + workReportNumber + "\n";
+    }
+
 
 
 

@@ -1,0 +1,1 @@
+select * from T_GYOUSYA_ACCOUNT where GYOUSYA_CODE in /*gyousyaCodeList*/(0);

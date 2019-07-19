@@ -5,18 +5,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
+import jp.co.edi_java.app.dao.MEigyousyoDao;
+import jp.co.edi_java.app.dao.MKoujiDao;
 import jp.co.edi_java.app.dao.TWorkReportDao;
 import jp.co.edi_java.app.dao.TWorkReportItemDao;
 import jp.co.edi_java.app.dao.gyousya.MGyousyaDao;
 import jp.co.edi_java.app.dao.gyousya.TGyousyaMailaddressDao;
+import jp.co.edi_java.app.dao.syain.MSyainDao;
 import jp.co.edi_java.app.dto.ApprovalDto;
 import jp.co.edi_java.app.dto.WorkReportDto;
+import jp.co.edi_java.app.entity.MEigyousyoEntity;
+import jp.co.edi_java.app.entity.MKoujiEntity;
 import jp.co.edi_java.app.entity.TWorkReportEntity;
 import jp.co.edi_java.app.entity.TWorkReportItemEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
+import jp.co.edi_java.app.entity.syain.MSyainEntity;
 import jp.co.edi_java.app.form.WorkReportForm;
 import jp.co.keepalive.springbootfw.util.consts.CommonConsts;
 import jp.co.keepalive.springbootfw.util.dxo.BeanUtils;
@@ -35,10 +42,26 @@ public class WorkReportService {
     public TWorkReportItemDao tWorkReportItemDao;
 
 	@Autowired
+    public MKoujiDao mKoujiDao;
+
+	@Autowired
+    public MEigyousyoDao mEigyousyoDao;
+
+	@Autowired
+    public MSyainDao mSyainDao;
+
+	@Autowired
     public MGyousyaDao mGyousyaDao;
 
 	@Autowired
     public TGyousyaMailaddressDao tGyousyaMailaddressDao;
+
+	private static String STG_FLG;
+	private static String STG_FLG_ON = "1";
+
+	private WorkReportService(@Value("${stg.flg}") String flg) {
+		STG_FLG = flg;
+	}
 
 	public TWorkReportEntity get(String workReportNumber) {
 		return tWorkReportDao.select(workReportNumber);
@@ -170,6 +193,30 @@ public class WorkReportService {
 				*/
 			}
 		}
+	}
+
+	//出来高報告書登録時にメールを送信
+	public void sendMailWorkReport(String workReportNumber, String gyousyaCode) {
+		//出来高情報取得
+		TWorkReportEntity workReport = get(workReportNumber);
+		//工事情報取得
+		MKoujiEntity kouji = mKoujiDao.select(workReport.getKoujiCode());
+		//支店情報取得
+		MEigyousyoEntity eigyousyo = mEigyousyoDao.select(kouji.getEigyousyoCode());
+		//社員情報取得
+		MSyainEntity syain = mSyainDao.select(kouji.getTantouSyainCode());
+		//業者情報取得
+		MGyousyaEntity gyousya = mGyousyaDao.select(gyousyaCode);
+		//CC
+		String cc = null;
+		if(!STG_FLG.equals(STG_FLG_ON)) {
+			cc = "jimu-" + eigyousyo.getEigyousyoCode() + "@tamahome.jp";
+		}else {
+			cc = MailService.STG_CC_MAIL;
+		}
+
+		//メール送信
+		mailService.sendMailWorkReport(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport.getOrderNumber(), workReportNumber);
 	}
 
 }

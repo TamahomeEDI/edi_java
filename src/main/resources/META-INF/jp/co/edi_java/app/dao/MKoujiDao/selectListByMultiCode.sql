@@ -1,0 +1,1 @@
+select * from M_KOUJI where KOUJI_CODE in /*koujiCodeList*/(0) order by KOUJI_CODE;
