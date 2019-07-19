@@ -5,12 +5,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import jp.co.edi_java.app.service.MailService;
-import jp.co.edi_java.app.util.mail.MailContents;
 import jp.co.keepalive.springbootfw.entity.ResponseEntity;
 import jp.co.keepalive.springbootfw.util.consts.ResponseCode;
 import jp.co.keepalive.springbootfw.util.logging.SystemLoggingUtil;
-import jp.co.keepalive.springbootfw.util.mail.MailUtils;
 import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
@@ -31,7 +28,7 @@ public class CommonExceptionHandler {
     		response.data.put("stackTrace", msg);
     	}
     	log.error(msg);
-    	MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemErrSubject(), msg);
+//    	MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemErrSubject(), msg);
         return response;
     }
 
@@ -47,7 +44,7 @@ public class CommonExceptionHandler {
     		response.data.put("stackTrace", msg);
     	}
     	log.error(msg);
-    	MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemErrSubject(), msg);
+//    	MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemErrSubject(), msg);
         return response;
     }
 
@@ -63,7 +60,7 @@ public class CommonExceptionHandler {
     	if(log.isDebugEnabled()) {
     		response.data.put("stackTrace", msg);
     	}
-    	MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemErrSubject(), msg);
+//    	MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemErrSubject(), msg);
         return response;
     }
 }

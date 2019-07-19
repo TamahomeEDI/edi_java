@@ -21,8 +21,10 @@ public class MailService {
     public static final String MAIL_ADDR_FROM_KAIKEI = "th-edi@tamahome.jp";
     public static final String MAIL_SIGN_FROM = "タマホーム電子発注システム";
 
-    public static final String STG_CC_MAIL = "th-ml+1@keep-alive.co.jp";
-    public static final String STG_BCC_MAIL = "th-ml+2@keep-alive.co.jp";
+//    public static final String STG_CC_MAIL = "th-ml+1@keep-alive.co.jp";
+    public static final String STG_CC_MAIL = "to-suzuki@tamahome.jp";
+//    public static final String STG_BCC_MAIL = "th-ml+2@keep-alive.co.jp";
+    public static final String STG_BCC_MAIL = "to-suzuki@tamahome.jp";
 
     /** TO：1件 */
     private void sendMail(String toMail, String subject, String body) {
