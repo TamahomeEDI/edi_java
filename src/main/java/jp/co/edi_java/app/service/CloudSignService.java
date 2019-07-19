@@ -180,7 +180,7 @@ public class CloudSignService {
 				update(documentId);
 
 				if (Objects.isNull(ret.get("files"))) {
-					log.info("can not get files from cloudsign: " + orderNumber);
+					log.info("can not get files from cloudsign: " + orderNumber + " " + documentId);
 				} else {
 					//ファイルを取得しdriveと連携
 					List<Map<String, Object>> files = (List<Map<String, Object>>)ret.get("files");
