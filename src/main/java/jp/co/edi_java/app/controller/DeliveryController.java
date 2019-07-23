@@ -38,10 +38,16 @@ public class DeliveryController extends BaseController {
 		//納品番号返却
 		String deliveryNumber = deliveryService.regist(form);
 
-		//納品受領通知
-		deliveryService.sendMailDelivery(deliveryNumber, form.getGyousyaCode());
-
 		super.setResponseData("ret", deliveryNumber);
+		return super.response();
+	}
+
+	/** 納品情報登録後メール送信 */
+	@RequestMapping("/sendmail")
+	public ResponseEntity sendmail(@Validated DeliveryForm form) {
+		//納品受領通知
+		deliveryService.sendMailDelivery(form);
+
 		return super.response();
 	}
 

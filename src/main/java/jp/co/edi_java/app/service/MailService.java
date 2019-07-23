@@ -1,8 +1,9 @@
 package jp.co.edi_java.app.service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-import org.apache.http.NameValuePair;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +12,7 @@ import jp.co.edi_java.app.entity.TDeliveryEntity;
 import jp.co.edi_java.app.entity.TWorkReportEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
 import jp.co.edi_java.app.util.mail.MailContents;
-import jp.co.keepalive.springbootfw.util.mail.MailUtils;
+import jp.co.edi_java.app.util.mail.MailExUtils;
 
 @Service
 @Scope("request")
@@ -26,32 +27,37 @@ public class MailService {
 
     /** TO：1件 */
     private void sendMail(String toMail, String subject, String body) {
-    	MailUtils.sendMail(toMail, MAIL_ADDR_FROM, MAIL_SIGN_FROM, subject, body);
+    	MailExUtils.sendMail(toMail, MAIL_ADDR_FROM, MAIL_SIGN_FROM, subject, body);
 	}
 
     /** TO：1件 */
     private void sendMailKaikei(String toMail, String subject, String body) {
-    	MailUtils.sendMail(toMail, MAIL_ADDR_FROM_KAIKEI, MAIL_SIGN_FROM, subject, body);
+    	MailExUtils.sendMail(toMail, MAIL_ADDR_FROM_KAIKEI, MAIL_SIGN_FROM, subject, body);
 	}
 
     /** TO：1件 CC：1件 */
 	private void sendMail(String toMail, String ccMail, String subject, String body) {
-		MailUtils.sendMail(toMail, ccMail, MAIL_ADDR_FROM, MAIL_SIGN_FROM, subject, body);
+		MailExUtils.sendMail(toMail, ccMail, MAIL_ADDR_FROM, MAIL_SIGN_FROM, subject, body);
 	}
 
 	/** TO：複数件 */
 	private void sendMail(List<String> toList, String subject, String body) {
-		MailUtils.sendMail(toList, MAIL_ADDR_FROM, MAIL_SIGN_FROM, subject, body);
+		MailExUtils.sendMail(toList, MAIL_ADDR_FROM, MAIL_SIGN_FROM, subject, body);
 	}
 
 	/** TO：複数件 CC：1件 */
     private void sendMail(List<String> toList, String ccMail,  String subject, String body) {
-        MailUtils.sendMail(toList, ccMail, MAIL_ADDR_FROM, MAIL_SIGN_FROM, subject, body);
+        MailExUtils.sendMail(toList, ccMail, MAIL_ADDR_FROM, MAIL_SIGN_FROM, subject, body);
     }
 
 	/** TO：複数件 CC：1件 BCC：1件 */
     private void sendMail(List<String> toList, String ccMail, String bccMail, String subject, String body) {
-        MailUtils.sendMail(toList, ccMail, bccMail, MAIL_ADDR_FROM, MAIL_SIGN_FROM, subject, body);
+        MailExUtils.sendMail(toList, ccMail, bccMail, MAIL_ADDR_FROM, MAIL_SIGN_FROM, subject, body);
+    }
+
+    /** 添付ファイルメール */
+    private void sendMPartMail(List<String> toList, List<String> ccList, List<String> bccList, String subject, String txtBody, String htmlBody, List<Map<String,String>> fileList) {
+        MailExUtils.sendMPartMail(toList, ccList, bccList, MAIL_ADDR_FROM, MAIL_SIGN_FROM, subject, txtBody, htmlBody, fileList);
     }
 
     /*
@@ -134,35 +140,53 @@ public class MailService {
     /*
      * 08_請書受領通知
      */
-	public void sendMailConfirmationAgree(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber) {
-		sendMail(to,
-				cc,
-				MailContents.getConfirmationAgreeSubject(),
-				MailContents.getConfirmationAgreeBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber));
+	public void sendMailConfirmationAgree(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList) {
+		List<String> toList = new ArrayList<String>();
+		toList.add(to);
+		List<String> ccList = new ArrayList<String>();
+		ccList.add(cc);
+
+		sendMPartMail(toList,ccList,null,
+			MailContents.getConfirmationAgreeSubject(),
+			MailContents.getConfirmationAgreeBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber),
+			null,
+			fileList
+		);
 	}
 
     /*
      * 09-1_納品受領通知
      */
-	public void sendMailDelivery(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber) {
-		sendMail(to,
-				cc,
-				MailContents.getDeliveryWorkReportSubject(),
-				MailContents.getDeliveryBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber));
+	public void sendMailDelivery(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList, String deliveryNumber) {
+		List<String> toList = new ArrayList<String>();
+		toList.add(to);
+		List<String> ccList = new ArrayList<String>();
+		ccList.add(cc);
+
+		sendMPartMail(toList,ccList,null,
+			MailContents.getDeliveryWorkReportSubject(),
+			MailContents.getDeliveryBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber),
+			null,
+			fileList
+		);
 	}
 
     /*
      * 09-2_出来高受領通知
      */
-	public void sendMailWorkReport(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String workReportNumber) {
-		sendMail(to,
-				cc,
-				MailContents.getDeliveryWorkReportSubject(),
-				MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber));
+	public void sendMailWorkReport(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList, String workReportNumber) {
+		List<String> toList = new ArrayList<String>();
+		toList.add(to);
+		List<String> ccList = new ArrayList<String>();
+		ccList.add(cc);
+
+		sendMPartMail(toList,ccList,null,
+			MailContents.getDeliveryWorkReportSubject(),
+			MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber),
+			null,
+			fileList
+		);
 	}
-
-
-
 
     /*
      * 90_会計基準（回答完了）
@@ -173,20 +197,13 @@ public class MailService {
 				MailContents.getKaikeiKijunBody(gyousyaName, staffName, kaikeiKijun, registDate));
 	}
 
-
-
-
-
-
-
-
     /*
      * sapパラメータ確認
      */
-	public void sendMailSap(List<NameValuePair> param) {
-		sendMail("m.hirano@keep-alive.co.jp",
-				MailContents.getSapSubject(),
-				MailContents.getSapBody(param));
-	}
+//	public void sendMailSap(List<NameValuePair> param) {
+//		sendMail("m.hirano@keep-alive.co.jp",
+//				MailContents.getSapSubject(),
+//				MailContents.getSapBody(param));
+//	}
 
 }

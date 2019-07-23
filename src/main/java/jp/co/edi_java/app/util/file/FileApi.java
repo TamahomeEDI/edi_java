@@ -31,6 +31,8 @@ public class FileApi {
 	public static String FILE_CODE_FORM = "03";			//帳票
 	public static String FILE_NO_CONFRIMATION = "02";	//請書
 	public static String FILE_NO_CANCEL = "05";			//取消合意書
+	public static String FILE_NO_DELIVERY = "03";		//納品書
+	public static String FILE_NO_WORK_REPORT = "04";	//出来高報告書
 
 	private FileApi(@Value("${fileapi.base.url}") String url) {
 		BASE_URL = url;
