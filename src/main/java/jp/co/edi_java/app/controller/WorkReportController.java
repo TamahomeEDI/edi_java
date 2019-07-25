@@ -46,7 +46,7 @@ public class WorkReportController extends BaseController {
 	/** 出来高報告書登録後メール送信 */
 	@RequestMapping("/sendmail")
 	public ResponseEntity sendmail(@Validated WorkReportForm form) {
-		workReportService.sendMailWorkReport(form);
+		workReportService.sendMailWorkReport(form, false);
 
 		return super.response();
 	}

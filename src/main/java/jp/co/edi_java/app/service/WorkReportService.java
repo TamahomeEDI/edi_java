@@ -92,6 +92,11 @@ public class WorkReportService {
 		return dtoList;
 	}
 
+	//出来高書リマインド対象のリスト取得
+	public List<TWorkReportEntity> selectRemindList() {
+		return tWorkReportDao.selectUnconfirmList();
+	}
+
 	public String regist(WorkReportForm form) {
 		//出来高報告情報登録
 		String workReportNumber = registWorkReport(form);
@@ -199,12 +204,25 @@ public class WorkReportService {
 		}
 	}
 
+	//出来高報告書の受入確認メール再送
+	public void remindList(List<TWorkReportEntity> workReportList) {
+		if (Objects.nonNull(workReportList)) {
+			WorkReportForm form = new WorkReportForm();
+			for (TWorkReportEntity workReport : workReportList) {
+				form.setWorkReportNumber(workReport.getWorkReportNumber());
+				sendMailWorkReport(form, true);
+			}
+		}
+	}
+
 	//出来高報告書登録時にメールを送信
-	public void sendMailWorkReport(WorkReportForm form) {
+	public void sendMailWorkReport(WorkReportForm form, Boolean remind) {
 		String workReportNumber = form.getWorkReportNumber();
 
 		//出来高情報取得
 		TWorkReportEntity workReport = get(workReportNumber);
+		//出来高明細取得
+		List<TWorkReportItemEntity> itemList = getItemList(workReportNumber);
 		//工事情報取得
 		MKoujiEntity kouji = mKoujiDao.select(workReport.getKoujiCode());
 		//支店情報取得
@@ -233,7 +251,7 @@ public class WorkReportService {
 			fileList.add(fileMap);
 		}
 		//メール送信
-		mailService.sendMailWorkReport(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport.getOrderNumber(), fileList, workReportNumber);
+		mailService.sendMailWorkReport(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport.getOrderNumber(), fileList, workReportNumber, itemList, remind);
 	}
 
 }

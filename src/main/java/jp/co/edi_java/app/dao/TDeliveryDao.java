@@ -29,6 +29,9 @@ public interface TDeliveryDao {
 	@Select
     List<TDeliveryEntity> selectAll(String orderNumber, String remandFlg);
 
+	@Select
+    List<TDeliveryEntity> selectUnconfirmList();
+
 	@Insert(excludeNull = true)
     int insert(TDeliveryEntity entity);
 

@@ -17,7 +17,9 @@ import jp.co.edi_java.app.service.DeliveryService;
 import jp.co.keepalive.springbootfw.controller.BaseController;
 import jp.co.keepalive.springbootfw.entity.ResponseEntity;
 import jp.co.keepalive.springbootfw.util.consts.ResponseCode;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @Scope("request")
 @RequestMapping("delivery")
@@ -29,6 +31,7 @@ public class DeliveryController extends BaseController {
 	/** 納品情報登録 */
 	@RequestMapping("/regist")
 	public ResponseEntity regist(@Validated DeliveryForm form) {
+		log.info("delivery regist ordernumber: " + form.orderNumber);
 		TDeliveryEntity delivery = deliveryService.getByOrderNumber(form.orderNumber, form.deliveryCount);
 		if(delivery != null) {
 			super.setErrorCode(ResponseCode.ERROR_CODE_652);
@@ -46,7 +49,7 @@ public class DeliveryController extends BaseController {
 	@RequestMapping("/sendmail")
 	public ResponseEntity sendmail(@Validated DeliveryForm form) {
 		//納品受領通知
-		deliveryService.sendMailDelivery(form);
+		deliveryService.sendMailDelivery(form, false);
 
 		return super.response();
 	}

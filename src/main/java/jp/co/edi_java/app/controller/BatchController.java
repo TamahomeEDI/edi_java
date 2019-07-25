@@ -9,9 +9,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jp.co.edi_java.app.entity.TCloudSignEntity;
+import jp.co.edi_java.app.entity.TDeliveryEntity;
+import jp.co.edi_java.app.entity.TWorkReportEntity;
 import jp.co.edi_java.app.service.CloudSignService;
+import jp.co.edi_java.app.service.DeliveryService;
 import jp.co.edi_java.app.service.JtmService;
 import jp.co.edi_java.app.service.MailService;
+import jp.co.edi_java.app.service.WorkReportService;
 import jp.co.edi_java.app.util.cloudsign.CloudSignApi;
 import jp.co.edi_java.app.util.mail.MailContents;
 import jp.co.keepalive.springbootfw.controller.BaseController;
@@ -30,7 +34,13 @@ public class BatchController extends BaseController {
 	@Autowired
 	public CloudSignService cloudSignService;
 
-	private String adminEmail = "th-ml@keep-alive.co.jp";
+	@Autowired
+	public DeliveryService deliveryService;
+
+	@Autowired
+	public WorkReportService workReportService;
+
+	private String adminEmail = "t-iida@tamahome.jp, to-suzuki@tamahome.jp, shinji-yamaguchi@tamahome.jp";
 
 	/** 支店マスタ取得 */
 	@RequestMapping("/getEigyousyoAll")
@@ -282,8 +292,8 @@ public class BatchController extends BaseController {
 			super.setResponseData("cancelCountMap",cancelCountMap);
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
-//			String msg = SystemLoggingUtil.getStackTraceString(e);
-//			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -307,12 +317,41 @@ public class BatchController extends BaseController {
 			super.setResponseData("count",count);
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
-//			String msg = SystemLoggingUtil.getStackTraceString(e);
-//			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
 
+	/**
+	 * 納品出来高受入リマインド機能
+	 * 毎日工務担当者へ処理漏れがないかリマインド
+	 *
+	 */
+	@RequestMapping("/remindDeliveryAcceptance")
+	public ResponseEntity remindDeliveryAcceptance() {
+		try {
+			long start = System.currentTimeMillis();
+
+			//納品書のID一覧取得
+			List<TDeliveryEntity> remindDList = deliveryService.selectRemindList();
+			//出来高書のID一覧取得
+			List<TWorkReportEntity> remindWList = workReportService.selectRemindList();
+			//メールを送信
+			int countD = remindDList.size();
+			deliveryService.remindList(remindDList);
+			int countW = remindWList.size();
+			workReportService.remindList(remindWList);
+			long end = System.currentTimeMillis();
+			super.setResponseData("countDelivery",countD);
+			super.setResponseData("countWorkReport",countW);
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
 
 
 

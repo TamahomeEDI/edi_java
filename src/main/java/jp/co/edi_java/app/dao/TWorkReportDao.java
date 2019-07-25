@@ -29,6 +29,9 @@ public interface TWorkReportDao {
 	@Select
     List<TWorkReportEntity> selectAll(String orderNumber, String remandFlg);
 
+	@Select
+	List<TWorkReportEntity> selectUnconfirmList();
+
 	@Insert(excludeNull = true)
     int insert(TWorkReportEntity entity);
 

@@ -92,6 +92,11 @@ public class DeliveryService {
 		return dtoList;
 	}
 
+	//納品書リマインド対象のリスト取得
+	public List<TDeliveryEntity> selectRemindList() {
+		return tDeliveryDao.selectUnconfirmList();
+	}
+
 	public String regist(DeliveryForm form) {
 		//納品情報登録
 		String deliveryNumber = registDelivery(form);
@@ -199,13 +204,27 @@ public class DeliveryService {
 		}
 	}
 
+	//納品書の受入確認メール再送
+	public void remindList(List<TDeliveryEntity> deliveryList) {
+		if (Objects.nonNull(deliveryList)) {
+			DeliveryForm form = new DeliveryForm();
+			for (TDeliveryEntity delivery : deliveryList) {
+				form.setDeliveryNumber(delivery.getDeliveryNumber());
+				form.setGyousyaCode(delivery.getGyousyaCode());
+				sendMailDelivery(form, true);
+			}
+		}
+	}
+
 	//納品書登録時にメールを送信
-	public void sendMailDelivery(DeliveryForm form) {
+	public void sendMailDelivery(DeliveryForm form, Boolean remind) {
 		String deliveryNumber = form.getDeliveryNumber();
 		String gyousyaCode = form.getGyousyaCode();
 
 		//納品情報取得
 		TDeliveryEntity delivery = get(deliveryNumber);
+		//納品書明細取得
+		List<TDeliveryItemEntity> itemList = getItemList(deliveryNumber);
 		//工事情報取得
 		MKoujiEntity kouji = mKoujiDao.select(delivery.getKoujiCode());
 		//支店情報取得
@@ -233,7 +252,7 @@ public class DeliveryService {
 			fileList.add(fileMap);
 		}
 		//メール送信
-		mailService.sendMailDelivery(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), fileList, deliveryNumber);
+		mailService.sendMailDelivery(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), fileList, deliveryNumber, itemList, remind);
 	}
 
 }

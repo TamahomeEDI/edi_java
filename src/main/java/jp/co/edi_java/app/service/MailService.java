@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 
 import jp.co.edi_java.app.dto.MailEstimateRegistDto;
 import jp.co.edi_java.app.entity.TDeliveryEntity;
+import jp.co.edi_java.app.entity.TDeliveryItemEntity;
 import jp.co.edi_java.app.entity.TWorkReportEntity;
+import jp.co.edi_java.app.entity.TWorkReportItemEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
 import jp.co.edi_java.app.util.mail.MailContents;
 import jp.co.edi_java.app.util.mail.MailExUtils;
@@ -22,8 +24,8 @@ public class MailService {
     public static final String MAIL_ADDR_FROM_KAIKEI = "th-edi@tamahome.jp";
     public static final String MAIL_SIGN_FROM = "タマホーム電子発注システム";
 
-    public static final String STG_CC_MAIL = "to-suzuki@tamahome.jp";
-    public static final String STG_BCC_MAIL = "to-suzuki@tamahome.jp,shinji-yamaguchi@tamahome.jp";
+    public static final String STG_CC_MAIL = "to-suzuki@tamahome.jp,tmh-0398-suzuki@ezweb.ne.jp";
+    public static final String STG_BCC_MAIL = "shinji-yamaguchi@tamahome.jp";
 
     /** TO：1件 */
     private void sendMail(String toMail, String subject, String body) {
@@ -157,16 +159,17 @@ public class MailService {
     /*
      * 09-1_納品受領通知
      */
-	public void sendMailDelivery(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList, String deliveryNumber) {
+	public void sendMailDelivery(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList, String deliveryNumber, List<TDeliveryItemEntity> itemList, Boolean remind) {
 		List<String> toList = new ArrayList<String>();
 		toList.add(to);
 		List<String> ccList = new ArrayList<String>();
 		ccList.add(cc);
 
 		sendMPartMail(toList,ccList,null,
-			MailContents.getDeliveryWorkReportSubject(),
-			MailContents.getDeliveryBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber),
+			MailContents.getDeliveryWorkReportSubject(remind),
+			//MailContents.getDeliveryBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, itemList),
 			null,
+			MailContents.getDeliveryHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, itemList),
 			fileList
 		);
 	}
@@ -174,16 +177,17 @@ public class MailService {
     /*
      * 09-2_出来高受領通知
      */
-	public void sendMailWorkReport(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList, String workReportNumber) {
+	public void sendMailWorkReport(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList, String workReportNumber, List<TWorkReportItemEntity> itemList, Boolean remind) {
 		List<String> toList = new ArrayList<String>();
 		toList.add(to);
 		List<String> ccList = new ArrayList<String>();
 		ccList.add(cc);
 
 		sendMPartMail(toList,ccList,null,
-			MailContents.getDeliveryWorkReportSubject(),
-			MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber),
+			MailContents.getDeliveryWorkReportSubject(remind),
+			//MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber, itemList),
 			null,
+			MailContents.getWorkReportHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber, itemList),
 			fileList
 		);
 	}
@@ -201,7 +205,7 @@ public class MailService {
      * sapパラメータ確認
      */
 //	public void sendMailSap(List<NameValuePair> param) {
-//		sendMail("m.hirano@keep-alive.co.jp",
+//		sendMail("shinji-yamaguchi@tamahome.jp",
 //				MailContents.getSapSubject(),
 //				MailContents.getSapBody(param));
 //	}

@@ -200,11 +200,13 @@ public class MailExUtils {
             mimeMessage.setSubject(mailSubject, MAIL_ENCODING);
             // マルチパートオブジェクトを生成
             Multipart mp = new MimeMultipart();
-            //テキストメッセージ本文
-            MimeBodyPart mbp1 = new MimeBodyPart();
-            mbp1.setText(mailTxtContent, MAIL_ENCODING);
-            mbp1.setHeader("Content-Type","text/plain; charset=ISO-2022-JP");
-            mp.addBodyPart(mbp1);
+            if (Objects.nonNull(mailTxtContent)) {
+            	//テキストメッセージ本文
+            	MimeBodyPart mbp1 = new MimeBodyPart();
+            	mbp1.setText(mailTxtContent, MAIL_ENCODING);
+            	mbp1.setHeader("Content-Type","text/plain; charset=ISO-2022-JP");
+            	mp.addBodyPart(mbp1);
+            }
             //html
         	if (Objects.nonNull(mailHtmlContent)) {
         		//テキストメッセージ本文

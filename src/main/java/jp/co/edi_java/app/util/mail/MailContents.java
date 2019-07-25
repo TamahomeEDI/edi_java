@@ -1,10 +1,14 @@
 package jp.co.edi_java.app.util.mail;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.http.NameValuePair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import jp.co.edi_java.app.entity.TDeliveryItemEntity;
+import jp.co.edi_java.app.entity.TWorkReportItemEntity;
 
 @Component
 public class MailContents {
@@ -335,12 +339,27 @@ public class MailContents {
      * 09-1_納品受領
      * to 社員
      */
-    public static String getDeliveryWorkReportSubject() {
-        return PREFIX + "【納品出来高報告のお知らせ】 TH-EDI";
+    public static String getDeliveryWorkReportSubject(Boolean remind) {
+    	String subject = "【納品出来高報告のお知らせ】 TH-EDI";
+    	if (remind) {
+    		subject = "【再送】【納品出来高報告のお知らせ】 TH-EDI";
+    	}
+        return PREFIX + subject;
     }
 
-    public static String getDeliveryBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber) {
-        return ""
+    public static String getDeliveryBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber, List<TDeliveryItemEntity> itemList) {
+
+    	String detail = "";
+    	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
+    		//detail = String.format("%-30s", "品名") + "| " + String.format("%-10s", "発注数量") + "| " + String.format("%-10s", "納入数") + "| " + String.format("%-10s", "納入残") + "| " + String.format("%-8s", "単位") + "\n\n";
+    		detail = "[品名],  [発注数量],  [納入数],  [納入残],  [単位]\n\n";
+    		for (TDeliveryItemEntity item : itemList) {
+    			//detail += String.format("%-30s", item.getItemName()) + "| " + String.format("%10s", item.getOrderQuantity()) + "| " + String.format("%10s", item.getDeliveryQuantity()) + "| " + String.format("%10s", item.getDeliveryRemainingQuantity()) + "| " + String.format("%-8s", item.getUnit()) + "\n";
+    			detail += item.getItemName() + ",  " + item.getOrderQuantity() + ",  " + item.getDeliveryQuantity() + ",  " + item.getDeliveryRemainingQuantity() + ",  " + item.getUnit() + "\n";
+    		}
+    	}
+
+    	return ""
                 + "\n"
                 + "------------------------------------------------------------------\n"
                 + "本メールはTH-EDIシステムから自動送信されています。\n"
@@ -356,17 +375,64 @@ public class MailContents {
                 + "発注番号：" + orderNumber + "\n"
                 + "\n"
                 + "\n"
+                + "受入： " + BASE_URL + "/user/delivery/acceptance/approve?deliveryNumber=" + deliveryNumber + "\n"
                 + "\n"
-                + "\n"
-                + BASE_URL + "/partner/delivery/detail/?deliveryNumber=" + deliveryNumber + "\n";
+                + "差戻： " + BASE_URL + "/user/delivery/acceptance/sendback?deliveryNumber=" + deliveryNumber + "\n"
+                + "\n\n"
+                + detail;
     }
 
+    public static String getDeliveryHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber, List<TDeliveryItemEntity> itemList) {
+
+    	String detail = "";
+    	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
+    		//detail = String.format("%-30s", "品名") + "| " + String.format("%-10s", "発注数量") + "| " + String.format("%-10s", "納入数") + "| " + String.format("%-10s", "納入残") + "| " + String.format("%-8s", "単位") + "\n\n";
+    		detail = "[品名],  [発注数量],  [納入数],  [納入残],  [単位]\n\n";
+    		for (TDeliveryItemEntity item : itemList) {
+    			//detail += String.format("%-30s", item.getItemName()) + "| " + String.format("%10s", item.getOrderQuantity()) + "| " + String.format("%10s", item.getDeliveryQuantity()) + "| " + String.format("%10s", item.getDeliveryRemainingQuantity()) + "| " + String.format("%-8s", item.getUnit()) + "\n";
+    			detail += item.getItemName() + ",  " + item.getOrderQuantity() + ",  " + item.getDeliveryQuantity() + ",  " + item.getDeliveryRemainingQuantity() + ",  " + item.getUnit() + "\n";
+    		}
+    	}
+
+    	return ""
+                + "<pre>\n"
+                + "------------------------------------------------------------------\n"
+                + "本メールはTH-EDIシステムから自動送信されています。\n"
+                + "------------------------------------------------------------------\n"
+                + "\n"
+                + eigyousyoName + " 支店\n"
+                + syainName + " 様\n"
+                + "\n"
+                + "納品出来高報告を受領しました。\n"
+                + "\n"
+                + "工事名：" + koujiName + "\n"
+                + "業者名：" + gyousyaName + "\n"
+                + "発注番号：" + orderNumber + "\n"
+                + "\n"
+                + "\n</pre>"
+                + "<a href='" + BASE_URL + "/user/delivery/acceptance/approve?deliveryNumber=" + deliveryNumber + "' target='_blank'>受入</a>"
+                + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                + "<a href='" + BASE_URL + "/user/delivery/acceptance/sendback?deliveryNumber=" + deliveryNumber + "' target='_blank'>差戻</a>"
+                + "<br><br>"
+                + "<pre>" + detail + "</pre>";
+    }
     /*
      * 09-2_出来高受領
      * to 社員
      */
-    public static String getWorkReportBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String workReportNumber) {
-        return ""
+    public static String getWorkReportBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String workReportNumber, List<TWorkReportItemEntity> itemList) {
+
+    	String detail = "";
+    	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
+    		//detail = String.format("%-40s", "品名") + "|" + String.format("%-10s", "発注数量") + "|" + String.format("%-8s", "単位") + "\n\n";
+    		detail = "[品名],  [発注数量],  [単位]\n\n";
+    		for (TWorkReportItemEntity item : itemList) {
+    			//detail += String.format("%-40s", item.getItemName()) + "|" + String.format("%10s", item.getOrderQuantity()) + "|" + String.format("%-8s", item.getUnit()) + "\n";
+    			detail += item.getItemName() + ",  " + item.getOrderQuantity() +  ",  " + item.getUnit() + "\n";
+    		}
+    	}
+
+    	return ""
                 + "\n"
                 + "------------------------------------------------------------------\n"
                 + "本メールはTH-EDIシステムから自動送信されています。\n"
@@ -382,12 +448,47 @@ public class MailContents {
                 + "発注番号：" + orderNumber + "\n"
                 + "\n"
                 + "\n"
+                + "受入： " + BASE_URL + "/user/workreport/acceptance/approve?workReportNumber=" + workReportNumber + "\n"
                 + "\n"
-                + "\n"
-                + BASE_URL + "/partner/workreport/detail/?workReportNumber=" + workReportNumber + "\n";
+                + "差戻： " + BASE_URL + "/user/workreport/acceptance/sendback?workReportNumber=" + workReportNumber + "\n"
+                + "\n\n"
+                + detail;
     }
 
+    public static String getWorkReportHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String workReportNumber, List<TWorkReportItemEntity> itemList) {
 
+    	String detail = "";
+    	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
+    		//detail = String.format("%-40s", "品名") + "|" + String.format("%-10s", "発注数量") + "|" + String.format("%-8s", "単位") + "\n\n";
+    		detail = "[品名],  [発注数量],  [単位]\n\n";
+    		for (TWorkReportItemEntity item : itemList) {
+    			//detail += String.format("%-40s", item.getItemName()) + "|" + String.format("%10s", item.getOrderQuantity()) + "|" + String.format("%-8s", item.getUnit()) + "\n";
+    			detail += item.getItemName() + ",  " + item.getOrderQuantity() +  ",  " + item.getUnit() + "\n";
+    		}
+    	}
+
+    	return ""
+                + "<pre>\n"
+                + "------------------------------------------------------------------\n"
+                + "本メールはTH-EDIシステムから自動送信されています。\n"
+                + "------------------------------------------------------------------\n"
+                + "\n"
+                + eigyousyoName + " 支店\n"
+                + syainName + " 様\n"
+                + "\n"
+                + "納品出来高報告を受領しました。\n"
+                + "\n"
+                + "工事名：" + koujiName + "\n"
+                + "業者名：" + gyousyaName + "\n"
+                + "発注番号：" + orderNumber + "\n"
+                + "\n"
+                + "\n</pre>"
+                + "<a href='" + BASE_URL + "/user/workreport/acceptance/approve?workReportNumber=" + workReportNumber + "' target=_blank>受入</a>"
+                + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                + "<a href='" + BASE_URL + "/user/workreport/acceptance/sendback?workReportNumber=" + workReportNumber + "' target=_blank>差戻</a>"
+                + "<br><br>"
+                + "<pre>" + detail + "</pre>";
+    }
 
 
     /*
