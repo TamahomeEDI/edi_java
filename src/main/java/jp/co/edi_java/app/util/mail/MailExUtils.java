@@ -45,7 +45,7 @@ public class MailExUtils {
 
 	public static final String PROPS_KEY_MAIL_SMTP_AUTH = "mail.smtp.auth";
 
-	public static final String MAIL_ENCODING = "ISO-2022-JP";
+	public static final String MAIL_ENCODING = "UTF-8";
 
 	public static final String MAIL_TEMP_FILE_DIR = "/home/web/edi_php/tmp/mailattached/";
 
@@ -151,7 +151,7 @@ public class MailExUtils {
         Session session = Session.getDefaultInstance(mailProps, null);
         MimeMessage mimeMessage = new MimeMessage(session);
         try {
-            mimeMessage.setHeader("Content-Type","text/plain; charset=ISO-2022-JP");
+            mimeMessage.setHeader("Content-Type","text/plain; charset=UTF-8");
             mimeMessage.setRecipients(Message.RecipientType.TO, mailTo);
             if(Objects.nonNull(mailCc)) {
                 mimeMessage.setRecipients(Message.RecipientType.CC, mailCc);
@@ -183,6 +183,9 @@ public class MailExUtils {
         Session session = Session.getDefaultInstance(mailProps, null);
         MimeMessage mimeMessage = new MimeMessage(session);
         try {
+        	//mailTo = "shinji-yamaguchi@tamahome.jp";
+        	//mailCc = "";
+
         	//from
         	InternetAddress from = new InternetAddress(mailFromAddress, mailFromSign, MAIL_ENCODING);
         	mimeMessage.setFrom(from);
@@ -204,7 +207,7 @@ public class MailExUtils {
             	//テキストメッセージ本文
             	MimeBodyPart mbp1 = new MimeBodyPart();
             	mbp1.setText(mailTxtContent, MAIL_ENCODING);
-            	mbp1.setHeader("Content-Type","text/plain; charset=ISO-2022-JP");
+            	mbp1.setHeader("Content-Type","text/plain; charset=UTF-8");
             	mp.addBodyPart(mbp1);
             }
             //html
@@ -212,7 +215,7 @@ public class MailExUtils {
         		//テキストメッセージ本文
                 MimeBodyPart mbp2 = new MimeBodyPart();
                 mbp2.setText(mailHtmlContent, MAIL_ENCODING);
-                mbp2.setHeader("Content-Type","text/html; charset=ISO-2022-JP");
+                mbp2.setHeader("Content-Type","text/html; charset=UTF-8");
                 mp.addBodyPart(mbp2);
         	}
         	if (Objects.nonNull(fileList)) {

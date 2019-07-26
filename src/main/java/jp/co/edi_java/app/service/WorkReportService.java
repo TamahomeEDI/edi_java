@@ -28,6 +28,7 @@ import jp.co.edi_java.app.entity.TWorkReportItemEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
 import jp.co.edi_java.app.entity.syain.MSyainEntity;
 import jp.co.edi_java.app.form.WorkReportForm;
+import jp.co.edi_java.app.util.crypto.CipherUtils;
 import jp.co.edi_java.app.util.file.FileApi;
 import jp.co.keepalive.springbootfw.util.consts.CommonConsts;
 import jp.co.keepalive.springbootfw.util.dxo.BeanUtils;
@@ -204,6 +205,15 @@ public class WorkReportService {
 		}
 	}
 
+	//出来高報告書Noのデコード
+	public String decodeWorkReportNumber(WorkReportForm form) {
+		String ret = "";
+		if (Objects.nonNull(form) && Objects.nonNull(form.getEncryptWorkReportNumber())) {
+			ret = CipherUtils.getDecryptAES(form.getEncryptWorkReportNumber());
+		}
+		return ret;
+	}
+
 	//出来高報告書の受入確認メール再送
 	public void remindList(List<TWorkReportEntity> workReportList) {
 		if (Objects.nonNull(workReportList)) {
@@ -242,7 +252,8 @@ public class WorkReportService {
 		//添付ファイル
 		String fileName = workReport.getFileId() + ".pdf";
 		String filePath = FileApi.getFile(workReport.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, FileApi.FILE_NO_WORK_REPORT, workReport.getFileId(), "pdf", fileName);
-
+		//ファイル名をわかりやすい名前に変更して添付
+		fileName = "出来高報告書.pdf";
 		List<Map<String,String>> fileList = new ArrayList<Map<String,String>>();
 		if (Objects.nonNull(filePath)) {
 			Map<String,String> fileMap = new HashMap<String,String>();
@@ -251,7 +262,7 @@ public class WorkReportService {
 			fileList.add(fileMap);
 		}
 		//メール送信
-		mailService.sendMailWorkReport(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport.getOrderNumber(), fileList, workReportNumber, itemList, remind);
+		mailService.sendMailWorkReport(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport.getOrderNumber(), workReport.getWorkRate(), fileList, workReportNumber, itemList, remind);
 	}
 
 }

@@ -51,6 +51,14 @@ public class WorkReportController extends BaseController {
 		return super.response();
 	}
 
+	/** 出来高報告書No デコード結果取得 */
+	@RequestMapping("/decodeWorkReportNumber")
+	public ResponseEntity decodeWorkReportNumber(@Validated WorkReportForm form) {
+		String workReportNumber = workReportService.decodeWorkReportNumber(form);
+		//出来高番号返却
+		super.setResponseData("ret", workReportNumber);
+		return super.response();
+	}
 
 	/** 出来高報告書取得 */
 	@RequestMapping("/get")

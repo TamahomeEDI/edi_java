@@ -177,7 +177,7 @@ public class MailService {
     /*
      * 09-2_出来高受領通知
      */
-	public void sendMailWorkReport(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList, String workReportNumber, List<TWorkReportItemEntity> itemList, Boolean remind) {
+	public void sendMailWorkReport(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, Integer workRate, List<Map<String,String>> fileList, String workReportNumber, List<TWorkReportItemEntity> itemList, Boolean remind) {
 		List<String> toList = new ArrayList<String>();
 		toList.add(to);
 		List<String> ccList = new ArrayList<String>();
@@ -187,7 +187,7 @@ public class MailService {
 			MailContents.getDeliveryWorkReportSubject(remind),
 			//MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber, itemList),
 			null,
-			MailContents.getWorkReportHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber, itemList),
+			MailContents.getWorkReportHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workRate, workReportNumber, itemList),
 			fileList
 		);
 	}

@@ -28,6 +28,7 @@ import jp.co.edi_java.app.entity.TDeliveryItemEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
 import jp.co.edi_java.app.entity.syain.MSyainEntity;
 import jp.co.edi_java.app.form.DeliveryForm;
+import jp.co.edi_java.app.util.crypto.CipherUtils;
 import jp.co.edi_java.app.util.file.FileApi;
 import jp.co.keepalive.springbootfw.util.consts.CommonConsts;
 import jp.co.keepalive.springbootfw.util.dxo.BeanUtils;
@@ -204,6 +205,15 @@ public class DeliveryService {
 		}
 	}
 
+	//納品書Noのデコード
+	public String decodeDeliveryNumber(DeliveryForm form) {
+		String ret = "";
+		if (Objects.nonNull(form) && Objects.nonNull(form.getEncryptDeliveryNumber())) {
+			ret = CipherUtils.getDecryptAES(form.getEncryptDeliveryNumber());
+		}
+		return ret;
+	}
+
 	//納品書の受入確認メール再送
 	public void remindList(List<TDeliveryEntity> deliveryList) {
 		if (Objects.nonNull(deliveryList)) {
@@ -243,6 +253,8 @@ public class DeliveryService {
 		//添付ファイル
 		String fileName = delivery.getFileId() + ".pdf";
 		String filePath = FileApi.getFile(delivery.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, FileApi.FILE_NO_DELIVERY, delivery.getFileId(), "pdf", fileName);
+		//ファイル名をわかりやすい名前に変更して添付
+		fileName = "納品書.pdf";
 
 		List<Map<String,String>> fileList = new ArrayList<Map<String,String>>();
 		if (Objects.nonNull(filePath)) {

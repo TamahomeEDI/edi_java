@@ -54,6 +54,15 @@ public class DeliveryController extends BaseController {
 		return super.response();
 	}
 
+	/** 納品書No デコード結果取得 */
+	@RequestMapping("/decodeDeliveryNumber")
+	public ResponseEntity decodeDeliveryNumber(@Validated DeliveryForm form) {
+		String deliveryNumber = deliveryService.decodeDeliveryNumber(form);
+		//納品書番号返却
+		super.setResponseData("ret", deliveryNumber);
+		return super.response();
+	}
+
 	/** 納品情報取得 */
 	@RequestMapping("/get")
 	public ResponseEntity get(@Validated DeliveryForm form) {

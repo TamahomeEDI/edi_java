@@ -18,10 +18,10 @@ import jp.co.edi_java.app.service.MailService;
 import jp.co.edi_java.app.service.WorkReportService;
 import jp.co.edi_java.app.util.cloudsign.CloudSignApi;
 import jp.co.edi_java.app.util.mail.MailContents;
+import jp.co.edi_java.app.util.mail.MailExUtils;
 import jp.co.keepalive.springbootfw.controller.BaseController;
 import jp.co.keepalive.springbootfw.entity.ResponseEntity;
 import jp.co.keepalive.springbootfw.util.logging.SystemLoggingUtil;
-import jp.co.keepalive.springbootfw.util.mail.MailUtils;
 
 @RestController
 @Scope("request")
@@ -41,6 +41,7 @@ public class BatchController extends BaseController {
 	public WorkReportService workReportService;
 
 	private String adminEmail = "t-iida@tamahome.jp, to-suzuki@tamahome.jp, shinji-yamaguchi@tamahome.jp";
+	//private String adminEmail = "shinji-yamaguchi@tamahome.jp";
 
 	/** 支店マスタ取得 */
 	@RequestMapping("/getEigyousyoAll")
@@ -62,7 +63,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -87,7 +88,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -109,7 +110,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -131,7 +132,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -153,7 +154,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -175,7 +176,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -197,7 +198,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -219,7 +220,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -244,7 +245,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -266,7 +267,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -293,7 +294,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -318,7 +319,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}
@@ -348,7 +349,7 @@ public class BatchController extends BaseController {
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);
-			MailUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
 		}
 		return super.response();
 	}

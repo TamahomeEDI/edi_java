@@ -269,12 +269,13 @@ public class CloudSignService {
 		}else {
 			cc = MailService.STG_CC_MAIL;
 		}
+		String newFileName = "注文請書.pdf";
 		//添付ファイル
 		List<Map<String,String>> fileList = new ArrayList<Map<String,String>>();
 		if (Objects.nonNull(filePath)) {
 			Map<String,String> fileMap = new HashMap<String,String>();
 			fileMap.put("filePath", filePath);
-			fileMap.put("fileName", fileName);
+			fileMap.put("fileName", newFileName);
 			fileList.add(fileMap);
 		}
 		//メール送信
@@ -299,10 +300,10 @@ public class CloudSignService {
 	private void sendOrderNumber(TOrderEntity order) {
 		String orderNumber = order.getOrderNumber();
 		String koujiCode = order.getKoujiCode();
-		String updateUser = order.getUpdateUser();
+		String insertUser = order.getInsertUser();
 		// sap 請書未受領一覧検索
-		log.info("selectUkeshoJyuryou: " + koujiCode + " " + updateUser);
-		Map<String, Object> nonJyuryouData = SapApi.selectUkeshoJyuryou(koujiCode, updateUser);
+		log.info("selectUkeshoJyuryou: " + koujiCode + " " + insertUser);
+		Map<String, Object> nonJyuryouData = SapApi.selectUkeshoJyuryou(koujiCode, insertUser);
 		//請書未受領一覧検索結果取得
 		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(nonJyuryouData);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {

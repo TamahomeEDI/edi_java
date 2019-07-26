@@ -57,5 +57,7 @@ public class WorkReportForm extends BaseForm {
 
     public String fileId;
 
+    public String encryptWorkReportNumber;
+
 
 }

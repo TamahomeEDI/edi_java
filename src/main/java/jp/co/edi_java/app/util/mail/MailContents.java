@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import jp.co.edi_java.app.entity.TDeliveryItemEntity;
 import jp.co.edi_java.app.entity.TWorkReportItemEntity;
+import jp.co.edi_java.app.util.crypto.CipherUtils;
 
 @Component
 public class MailContents {
@@ -359,6 +360,8 @@ public class MailContents {
     		}
     	}
 
+    	String encryptNumber = CipherUtils.getEncryptAES(deliveryNumber);
+
     	return ""
                 + "\n"
                 + "------------------------------------------------------------------\n"
@@ -375,9 +378,9 @@ public class MailContents {
                 + "発注番号：" + orderNumber + "\n"
                 + "\n"
                 + "\n"
-                + "受入： " + BASE_URL + "/user/delivery/acceptance/approve?deliveryNumber=" + deliveryNumber + "\n"
+                + "受入： " + BASE_URL + "/user/delivery/acceptance/approve?t=" + encryptNumber + "\n"
                 + "\n"
-                + "差戻： " + BASE_URL + "/user/delivery/acceptance/sendback?deliveryNumber=" + deliveryNumber + "\n"
+                + "差戻： " + BASE_URL + "/user/delivery/acceptance/sendback?t=" + encryptNumber + "\n"
                 + "\n\n"
                 + detail;
     }
@@ -386,15 +389,29 @@ public class MailContents {
 
     	String detail = "";
     	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
-    		//detail = String.format("%-30s", "品名") + "| " + String.format("%-10s", "発注数量") + "| " + String.format("%-10s", "納入数") + "| " + String.format("%-10s", "納入残") + "| " + String.format("%-8s", "単位") + "\n\n";
-    		detail = "[品名],  [発注数量],  [納入数],  [納入残],  [単位]\n\n";
+    		detail = "<table border=\"1\" style=\"border-collapse:collapse;width:100%;max-width:1024px;padding:2px 4px 2px 4px;\">\n"
+    				+ "<tr><th style=\"text-align:left;\">[品名]</th><th style=\"text-align:left;\">[発注数量]</th>\n"
+        			+ "<th style=\"text-align:left;\">[納入数]</th><th style=\"text-align:left;\">[納入残]</th><th style=\"text-align:left;\">[単位]</th></tr>\n";
     		for (TDeliveryItemEntity item : itemList) {
-    			//detail += String.format("%-30s", item.getItemName()) + "| " + String.format("%10s", item.getOrderQuantity()) + "| " + String.format("%10s", item.getDeliveryQuantity()) + "| " + String.format("%10s", item.getDeliveryRemainingQuantity()) + "| " + String.format("%-8s", item.getUnit()) + "\n";
-    			detail += item.getItemName() + ",  " + item.getOrderQuantity() + ",  " + item.getDeliveryQuantity() + ",  " + item.getDeliveryRemainingQuantity() + ",  " + item.getUnit() + "\n";
+    			detail += "<tr><td style=\"width:40%\">" + item.getItemName()
+    				+ "</td><td style=\"text-align:right;width:15%\">" + item.getOrderQuantity()
+    				+ "</td><td style=\"text-align:right;width:15%\">" + item.getDeliveryQuantity()
+    				+ "</td><td style=\"text-align:right;width:15%\">" + item.getDeliveryRemainingQuantity()
+    				+ "</td><td style=\"width:15%;\">" + item.getUnit() + "</td></tr>\n";
     		}
+    		detail += "</table>";
     	}
 
+    	String encryptNumber = CipherUtils.getEncryptAES(deliveryNumber);
+
     	return ""
+    			+ "<!DOCTYPE html>\n"
+    			+ "<html lang=\"ja\">\n"
+    			+ "<head>\n"
+    			+ "<meta name=\"viewport\" content=\"width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1\">\n"
+    			+ "<meta charset=\"UTF-8\">\n"
+    			+ "<title></title>\n"
+    			+ "<style></style></head><body>\n"
                 + "<pre>\n"
                 + "------------------------------------------------------------------\n"
                 + "本メールはTH-EDIシステムから自動送信されています。\n"
@@ -410,27 +427,28 @@ public class MailContents {
                 + "発注番号：" + orderNumber + "\n"
                 + "\n"
                 + "\n</pre>"
-                + "<a href='" + BASE_URL + "/user/delivery/acceptance/approve?deliveryNumber=" + deliveryNumber + "' target='_blank'>受入</a>"
+                + "<a href='" + BASE_URL + "/user/delivery/acceptance/approve?t=" + encryptNumber + "' target='_blank'>受入</a>"
                 + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
-                + "<a href='" + BASE_URL + "/user/delivery/acceptance/sendback?deliveryNumber=" + deliveryNumber + "' target='_blank'>差戻</a>"
+                + "<a href='" + BASE_URL + "/user/delivery/acceptance/sendback?t=" + encryptNumber + "' target='_blank'>差戻</a>"
                 + "<br><br>"
-                + "<pre>" + detail + "</pre>";
+                + detail
+                + "</body></html>";
     }
     /*
      * 09-2_出来高受領
      * to 社員
      */
-    public static String getWorkReportBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String workReportNumber, List<TWorkReportItemEntity> itemList) {
+    public static String getWorkReportBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, Integer workRate, String workReportNumber, List<TWorkReportItemEntity> itemList) {
 
     	String detail = "";
     	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
-    		//detail = String.format("%-40s", "品名") + "|" + String.format("%-10s", "発注数量") + "|" + String.format("%-8s", "単位") + "\n\n";
     		detail = "[品名],  [発注数量],  [単位]\n\n";
     		for (TWorkReportItemEntity item : itemList) {
-    			//detail += String.format("%-40s", item.getItemName()) + "|" + String.format("%10s", item.getOrderQuantity()) + "|" + String.format("%-8s", item.getUnit()) + "\n";
     			detail += item.getItemName() + ",  " + item.getOrderQuantity() +  ",  " + item.getUnit() + "\n";
     		}
     	}
+
+    	String encryptNumber = CipherUtils.getEncryptAES(workReportNumber);
 
     	return ""
                 + "\n"
@@ -448,26 +466,38 @@ public class MailContents {
                 + "発注番号：" + orderNumber + "\n"
                 + "\n"
                 + "\n"
-                + "受入： " + BASE_URL + "/user/workreport/acceptance/approve?workReportNumber=" + workReportNumber + "\n"
+                + "受入： " + BASE_URL + "/user/workreport/acceptance/approve?t=" + encryptNumber + "\n"
                 + "\n"
-                + "差戻： " + BASE_URL + "/user/workreport/acceptance/sendback?workReportNumber=" + workReportNumber + "\n"
+                + "差戻： " + BASE_URL + "/user/workreport/acceptance/sendback?t=" + encryptNumber + "\n"
                 + "\n\n"
+                + "【出来高：" + workRate + " パーセント】\n"
                 + detail;
     }
 
-    public static String getWorkReportHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String workReportNumber, List<TWorkReportItemEntity> itemList) {
+    public static String getWorkReportHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, Integer workRate, String workReportNumber, List<TWorkReportItemEntity> itemList) {
 
     	String detail = "";
     	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
-    		//detail = String.format("%-40s", "品名") + "|" + String.format("%-10s", "発注数量") + "|" + String.format("%-8s", "単位") + "\n\n";
-    		detail = "[品名],  [発注数量],  [単位]\n\n";
+    		//detail = "[品名],  [発注数量],  [単位]\n\n";
+    		detail = "<table border=\"1\" style=\"border-collapse:collapse;width:100%;max-width:1024px;padding:2px 4px 2px 4px;\">\n"
+    				+ "<tr><th style=\"text-align:left;\">[品名]</th><th style=\"text-align:left;\">[発注数量]</th><th style=\"text-align:left;\">[単位]</th></tr>\n";
     		for (TWorkReportItemEntity item : itemList) {
-    			//detail += String.format("%-40s", item.getItemName()) + "|" + String.format("%10s", item.getOrderQuantity()) + "|" + String.format("%-8s", item.getUnit()) + "\n";
-    			detail += item.getItemName() + ",  " + item.getOrderQuantity() +  ",  " + item.getUnit() + "\n";
+    			detail += "<tr><td style=\"width:64%\">" + item.getItemName()
+    				+ "</td><td style=\"text-align:right;width:18%\">" + item.getOrderQuantity()
+    				+ "</td><td style=\"width:18%;\">" + item.getUnit() + "</td></tr>\n";
     		}
+    		detail += "</table>";
     	}
+    	String encryptNumber = CipherUtils.getEncryptAES(workReportNumber);
 
     	return ""
+    			+ "<!DOCTYPE html>\n"
+    			+ "<html lang=\"ja\">\n"
+    			+ "<head>\n"
+    			+ "<meta name=\"viewport\" content=\"width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1\">\n"
+    			+ "<meta charset=\"UTF-8\">\n"
+    			+ "<title></title>\n"
+    			+ "<style></style></head><body>\n"
                 + "<pre>\n"
                 + "------------------------------------------------------------------\n"
                 + "本メールはTH-EDIシステムから自動送信されています。\n"
@@ -483,11 +513,13 @@ public class MailContents {
                 + "発注番号：" + orderNumber + "\n"
                 + "\n"
                 + "\n</pre>"
-                + "<a href='" + BASE_URL + "/user/workreport/acceptance/approve?workReportNumber=" + workReportNumber + "' target=_blank>受入</a>"
+                + "<a href='" + BASE_URL + "/user/workreport/acceptance/approve?t=" + encryptNumber + "' target=_blank>受入</a>"
                 + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
-                + "<a href='" + BASE_URL + "/user/workreport/acceptance/sendback?workReportNumber=" + workReportNumber + "' target=_blank>差戻</a>"
+                + "<a href='" + BASE_URL + "/user/workreport/acceptance/sendback?t=" + encryptNumber + "' target=_blank>差戻</a>"
                 + "<br><br>"
-                + "<pre>" + detail + "</pre>";
+                + "<p style=\"font-weight:bold;font-size:medium;\">【出来高：" + workRate + " パーセント】</p>\n"
+                + detail
+                + "</body></html>";
     }
 
 
