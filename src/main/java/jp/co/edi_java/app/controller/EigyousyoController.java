@@ -41,6 +41,13 @@ public class EigyousyoController extends BaseController {
 		return super.response();
 	}
 
+	/** 社員本店情報リスト取得 */
+	@RequestMapping("/getListByUserHeadOffice")
+	public ResponseEntity getListByUserHeadOffice(@Validated EigyousyoForm form) {
+		super.setResponseData("ret", eigyousyoService.getListByUserHeadOffice(form.syainCode));
+		return super.response();
+	}
+
 	/** 業者支店情報リスト取得 */
 	@RequestMapping("/getListByPartner")
 	public ResponseEntity getListByPartner(@Validated EigyousyoForm form) {
