@@ -153,7 +153,7 @@ public class TestController extends BaseController {
 	//アドレス送信
 	@RequestMapping("/postParticipants")
 	public ResponseEntity postParticipants() {
-		Map<String, Object> ret = CloudSignApi.postParticipants(id, "m.hirano@keep-alive.co.jp", "ひらの");
+		Map<String, Object> ret = CloudSignApi.postParticipants(id, "shinji-yamaguchi@tamahome.jp", "やまぐち");
 		super.setResponseData("ret", ret);
 		return super.response();
 	}

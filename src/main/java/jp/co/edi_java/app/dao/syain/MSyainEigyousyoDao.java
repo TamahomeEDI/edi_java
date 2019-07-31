@@ -25,6 +25,9 @@ public interface MSyainEigyousyoDao {
 	List<SyainEigyousyoDto> selectList(String syainCode);
 
 	@Select
+	List<SyainEigyousyoDto> selectListByHeadOffice(String syainCode);
+
+	@Select
 	List<String> selectGroupCodeList(String syainCode);
 
 	@Insert(excludeNull = true)

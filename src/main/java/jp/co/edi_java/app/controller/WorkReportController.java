@@ -37,7 +37,24 @@ public class WorkReportController extends BaseController {
 		}
 
 		String workReportNumber = workReportService.regist(form);
-		workReportService.sendMailWorkReport(workReportNumber, form.getUserId());
+
+		//出来高番号返却
+		super.setResponseData("ret", workReportNumber);
+		return super.response();
+	}
+
+	/** 出来高報告書登録後メール送信 */
+	@RequestMapping("/sendmail")
+	public ResponseEntity sendmail(@Validated WorkReportForm form) {
+		workReportService.sendMailWorkReport(form, false);
+
+		return super.response();
+	}
+
+	/** 出来高報告書No デコード結果取得 */
+	@RequestMapping("/decodeWorkReportNumber")
+	public ResponseEntity decodeWorkReportNumber(@Validated WorkReportForm form) {
+		String workReportNumber = workReportService.decodeWorkReportNumber(form);
 		//出来高番号返却
 		super.setResponseData("ret", workReportNumber);
 		return super.response();

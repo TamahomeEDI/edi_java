@@ -53,4 +53,6 @@ public class DeliveryForm extends BaseForm {
 
     public String fileId;
 
+    public String encryptDeliveryNumber;
+
 }

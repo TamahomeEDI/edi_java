@@ -39,6 +39,10 @@ public class EigyousyoService {
 		return mSyainEigyousyoDao.selectList(syainCode);
 	}
 
+	public List<SyainEigyousyoDto> getListByUserHeadOffice(String syainCode) {
+		return mSyainEigyousyoDao.selectListByHeadOffice(syainCode);
+	}
+
 //	public List<MEigyousyoEntity> getListByPartner(String gyousyaCode) {
 //		List<MGyousyaEigyousyoEntity> list = mGyousyaEigyousyoDao.selectList(gyousyaCode);
 //		List<String> eigyousyoList = new ArrayList<>();

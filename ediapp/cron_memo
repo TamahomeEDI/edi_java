@@ -1,0 +1,56 @@
+#cron起動確認#
+etc/rc.d/init.d/crond start status
+#cron起動#
+/etc/rc.d/init.d/crond start
+#cron設定内容表示#
+sudo crontab -l
+#cron編集#
+sudo crontab -e
+#cron設定のフォーマット#
+分 時 日 月 曜日 コマンド
+
+分は0〜59の数字
+時は0〜23の数字
+日は1〜31の数字
+月は1〜12の数字
+曜日は0〜7の数字（0,7は日曜日、1〜6が月〜金）
+コマンドはフルパスもしくはカレントディレクトリからの相対パス
+パスが通っていれば直接コマンドを指定できます。
+サンプル
+*/30 * * * * sample1.sh → 30分おきに実行する
+*    3 * * * sample2.sh → 毎日3時に実行する
+*/5  * * * * sample3.sh → 5分おきに実行する
+
+
+本番環境の設定
+
+#５分毎にクラウドサインをチェック
+*/5 * * * * /opt/ediapp/bat/chkCloudSign.sh
+#10分毎にキャッシュをクリア
+*/10 * * * * /opt/ediapp/bat/clean.sh
+#AM6時 支店マスタ
+0 6 * * * /opt/ediapp/bat/getEigyousyoAll.sh
+#AM6時5分 地区本部マスタ
+5 6 * * * /opt/ediapp/bat/getEigyousyoGroupAll.sh
+#AM6時10分 業者マスタ
+10 6 * * * /opt/ediapp/bat/getGyousyaAll.sh
+#AM6時15分 業者支店マスタ
+15 6 * * * /opt/ediapp/bat/getGyousyaEigyousyoAll.sh
+#AM6時45分 業者細目
+45 6 * * * /opt/ediapp/bat/getGyousyaSaimokuAll.sh
+#AM7時 家歴
+0 7 * * * /opt/ediapp/bat/getKarekiAll.sh
+#AM7時5分 工事マスタ
+5 7 * * * /opt/ediapp/bat/getKoujiAll.sh
+#AM7時35分 細目工種
+35 7 * * * /opt/ediapp/bat/getSaimokuKousyuAll.sh
+#AM7時40分 社員マスタ
+40 7 * * * /opt/ediapp/bat/getSyainAll.sh
+#AM7時45分 社員所属支店
+45 7 * * * /opt/ediapp/bat/getSyainEigyousyoAll.sh
+
+#本番設定予定20190731
+#AM7時50分 クラウドサインリマインドメール
+50 7 * * * /opt/ediapp/bat/remindCloudSign.sh
+#AM7時55分 納品書・出来高報告書確認リマインドメール
+55 7 * * * /opt/ediapp/bat/remindDeliveryAcceptance.sh

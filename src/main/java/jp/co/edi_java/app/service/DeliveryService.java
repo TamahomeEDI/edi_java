@@ -2,7 +2,10 @@ package jp.co.edi_java.app.service;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +28,8 @@ import jp.co.edi_java.app.entity.TDeliveryItemEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
 import jp.co.edi_java.app.entity.syain.MSyainEntity;
 import jp.co.edi_java.app.form.DeliveryForm;
+import jp.co.edi_java.app.util.crypto.CipherUtils;
+import jp.co.edi_java.app.util.file.FileApi;
 import jp.co.keepalive.springbootfw.util.consts.CommonConsts;
 import jp.co.keepalive.springbootfw.util.dxo.BeanUtils;
 
@@ -86,6 +91,11 @@ public class DeliveryService {
 			dtoList.add(dto);
 		}
 		return dtoList;
+	}
+
+	//納品書リマインド対象のリスト取得
+	public List<TDeliveryEntity> selectRemindList() {
+		return tDeliveryDao.selectUnconfirmList();
 	}
 
 	public String regist(DeliveryForm form) {
@@ -195,10 +205,36 @@ public class DeliveryService {
 		}
 	}
 
+	//納品書Noのデコード
+	public String decodeDeliveryNumber(DeliveryForm form) {
+		String ret = "";
+		if (Objects.nonNull(form) && Objects.nonNull(form.getEncryptDeliveryNumber())) {
+			ret = CipherUtils.getDecryptAES(form.getEncryptDeliveryNumber());
+		}
+		return ret;
+	}
+
+	//納品書の受入確認メール再送
+	public void remindList(List<TDeliveryEntity> deliveryList) {
+		if (Objects.nonNull(deliveryList)) {
+			DeliveryForm form = new DeliveryForm();
+			for (TDeliveryEntity delivery : deliveryList) {
+				form.setDeliveryNumber(delivery.getDeliveryNumber());
+				form.setGyousyaCode(delivery.getGyousyaCode());
+				sendMailDelivery(form, true);
+			}
+		}
+	}
+
 	//納品書登録時にメールを送信
-	public void sendMailDelivery(String deliveryNumber, String gyousyaCode) {
+	public void sendMailDelivery(DeliveryForm form, Boolean remind) {
+		String deliveryNumber = form.getDeliveryNumber();
+		String gyousyaCode = form.getGyousyaCode();
+
 		//納品情報取得
 		TDeliveryEntity delivery = get(deliveryNumber);
+		//納品書明細取得
+		List<TDeliveryItemEntity> itemList = getItemList(deliveryNumber);
 		//工事情報取得
 		MKoujiEntity kouji = mKoujiDao.select(delivery.getKoujiCode());
 		//支店情報取得
@@ -214,9 +250,21 @@ public class DeliveryService {
 		}else {
 			cc = MailService.STG_CC_MAIL;
 		}
+		//添付ファイル
+		String fileName = delivery.getFileId() + ".pdf";
+		String filePath = FileApi.getFile(delivery.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, FileApi.FILE_NO_DELIVERY, delivery.getFileId(), "pdf", fileName);
+		//ファイル名をわかりやすい名前に変更して添付
+		fileName = "納品書.pdf";
 
+		List<Map<String,String>> fileList = new ArrayList<Map<String,String>>();
+		if (Objects.nonNull(filePath)) {
+			Map<String,String> fileMap = new HashMap<String,String>();
+			fileMap.put("filePath", filePath);
+			fileMap.put("fileName", fileName);
+			fileList.add(fileMap);
+		}
 		//メール送信
-		mailService.sendMailDelivery(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), deliveryNumber);
+		mailService.sendMailDelivery(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), fileList, deliveryNumber, itemList, remind);
 	}
 
 }
