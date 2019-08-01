@@ -222,15 +222,19 @@ public class MailExUtils {
         		for(Map<String,String> fileMap : fileList) {
         			String filePath = fileMap.get("filePath");
         			String fileName = fileMap.get("fileName");
-        			MimeBodyPart mbp = new MimeBodyPart();
-        			File attachmentFile = new File(filePath);
-        			FileDataSource fds = new FileDataSource(attachmentFile);
-        			mbp.setDataHandler(new DataHandler(fds));
-        			if (Objects.isNull(fileName)) {
-        				fileName = fds.getName();
+        			if (Objects.nonNull(filePath)) {
+        				File attachmentFile = new File(filePath);
+        				if (attachmentFile.exists()) {
+        					FileDataSource fds = new FileDataSource(attachmentFile);
+        					MimeBodyPart mbp = new MimeBodyPart();
+        					mbp.setDataHandler(new DataHandler(fds));
+        					if (Objects.isNull(fileName)) {
+        						fileName = fds.getName();
+        					}
+        					mbp.setFileName(MimeUtility.encodeWord(fileName));
+        					mp.addBodyPart(mbp);
+        				}
         			}
-        			mbp.setFileName(MimeUtility.encodeWord(fileName));
-        			mp.addBodyPart(mbp);
         		}
         	}
         	mimeMessage.setContent(mp);
