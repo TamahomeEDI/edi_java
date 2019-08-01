@@ -251,17 +251,19 @@ public class DeliveryService {
 			cc = MailService.STG_CC_MAIL;
 		}
 		//添付ファイル
-		String fileName = delivery.getFileId() + ".pdf";
-		String filePath = FileApi.getFile(delivery.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, FileApi.FILE_NO_DELIVERY, delivery.getFileId(), "pdf", fileName);
-		//ファイル名をわかりやすい名前に変更して添付
-		fileName = "納品書.pdf";
-
 		List<Map<String,String>> fileList = new ArrayList<Map<String,String>>();
-		if (Objects.nonNull(filePath)) {
-			Map<String,String> fileMap = new HashMap<String,String>();
-			fileMap.put("filePath", filePath);
-			fileMap.put("fileName", fileName);
-			fileList.add(fileMap);
+		if (Objects.nonNull(delivery.getFileId())) {
+			String fileName = delivery.getFileId() + ".pdf";
+			String filePath = FileApi.getFile(delivery.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, FileApi.FILE_NO_DELIVERY, delivery.getFileId(), "pdf", fileName);
+			//ファイル名をわかりやすい名前に変更して添付
+			fileName = "納品書.pdf";
+
+			if (Objects.nonNull(filePath)) {
+				Map<String,String> fileMap = new HashMap<String,String>();
+				fileMap.put("filePath", filePath);
+				fileMap.put("fileName", fileName);
+				fileList.add(fileMap);
+			}
 		}
 		//メール送信
 		mailService.sendMailDelivery(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), fileList, deliveryNumber, itemList, remind);

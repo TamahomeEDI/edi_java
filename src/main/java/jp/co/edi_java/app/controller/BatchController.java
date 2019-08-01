@@ -15,6 +15,7 @@ import jp.co.edi_java.app.service.CloudSignService;
 import jp.co.edi_java.app.service.DeliveryService;
 import jp.co.edi_java.app.service.JtmService;
 import jp.co.edi_java.app.service.MailService;
+import jp.co.edi_java.app.service.OrderService;
 import jp.co.edi_java.app.service.WorkReportService;
 import jp.co.edi_java.app.util.cloudsign.CloudSignApi;
 import jp.co.edi_java.app.util.mail.MailContents;
@@ -39,6 +40,9 @@ public class BatchController extends BaseController {
 
 	@Autowired
 	public WorkReportService workReportService;
+
+	@Autowired
+	public OrderService orderService;
 
 	private String adminEmail = "t-iida@tamahome.jp, to-suzuki@tamahome.jp, shinji-yamaguchi@tamahome.jp";
 	//private String adminEmail = "shinji-yamaguchi@tamahome.jp";
@@ -355,6 +359,29 @@ public class BatchController extends BaseController {
 	}
 
 
+	/* 単発実行のバッチ処理 ※ データメンテナンス等 */
+	/**
+	 *
+	 * 発注日のSAP連携
+	 *
+	 */
+	@RequestMapping("/refreshOrderDate")
+	public ResponseEntity refreshOrderDate() {
+		try {
+			long start = System.currentTimeMillis();
+
+			Map<String, Integer> cntMap = orderService.refreshOrderDate();
+
+			long end = System.currentTimeMillis();
+			super.setResponseData("countSAPUpdateOK",cntMap.get("sapOK"));
+			super.setResponseData("countSAPUpdateNG",cntMap.get("sapNG"));
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
 
 
 

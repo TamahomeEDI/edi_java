@@ -44,7 +44,9 @@ import jp.co.keepalive.springbootfw.exception.CoreRuntimeException;
 import jp.co.keepalive.springbootfw.util.consts.ResponseCode;
 import jp.co.keepalive.springbootfw.util.dxo.BeanUtils;
 import jp.co.keepalive.springbootfw.util.lang.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @Scope("request")
 public class OrderService {
@@ -437,6 +439,7 @@ public class OrderService {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
 		}
 	}
+
 	private Map<String, List<Map<String, Object>>> getFileIdListMap(List<String> orderNumberList) {
 		List<FileOrderRelEntity> fileRelList = fileOrderRelDao.selectListByMultiNum(orderNumberList);
 		Map<String, List<Map<String, Object>>> ret = new HashMap<String, List<Map<String, Object>>>();
@@ -530,5 +533,31 @@ public class OrderService {
 		return ret;
 	}
 
+	/* 単発処理 */
+	public Map<String,Integer> refreshOrderDate() {
+		Map<String,Integer> cntMap = new HashMap<String,Integer>();
+
+		//発注日をSAPへ連携
+		List<TOrderEntity> orderList = tOrderDao.selectListByOrdered();
+		Integer cntOK = 0;
+		Integer cntNG = 0;
+		if (Objects.nonNull(orderList)) {
+			for (TOrderEntity orderInfo : orderList) {
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+				String orderDate = sdf.format(orderInfo.getConfirmationRequestDate());
+				Map<String, Object> data = SapApi.setOrderDate(orderInfo.getOrderNumber(), orderInfo.getKoujiCode(), orderDate);
+				Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
+				if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+					cntNG += 1;
+					log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+				} else {
+					cntOK += 1;
+				}
+			}
+		}
+		cntMap.put("sapOK",cntOK);
+		cntMap.put("sapNG",cntNG);
+		return cntMap;
+	}
 
 }

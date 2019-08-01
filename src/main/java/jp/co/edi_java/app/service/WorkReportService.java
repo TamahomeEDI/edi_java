@@ -250,16 +250,19 @@ public class WorkReportService {
 			cc = MailService.STG_CC_MAIL;
 		}
 		//添付ファイル
-		String fileName = workReport.getFileId() + ".pdf";
-		String filePath = FileApi.getFile(workReport.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, FileApi.FILE_NO_WORK_REPORT, workReport.getFileId(), "pdf", fileName);
-		//ファイル名をわかりやすい名前に変更して添付
-		fileName = "出来高報告書.pdf";
 		List<Map<String,String>> fileList = new ArrayList<Map<String,String>>();
-		if (Objects.nonNull(filePath)) {
-			Map<String,String> fileMap = new HashMap<String,String>();
-			fileMap.put("filePath", filePath);
-			fileMap.put("fileName", fileName);
-			fileList.add(fileMap);
+		if (Objects.nonNull(workReport.getFileId())) {
+			String fileName = workReport.getFileId() + ".pdf";
+			String filePath = FileApi.getFile(workReport.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, FileApi.FILE_NO_WORK_REPORT, workReport.getFileId(), "pdf", fileName);
+			//ファイル名をわかりやすい名前に変更して添付
+			fileName = "出来高報告書.pdf";
+
+			if (Objects.nonNull(filePath)) {
+				Map<String,String> fileMap = new HashMap<String,String>();
+				fileMap.put("filePath", filePath);
+				fileMap.put("fileName", fileName);
+				fileList.add(fileMap);
+			}
 		}
 		//メール送信
 		mailService.sendMailWorkReport(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport.getOrderNumber(), workReport.getWorkRate(), fileList, workReportNumber, itemList, remind);
