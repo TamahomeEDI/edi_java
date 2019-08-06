@@ -371,4 +371,88 @@ public class CloudSignService {
 		return sdf.format(date);
 	}
 
+	/* 単発処理 */
+	@SuppressWarnings("unchecked")
+	public Map<String, Object> refreshOrderReport(List<TCloudSignEntity> fileList, String formType) {
+		int agreeCount = 0;
+
+		for (TCloudSignEntity tCloudSignEntity : fileList) {
+			//発注情報の取得
+			String orderNumber = tCloudSignEntity.getOrderNumber();
+			TOrderEntity order = tOrderDao.select(orderNumber);
+
+			//連携書類情報の取得
+			String documentId = tCloudSignEntity.getFileId();
+			Map<String, Object> ret = CloudSignApi.getDocumentId(documentId);
+			if (Objects.isNull(ret) || Objects.isNull(ret.get("status"))) {
+				log.info("can not get documentId from cloudsign : " + orderNumber + " " + documentId);
+				continue;
+			}
+			//ステータス 1…保留、2…同意、3…却下
+			String status = ret.get("status").toString();
+
+			//同意の場合
+			if(status.equals(CloudSignApi.STATUS_AGREE)) {
+				log.info("status is agree : " + orderNumber);
+
+				String fileId = "";
+				String fileName = "";
+				String filePath = "";
+				String fileNo = "";
+				String driveFileId = "";
+
+				if (Objects.isNull(ret.get("files"))) {
+					log.info("can not get files from cloudsign: " + orderNumber + " " + documentId);
+				} else {
+					log.info("get files from cloudsign : " + orderNumber);
+					//ファイルを取得しdriveと連携
+					List<Map<String, Object>> files = (List<Map<String, Object>>)ret.get("files");
+					if (Objects.nonNull(files) && !files.isEmpty()) {
+						if (Objects.nonNull(files.get(0)) && Objects.nonNull(files.get(0).get("id"))) {
+							log.info("cloudsign file id is not null: " + orderNumber);
+							fileId = files.get(0).get("id").toString();
+							fileName = fileId + ".pdf";
+							filePath = CloudSignApi.getFile(documentId, fileId, fileName);
+
+							if(formType.equals(CloudSignApi.FORM_TYPE_ORDER)) {
+								fileNo = FileApi.FILE_NO_CONFRIMATION;
+							}else if(formType.equals(CloudSignApi.FORM_TYPE_CANCEL)){
+								fileNo = FileApi.FILE_NO_CANCEL;
+							}
+							Map<String, Object> postRet = FileApi.postFile(order.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, fileNo, null, filePath, fileName, "pdf");
+							log.info("postFile done: " + orderNumber);
+							if (Objects.nonNull(postRet)) {
+								// google drive file id
+								driveFileId = postRet.get("file_id").toString();
+								log.info("google drive file id is : " + driveFileId + ", order number is: " + orderNumber);
+							} else {
+								log.info("can not post files to google drive: " + orderNumber);
+							}
+						} else {
+							log.info("cloudsign file id is null : " + orderNumber);
+						}
+					} else {
+						log.info("cloudsign files is empty: " + orderNumber);
+					}
+				}
+				//発注テーブルの更新
+				if(formType.equals(CloudSignApi.FORM_TYPE_ORDER)) {
+					order.setFileIdOrder(driveFileId);
+					order.setConfirmationFlg(FILE_FLG_ON);
+					order.setConfirmationAgreeDate(tCloudSignEntity.getExecutionDate());
+				}
+				tOrderDao.update(order);
+
+				//請書受領連携
+				sendOrderNumber(order);
+
+				agreeCount++;
+
+			}
+		}
+		Map<String, Object> count = new HashMap<>();
+		count.put("agreeCount", agreeCount);
+
+		return count;
+	}
 }
