@@ -87,6 +87,7 @@ and WRP.STAFF_RECEIPT_DATE >= /*params.inspectionReceiptDateFrom*/1
 /*%if params.inspectionReceiptDateTo != null && params.inspectionReceiptDateTo != ""*/
 and WRP.STAFF_RECEIPT_DATE <= /*params.inspectionReceiptDateTo*/1
 /*%end*/
+order by WRP.WORK_REPORT_NUMBER
 LIMIT /*limit*/20 OFFSET /*offset*/1
 ;
 

@@ -51,6 +51,17 @@ public class SearchController extends BaseController {
 		return super.response();
 	}
 
+	/** 発注情報検索 ダッシュボードの代替機能 */
+	@RequestMapping("/getMultiOrder")
+	public ResponseEntity getMultiOrder(@Validated SearchForm form) {
+		List<SapSearchOrderDto> orderList = searchService.getMultiOrder(form);
+		super.setResponseData("ret", orderList);
+		super.setResponseData("totalCount", orderList.size());
+		super.setResponseData("limitOver", false);
+
+		return super.response();
+	}
+
 	/** 発注情報検索 */
 	@RequestMapping("/getOrderByKouji")
 	public ResponseEntity getOrderByKouji(@Validated SearchForm form) {
@@ -70,11 +81,15 @@ public class SearchController extends BaseController {
 	@RequestMapping("/getReport")
 	public ResponseEntity getReport(@Validated SearchForm form) {
 		//納品一覧取得
+		int deliveryTotalCount = searchService.countDelivery(form);
 		List<SearchDeliveryDto> deliveryList = searchService.getDelivery(form);
+		int workReportTotalCount = searchService.countWorkReport(form);
 		List<SearchWorkReportDto> workReportList = searchService.getWorkReport(form);
 		Map<String, Object> ret = new HashMap<>();
 		ret.put("deliveryList", deliveryList);
+		ret.put("deliveryTotalCount", deliveryTotalCount);
 		ret.put("workReportList", workReportList);
+		ret.put("workReportTotalCount", workReportTotalCount);
 		super.setResponseData("ret", ret);
 		return super.response();
 	}

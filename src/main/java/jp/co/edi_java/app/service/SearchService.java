@@ -169,6 +169,24 @@ public class SearchService {
 	}
 
 	@SuppressWarnings("unchecked")
+	public ArrayList<SapSearchOrderDto> getMultiOrder(SearchForm form) {
+		ArrayList<SapSearchOrderDto> ret = new ArrayList<SapSearchOrderDto>();
+		List<String> gyousyaCodeList = form.getGyousyaCodeList();
+		if (Objects.nonNull(gyousyaCodeList)) {
+			for (String gyousyaCode : gyousyaCodeList) {
+				ArrayList<SapSearchOrderDto> orderList = new ArrayList<SapSearchOrderDto>();
+				form.setGyousyaCode(gyousyaCode);
+				orderList = getOrder(form);
+				if (Objects.nonNull(orderList) && !orderList.isEmpty()) {
+					ret.addAll(orderList);
+				}
+			}
+		}
+		return ret;
+
+	}
+
+	@SuppressWarnings("unchecked")
 	public Map<String, Object> getOrderByKouji(SearchForm form) {
 
 		//社員フラグ
@@ -342,14 +360,22 @@ public class SearchService {
 
 	}
 
+	public int countWorkReport(SearchForm form) {
+		return searchDao.countWorkReport(form);
+	}
+
 	public List<SearchWorkReportDto> getWorkReport(SearchForm form) {
-		int offset = (form.getPage() - 1) * form.getCount();
-		return searchDao.selectWorkReport(form, form.getCount(), offset);
+		int offset = (form.getWpage() - 1) * form.getWlimit();
+		return searchDao.selectWorkReport(form, form.getWlimit(), offset);
+	}
+
+	public int countDelivery(SearchForm form) {
+		return searchDao.countDelivery(form);
 	}
 
 	public List<SearchDeliveryDto> getDelivery(SearchForm form) {
-		int offset = (form.getPage() - 1) * form.getCount();
-		return searchDao.selectDelivery(form, form.getCount(), offset);
+		int offset = (form.getDpage() - 1) * form.getDlimit();
+		return searchDao.selectDelivery(form, form.getDlimit(), offset);
 	}
 
 	public void getInspectionReceipt(SearchForm form) {

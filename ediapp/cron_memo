@@ -1,7 +1,11 @@
+#CentOS6
+
 #cron起動確認#
 etc/rc.d/init.d/crond start status
 #cron起動#
 /etc/rc.d/init.d/crond start
+#cron再起動#
+/etc/rc.d/init.d/crond restart
 #cron設定内容表示#
 sudo crontab -l
 #cron編集#
@@ -49,7 +53,7 @@ sudo crontab -e
 #AM7時45分 社員所属支店
 45 7 * * * /opt/ediapp/bat/getSyainEigyousyoAll.sh
 
-#本番設定予定20190731
+#本番設定20190805
 #AM7時50分 クラウドサインリマインドメール
 50 7 * * * /opt/ediapp/bat/remindCloudSign.sh
 #AM7時55分 納品書・出来高報告書確認リマインドメール

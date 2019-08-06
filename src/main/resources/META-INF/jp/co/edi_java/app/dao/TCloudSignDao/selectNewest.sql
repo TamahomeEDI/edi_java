@@ -5,4 +5,4 @@ and FORM_TYPE = /*formType*/1
 and ORDER_NUMBER = /*orderNumber*/1
 order by
 	INSERT_DATE desc
-limit 1;;
+limit 1;

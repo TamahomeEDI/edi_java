@@ -30,6 +30,12 @@ public interface SearchDao {
 	int countEstimate(SearchForm params);
 
 	@Select
+	int countDelivery(SearchForm params);
+
+	@Select
+	int countWorkReport(SearchForm params);
+
+	@Select
 	int countKoujiInfo(String koujiCode, String koujiName, String eigyousyoCode);
 
 	@Select
