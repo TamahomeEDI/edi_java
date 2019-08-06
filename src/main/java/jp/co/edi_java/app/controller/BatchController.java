@@ -1,5 +1,6 @@
 package jp.co.edi_java.app.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -8,6 +9,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jp.co.edi_java.app.dao.TCloudSignDao;
 import jp.co.edi_java.app.entity.TCloudSignEntity;
 import jp.co.edi_java.app.entity.TDeliveryEntity;
 import jp.co.edi_java.app.entity.TWorkReportEntity;
@@ -34,6 +36,9 @@ public class BatchController extends BaseController {
 
 	@Autowired
 	public CloudSignService cloudSignService;
+
+	@Autowired
+    public TCloudSignDao tCloudSignDao;
 
 	@Autowired
 	public DeliveryService deliveryService;
@@ -383,12 +388,33 @@ public class BatchController extends BaseController {
 		return super.response();
 	}
 
+	/**
+	 * 請書のファイルIDリフレッシュ
+	 * ('4505576864','4505577036')
+	 *
+	 */
+	@RequestMapping("/refreshOrderReport")
+	public ResponseEntity refreshOrderReport() {
+		try {
+			long start = System.currentTimeMillis();
 
+			//発注請書のID一覧取得
+			List<String> orderNumberList = new ArrayList<String>();
+			orderNumberList.add("4505576864");
+			orderNumberList.add("4505577036");
 
+			List<TCloudSignEntity> confirmationFileList = tCloudSignDao.selectNewestList(orderNumberList, CloudSignApi.FORM_TYPE_ORDER);
+			//リストを確認
+			Map<String, Object> confrimationCountMap = cloudSignService.refreshOrderReport(confirmationFileList, CloudSignApi.FORM_TYPE_ORDER);
 
-
-
-
-
+			long end = System.currentTimeMillis();
+			super.setResponseData("confrimationCountMap",confrimationCountMap);
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
 
 }
