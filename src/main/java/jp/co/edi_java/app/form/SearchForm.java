@@ -1,5 +1,7 @@
 package jp.co.edi_java.app.form;
 
+import java.util.List;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -88,6 +90,8 @@ public class SearchForm extends BaseForm {
 
     public String loginUserCode;
 
+    public List<String> gyousyaCodeList;
+
 	//納品・出来高情報検索
     public String receptionStatus;
 
@@ -98,6 +102,14 @@ public class SearchForm extends BaseForm {
     public String inspectionReceiptDateFrom;
 
     public String inspectionReceiptDateTo;
+
+    public int dpage;
+
+    public int dlimit;
+
+    public int wpage;
+
+    public int wlimit;
 
 	//検収明細情報検索
     public String inspectionReceiptStatus;
