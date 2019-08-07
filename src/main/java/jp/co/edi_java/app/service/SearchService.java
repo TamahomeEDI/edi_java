@@ -78,7 +78,10 @@ public class SearchService {
 	private String CLOUD_SIGN_FORM_TYPE_ORDER = "1";
 
 	//工事単位検索上限
-	private int LIMIT_KOUJI_COUNT = 300;
+	private int LIMIT_KOUJI_COUNT = 50;
+
+	//発注情報検索結果上限
+	private int LIMIT_ORDER_COUNT = 200;
 
 	SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 
@@ -228,6 +231,7 @@ public class SearchService {
 
 		Map<String, Boolean> gyousyaMap = new HashMap<String, Boolean>();
 		List<String> gyousyaCodeList =  new ArrayList<String>();
+		int orderCount = 0;
 		// 工事に関連する業者を取得
 		for (SearchKoujiInfoDto kouji: koujiInfoList) {
 			log.info("kouji code: " + kouji.getKoujiCode());
@@ -241,6 +245,11 @@ public class SearchService {
 				//sapからデータ取得
 				Map<String, Object> orderData = SapApi.orderListByPosId(postId.get(SapApiConsts.PARAMS_ID_POSID).toString(),form.getLoginUserCode());
 				List<Map<String, Object>> orderListTmp = getSapListData(orderData, SapApiConsts.PARAMS_KEY_T_E_03004);
+				orderCount += orderListTmp.size();
+				log.info("total order count: " + orderCount);
+				if (orderCount > LIMIT_ORDER_COUNT) {
+					break;
+				}
 				for (Map<String, Object> orderTmp : orderListTmp) {
 					String gyousyaCode = orderTmp.get(SapApiConsts.PARAMS_ID_LIFNR).toString();
 					if (Objects.nonNull(gyousyaCode) && !gyousyaCode.isEmpty()) {
@@ -251,6 +260,10 @@ public class SearchService {
 					}
 				}
 			}
+		}
+		if (orderCount > LIMIT_ORDER_COUNT) {
+			ret.put("limitOver", true);
+			return ret;
 		}
 
 		//SAPデータ取得結果リストの初期化
