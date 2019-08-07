@@ -7,7 +7,7 @@
 #
 # ホスト: order.tamahome.jp (MySQL 5.6.41-log)
 # データベース: edi
-# 作成時刻: 2019-08-06 07:45:48 +0000
+# 作成時刻: 2019-08-07 02:25:48 +0000
 # ************************************************************
 
 
@@ -436,7 +436,9 @@ CREATE TABLE `M_KOUJI` (
   KEY `idx_mk_kouji_name` (`KOUJI_NAME`),
   KEY `idx_mk_tantou_syain_code` (`TANTOU_SYAIN_CODE`),
   KEY `idx_mk_eigyousyo_code` (`EIGYOUSYO_CODE`),
-  KEY `idx_mk_eigyousyo_group_code` (`EIGYOUSYO_GROUP_CODE`)
+  KEY `idx_mk_eigyousyo_group_code` (`EIGYOUSYO_GROUP_CODE`),
+  KEY `idx_mk_keiyakusya_name` (`KEIYAKUSYA_NAME`),
+  KEY `idx_mk_keiyakusya_kana` (`KEIYAKUSYA_KANA`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -552,7 +554,8 @@ CREATE TABLE `T_CLOUD_SIGN` (
   `DELETE_USER` varchar(50) DEFAULT NULL,
   `DELETE_FLG` char(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`,`FILE_ID`),
-  UNIQUE KEY `T_CLOUD_SIGN_IX1` (`ID`)
+  UNIQUE KEY `T_CLOUD_SIGN_IX1` (`ID`),
+  KEY `idx_tcs_order_number` (`ORDER_NUMBER`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
