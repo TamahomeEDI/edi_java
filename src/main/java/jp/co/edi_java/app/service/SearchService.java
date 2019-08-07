@@ -231,7 +231,7 @@ public class SearchService {
 
 		Map<String, Boolean> gyousyaMap = new HashMap<String, Boolean>();
 		List<String> gyousyaCodeList =  new ArrayList<String>();
-		int orderCount = 0;
+
 		// 工事に関連する業者を取得
 		for (SearchKoujiInfoDto kouji: koujiInfoList) {
 			log.info("kouji code: " + kouji.getKoujiCode());
@@ -245,11 +245,7 @@ public class SearchService {
 				//sapからデータ取得
 				Map<String, Object> orderData = SapApi.orderListByPosId(postId.get(SapApiConsts.PARAMS_ID_POSID).toString(),form.getLoginUserCode());
 				List<Map<String, Object>> orderListTmp = getSapListData(orderData, SapApiConsts.PARAMS_KEY_T_E_03004);
-				orderCount += orderListTmp.size();
-				log.info("total order count: " + orderCount);
-				if (orderCount > LIMIT_ORDER_COUNT) {
-					break;
-				}
+
 				for (Map<String, Object> orderTmp : orderListTmp) {
 					String gyousyaCode = orderTmp.get(SapApiConsts.PARAMS_ID_LIFNR).toString();
 					if (Objects.nonNull(gyousyaCode) && !gyousyaCode.isEmpty()) {
@@ -261,10 +257,6 @@ public class SearchService {
 				}
 			}
 		}
-		if (orderCount > LIMIT_ORDER_COUNT) {
-			ret.put("limitOver", true);
-			return ret;
-		}
 
 		//SAPデータ取得結果リストの初期化
 		List<Map<String, Object>> sapOrderList = new ArrayList<Map<String, Object>>();
@@ -274,10 +266,15 @@ public class SearchService {
 		Map<String, Map<String, Object>> sapOrderMap = new HashMap<String, Map<String, Object>>();
 
 		//業者コード分検索を実施
+		int orderCount = 0;
 		for (String gyousyaCode : gyousyaCodeList) {
 			form.setGyousyaCode(gyousyaCode);
 			Map<String, Object> data = SapApi.orderList(form);
 			List<Map<String, Object>> orderListTmp = getSapListData(data, SapApiConsts.PARAMS_KEY_T_E_01004);
+			orderCount += orderListTmp.size();
+			if (orderCount > LIMIT_ORDER_COUNT) {
+				break;
+			}
 			for (Map<String, Object> orderTmp : orderListTmp) {
 				String orderSettlementFlg = orderTmp.get(SapApiConsts.PARAMS_ID_ZHCSSF).toString();
 				String orderNumber = orderTmp.get(SapApiConsts.PARAMS_ID_SEBELN).toString();
@@ -294,6 +291,10 @@ public class SearchService {
 		}
 		//sapのデータが存在しなかったら空のリストを返却
 		if(Objects.isNull(sapOrderList) || sapOrderList.size() < 1) {
+			return ret;
+		}
+		if (orderCount > LIMIT_ORDER_COUNT) {
+			ret.put("limitOver", true);
 			return ret;
 		}
 
