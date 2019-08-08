@@ -187,7 +187,7 @@ public class ChecklistService {
 		}
 		Map<String, SearchKoujiInfoDto> skinfoMap = new HashMap<String, SearchKoujiInfoDto>();
 		log.info("kouji name in checklist" + form.getKoujiName());
-		List<SearchKoujiInfoDto> koujiList = searchDao.getKoujiInfoList(koujiCodeList, form.getKoujiName(), null);
+		List<SearchKoujiInfoDto> koujiList = searchDao.getKoujiInfoList(koujiCodeList, form.getKoujiName(), null, null);
 		for (SearchKoujiInfoDto koujiDto: koujiList) {
 			//工事情報のキャッシュ
 			skinfoMap.put(koujiDto.getKoujiCode(), koujiDto);
