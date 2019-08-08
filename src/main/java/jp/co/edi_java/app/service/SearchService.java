@@ -229,7 +229,7 @@ public class SearchService {
 			return ret;
 		}
 
-		Map<String, Boolean> gyousyaMap = new HashMap<String, Boolean>();
+		Map<String, List<String>> gyousyaMap = new HashMap<String, List<String>>();
 		List<String> gyousyaCodeList =  new ArrayList<String>();
 
 		// 工事に関連する業者を取得
@@ -251,8 +251,9 @@ public class SearchService {
 					if (Objects.nonNull(gyousyaCode) && !gyousyaCode.isEmpty()) {
 						if (!gyousyaMap.containsKey(gyousyaCode)) {
 							gyousyaCodeList.add(gyousyaCode);
-							gyousyaMap.put(gyousyaCode,true);
+							gyousyaMap.put(gyousyaCode,new ArrayList<String>());
 						}
+						gyousyaMap.get(gyousyaCode).add(kouji.getKoujiCode());
 					}
 				}
 			}
@@ -265,30 +266,38 @@ public class SearchService {
 		//SAPOrderマップ
 		Map<String, Map<String, Object>> sapOrderMap = new HashMap<String, Map<String, Object>>();
 
-		//業者コード分検索を実施
+		//業者コード別工事コード毎検索を実施
 		int orderCount = 0;
 		for (String gyousyaCode : gyousyaCodeList) {
 			form.setGyousyaCode(gyousyaCode);
-			Map<String, Object> data = SapApi.orderList(form);
-			List<Map<String, Object>> orderListTmp = getSapListData(data, SapApiConsts.PARAMS_KEY_T_E_01004);
-			orderCount += orderListTmp.size();
-			if (orderCount > LIMIT_ORDER_COUNT) {
-				break;
-			}
-			for (Map<String, Object> orderTmp : orderListTmp) {
-				String orderSettlementFlg = orderTmp.get(SapApiConsts.PARAMS_ID_ZHCSSF).toString();
-				String orderNumber = orderTmp.get(SapApiConsts.PARAMS_ID_SEBELN).toString();
-				if (Objects.nonNull(orderNumber) && !orderNumber.isEmpty()) {
-					if (!(!StringUtils.isNullString(orderSettlementFlg) && orderSettlementFlg.equals(ORDER_SETTLEMENT_FLG_VALUE_X))) {
-						//発注番号をキャッシュ
-						orderNumberList.add(orderNumber);
-						//SAPOrderをキャッシュ
-						sapOrderMap.put(orderNumber, orderTmp);
-						sapOrderList.add(orderTmp);
+			for (String koujiCode : gyousyaMap.get(gyousyaCode)) {
+				form.setKoujiCode(koujiCode);
+				Map<String, Object> data = SapApi.orderList(form);
+				List<Map<String, Object>> orderListTmp = getSapListData(data, SapApiConsts.PARAMS_KEY_T_E_01004);
+
+				for (Map<String, Object> orderTmp : orderListTmp) {
+					String orderSettlementFlg = orderTmp.get(SapApiConsts.PARAMS_ID_ZHCSSF).toString();
+					String orderNumber = orderTmp.get(SapApiConsts.PARAMS_ID_SEBELN).toString();
+					if (Objects.nonNull(orderNumber) && !orderNumber.isEmpty()) {
+						if (!(!StringUtils.isNullString(orderSettlementFlg) && orderSettlementFlg.equals(ORDER_SETTLEMENT_FLG_VALUE_X))) {
+							//発注番号をキャッシュ
+							orderNumberList.add(orderNumber);
+							//SAPOrderをキャッシュ
+							sapOrderMap.put(orderNumber, orderTmp);
+							sapOrderList.add(orderTmp);
+							orderCount += 1;
+						}
+					}
+					if (orderCount > LIMIT_ORDER_COUNT) {
+						break;
 					}
 				}
 			}
+			if (orderCount > LIMIT_ORDER_COUNT) {
+				break;
+			}
 		}
+		log.info("order count: " + orderCount);
 		//sapのデータが存在しなかったら空のリストを返却
 		if(Objects.isNull(sapOrderList) || sapOrderList.size() < 1) {
 			return ret;
