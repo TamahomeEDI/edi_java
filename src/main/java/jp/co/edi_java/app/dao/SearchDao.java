@@ -36,7 +36,7 @@ public interface SearchDao {
 	int countWorkReport(SearchForm params);
 
 	@Select
-	int countKoujiInfo(String koujiCode, String koujiName, String eigyousyoCode);
+	int countKoujiInfo(String koujiCode, String koujiName, String eigyousyoCode, String kanseiKubun);
 
 	@Select
 	SearchOrderInfoDto selectOrderInfo(String orderNumber, SearchForm params, String orderDate);
@@ -62,6 +62,6 @@ public interface SearchDao {
 	@Select
 	List<SearchOrderInfoDto> selectOrderInfoList(List<String> orderNumber, SearchForm params);
 	@Select
-	List<SearchKoujiInfoDto> getKoujiInfoList(List<String> koujiCodeList, String koujiName, String eigyousyoCode);
+	List<SearchKoujiInfoDto> getKoujiInfoList(List<String> koujiCodeList, String koujiName, String eigyousyoCode, String kanseiKubun);
 
 }

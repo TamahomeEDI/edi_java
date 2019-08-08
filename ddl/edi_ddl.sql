@@ -7,7 +7,7 @@
 #
 # ホスト: order.tamahome.jp (MySQL 5.6.41-log)
 # データベース: edi
-# 作成時刻: 2019-08-07 02:25:48 +0000
+# 作成時刻: 2019-08-08 01:29:55 +0000
 # ************************************************************
 
 
@@ -438,7 +438,8 @@ CREATE TABLE `M_KOUJI` (
   KEY `idx_mk_eigyousyo_code` (`EIGYOUSYO_CODE`),
   KEY `idx_mk_eigyousyo_group_code` (`EIGYOUSYO_GROUP_CODE`),
   KEY `idx_mk_keiyakusya_name` (`KEIYAKUSYA_NAME`),
-  KEY `idx_mk_keiyakusya_kana` (`KEIYAKUSYA_KANA`)
+  KEY `idx_mk_keiyakusya_kana` (`KEIYAKUSYA_KANA`),
+  KEY `idx_mk_kansei_kubun` (`KANSEI_KUBUN`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 

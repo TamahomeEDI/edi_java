@@ -78,7 +78,7 @@ public class SearchService {
 	private String CLOUD_SIGN_FORM_TYPE_ORDER = "1";
 
 	//工事単位検索上限
-	private int LIMIT_KOUJI_COUNT = 50;
+	private int LIMIT_KOUJI_COUNT = 10;
 
 	//発注情報検索結果上限
 	private int LIMIT_ORDER_COUNT = 200;
@@ -211,7 +211,7 @@ public class SearchService {
 		ret.put("limitOver", false);
 		ret.put("orderList", resultList);
 
-		int koujiCount = searchDao.countKoujiInfo(form.getKoujiCode(), form.getKoujiName(), form.getEigyousyoCode());
+		int koujiCount = searchDao.countKoujiInfo(form.getKoujiCode(), form.getKoujiName(), form.getEigyousyoCode(), form.getKoujiStatus());
 		log.info("kouji count: " + koujiCount);
 		//工事情報が多い場合は追加で絞り込み条件を指定してもらうように返却
 		if (koujiCount > LIMIT_KOUJI_COUNT) {
@@ -223,7 +223,7 @@ public class SearchService {
 		//工事コードマップ
 		List<String> koujiCodeList =  new ArrayList<String>();
 		koujiCodeList.add(form.getKoujiCode());
-		List<SearchKoujiInfoDto> koujiInfoList = searchDao.getKoujiInfoList(koujiCodeList, form.getKoujiName(), form.getEigyousyoCode());
+		List<SearchKoujiInfoDto> koujiInfoList = searchDao.getKoujiInfoList(koujiCodeList, form.getKoujiName(), form.getEigyousyoCode(), form.getKoujiStatus());
 
 		if (koujiInfoList.isEmpty()) {
 			return ret;
