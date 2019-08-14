@@ -32,6 +32,9 @@ public interface MSyainDao {
 	List<MSyainEntity> selectListByEigyousyoList(List<String> eigyousyoCodeList);
 
 	@Select
+	List<MSyainEntity> selectListBySyokusyu3(String eigyousyoCode);
+
+	@Select
 	MSyainEntity selectByLogin(String syainCode, String password);
 
 	@Insert(excludeNull = true)

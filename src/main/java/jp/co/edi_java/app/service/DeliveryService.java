@@ -32,7 +32,9 @@ import jp.co.edi_java.app.util.crypto.CipherUtils;
 import jp.co.edi_java.app.util.file.FileApi;
 import jp.co.keepalive.springbootfw.util.consts.CommonConsts;
 import jp.co.keepalive.springbootfw.util.dxo.BeanUtils;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @Scope("request")
 public class DeliveryService {
@@ -63,6 +65,7 @@ public class DeliveryService {
 
 	private static String STG_FLG;
 	private static String STG_FLG_ON = "1";
+	private static String TEMPORARY_SYAIN_CODE = "990000";
 
 	private DeliveryService(@Value("${stg.flg}") String flg) {
 		STG_FLG = flg;
@@ -233,6 +236,10 @@ public class DeliveryService {
 
 		//納品情報取得
 		TDeliveryEntity delivery = get(deliveryNumber);
+		if (Objects.isNull(delivery)) {
+			log.info("delivery nothing: " + deliveryNumber);
+			return;
+		}
 		//納品書明細取得
 		List<TDeliveryItemEntity> itemList = getItemList(deliveryNumber);
 		//工事情報取得
@@ -243,13 +250,39 @@ public class DeliveryService {
 		MSyainEntity syain = mSyainDao.select(kouji.getTantouSyainCode());
 		//業者情報取得
 		MGyousyaEntity gyousya = mGyousyaDao.select(gyousyaCode);
+
+		List<String> toList = new ArrayList<String>();
+		String eigyousyoCode = eigyousyo.getEigyousyoCode();
+
+		if (Objects.nonNull(syain) && Objects.nonNull(syain.getSyainCode())) {
+			//'990000'ユーザは工務長宛にメール
+			if (Objects.equals(syain.getSyainCode(),TEMPORARY_SYAIN_CODE) && Objects.nonNull(eigyousyoCode)) {
+				List<MSyainEntity> s3SyainList = mSyainDao.selectListBySyokusyu3(eigyousyoCode);
+				for (MSyainEntity s3Syain : s3SyainList) {
+					if (Objects.nonNull(s3Syain.getSyainMail())) {
+						toList.add(s3Syain.getSyainMail());
+					}
+				}
+			} else {
+				if (Objects.nonNull(syain.getSyainMail())) {
+					toList.add(syain.getSyainMail());
+				}
+			}
+		}
+		//to
+		String to = "";
+		if (!toList.isEmpty()) {
+			to = String.join(",", toList);
+			//log.info("delivery send mail: " + to);
+		}
 		//CC
 		String cc = null;
-		if(!STG_FLG.equals(STG_FLG_ON)) {
-			cc = "jimu-" + eigyousyo.getEigyousyoCode() + "@tamahome.jp";
+		if(!STG_FLG.equals(STG_FLG_ON) && Objects.nonNull(eigyousyoCode)) {
+			cc = "jimu-" + eigyousyoCode + "@tamahome.jp";
 		}else {
 			cc = MailService.STG_CC_MAIL;
 		}
+
 		//添付ファイル
 		List<Map<String,String>> fileList = new ArrayList<Map<String,String>>();
 		if (Objects.nonNull(delivery.getFileId())) {
@@ -266,7 +299,7 @@ public class DeliveryService {
 			}
 		}
 		//メール送信
-		mailService.sendMailDelivery(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), fileList, deliveryNumber, itemList, remind);
+		mailService.sendMailDelivery(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), fileList, deliveryNumber, itemList, remind);
 	}
 
 }

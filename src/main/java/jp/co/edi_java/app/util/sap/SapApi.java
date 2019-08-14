@@ -295,6 +295,7 @@ public class SapApi {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_ZWRKCD, form.getKoujiCode());
 		}
 //		//工事名称
+		//JCO側で文字化けし、ヒットしない。JCOに合わせたエンコードが必要
 //		if(!StringUtils.isNullString(form.getKoujiName())) {
 //			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_ZPRJNM, form.getKoujiName());
 //		}
@@ -347,9 +348,6 @@ public class SapApi {
 		parsedList.put("params", params.getParams());
 		return parsedList;
 	}
-
-
-
 
 /** おそらく不要資材 */
 
