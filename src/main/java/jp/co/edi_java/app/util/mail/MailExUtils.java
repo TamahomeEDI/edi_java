@@ -81,7 +81,7 @@ public class MailExUtils {
     		mailTo = String.join(",", toList);
     	}
     	if (Objects.nonNull(ccList) && !ccList.isEmpty()) {
-    		mailTo = String.join(",", ccList);
+    		mailCc = String.join(",", ccList);
     	}
 		sendMail(mailTo, mailCc, null, mailFromAddress, mailFromSign, mailSubject, mailContent);
     }
@@ -101,7 +101,7 @@ public class MailExUtils {
     		mailTo = String.join(",", toList);
     	}
     	if (Objects.nonNull(ccList) && !ccList.isEmpty()) {
-    		mailTo = String.join(",", ccList);
+    		mailCc = String.join(",", ccList);
     	}
 		sendMail(mailTo, mailCc, mailBcc, mailFromAddress, mailFromSign, mailSubject, mailContent);
     }
@@ -114,10 +114,10 @@ public class MailExUtils {
     		mailTo = String.join(",", toList);
     	}
     	if (Objects.nonNull(ccList) && !ccList.isEmpty()) {
-    		mailTo = String.join(",", ccList);
+    		mailCc = String.join(",", ccList);
     	}
     	if (Objects.nonNull(bccList) && !bccList.isEmpty()) {
-    		mailTo = String.join(",", bccList);
+    		mailBcc = String.join(",", bccList);
     	}
 		sendMail(mailTo, mailCc, mailBcc, mailFromAddress, mailFromSign, mailSubject, mailContent);
     }
@@ -130,10 +130,10 @@ public class MailExUtils {
     		mailTo = String.join(",", toList);
     	}
     	if (Objects.nonNull(ccList) && !ccList.isEmpty()) {
-    		mailTo = String.join(",", ccList);
+    		mailCc = String.join(",", ccList);
     	}
     	if (Objects.nonNull(bccList) && !bccList.isEmpty()) {
-    		mailTo = String.join(",", bccList);
+    		mailBcc = String.join(",", bccList);
     	}
     	sendMPartMail(mailTo, mailCc, mailBcc, mailFromAddress, mailFromSign, mailSubject, mailTxtContent, mailHtmlContent, fileList);
     }
