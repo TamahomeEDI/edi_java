@@ -143,28 +143,28 @@ public class SearchService {
 			String koujiCode = map.get(SapApiConsts.PARAMS_ID_ZWRKCD).toString();
 			String orderDate = map.get(SapApiConsts.PARAMS_ID_ZORDDT).toString();
 			String orderSettlementFlg = map.get(SapApiConsts.PARAMS_ID_ZHCSSF).toString();
+			if (Objects.nonNull(orderNumber) && !orderNumber.isEmpty()) {
+				if(!(!StringUtils.isNullString(orderSettlementFlg) && orderSettlementFlg.equals(ORDER_SETTLEMENT_FLG_VALUE_X))) {
 
-			if(!(!StringUtils.isNullString(orderSettlementFlg) && orderSettlementFlg.equals(ORDER_SETTLEMENT_FLG_VALUE_X))) {
+					//発注情報取得…SAPとのステータスが複雑化したので追加（あとで作り直した方がいいかも）
+					SearchOrderInfoDto order = searchDao.getOrderInfo(orderNumber, orderDate);
 
-				//発注情報取得…SAPとのステータスが複雑化したので追加（あとで作り直した方がいいかも）
-				SearchOrderInfoDto order = searchDao.getOrderInfo(orderNumber, orderDate);
+					//発注検索情報取得
+					SearchOrderInfoDto searchOrderInfoDto = searchDao.selectOrderInfo(orderNumber, form, orderDate);
+					//工事検索情報取得
+					SearchKoujiInfoDto searchKoujiInfoDto = searchDao.selectKoujiInfo(koujiCode, form.getKoujiName());
+					//クラウドサイン情報取得
+					TCloudSignEntity cloudSignInfo = tCloudSignDao.selectNewest(orderNumber, CLOUD_SIGN_FORM_TYPE_ORDER);
 
-				//発注検索情報取得
-				SearchOrderInfoDto searchOrderInfoDto = searchDao.selectOrderInfo(orderNumber, form, orderDate);
-				//工事検索情報取得
-				SearchKoujiInfoDto searchKoujiInfoDto = searchDao.selectKoujiInfo(koujiCode, form.getKoujiName());
-				//クラウドサイン情報取得
-				TCloudSignEntity cloudSignInfo = tCloudSignDao.selectNewest(orderNumber, CLOUD_SIGN_FORM_TYPE_ORDER);
+					if (checkSearchResult(searchOrderStatus, orderDate, userFlg, order, searchOrderInfoDto)) {
+						continue;
+					}
 
-				if (checkSearchResult(searchOrderStatus, orderDate, userFlg, order, searchOrderInfoDto)) {
-					continue;
+					if(!(paramFlg && searchOrderInfoDto == null) && searchKoujiInfoDto != null) {
+						SapSearchOrderDto dto = createSearchResultData(map, orderNumber, koujiCode, orderDate, searchOrderInfoDto, searchKoujiInfoDto, cloudSignInfo);
+						ret.add(dto);
+					}
 				}
-
-				if(!(paramFlg && searchOrderInfoDto == null) && searchKoujiInfoDto != null) {
-					SapSearchOrderDto dto = createSearchResultData(map, orderNumber, koujiCode, orderDate, searchOrderInfoDto, searchKoujiInfoDto, cloudSignInfo);
-					ret.add(dto);
-				}
-
 			}
 		}
 		return ret;
@@ -218,7 +218,7 @@ public class SearchService {
 			ret.put("limitOver", true);
 			return ret;
 		}
-		// 工事情報の取得
+		//工事情報の取得
 		Map<String, SearchKoujiInfoDto> skinfoMap = new HashMap<String, SearchKoujiInfoDto>();
 		//工事コードマップ
 		List<String> koujiCodeList =  new ArrayList<String>();
@@ -232,7 +232,7 @@ public class SearchService {
 		Map<String, List<String>> gyousyaMap = new HashMap<String, List<String>>();
 		List<String> gyousyaCodeList =  new ArrayList<String>();
 
-		// 工事に関連する業者を取得
+		//工事に関連する業者を取得
 		for (SearchKoujiInfoDto kouji: koujiInfoList) {
 			log.info("kouji code: " + kouji.getKoujiCode());
 			//工事情報のキャッシュ
@@ -280,12 +280,14 @@ public class SearchService {
 					String orderNumber = orderTmp.get(SapApiConsts.PARAMS_ID_SEBELN).toString();
 					if (Objects.nonNull(orderNumber) && !orderNumber.isEmpty()) {
 						if (!(!StringUtils.isNullString(orderSettlementFlg) && orderSettlementFlg.equals(ORDER_SETTLEMENT_FLG_VALUE_X))) {
-							//発注番号をキャッシュ
-							orderNumberList.add(orderNumber);
-							//SAPOrderをキャッシュ
-							sapOrderMap.put(orderNumber, orderTmp);
-							sapOrderList.add(orderTmp);
-							orderCount += 1;
+							if (!sapOrderMap.containsKey(orderNumber)) {
+								//発注番号をキャッシュ
+								orderNumberList.add(orderNumber);
+								//SAPOrderをキャッシュ
+								sapOrderMap.put(orderNumber, orderTmp);
+								sapOrderList.add(orderTmp);
+								orderCount += 1;
+							}
 						}
 					}
 					if (orderCount > LIMIT_ORDER_COUNT) {
