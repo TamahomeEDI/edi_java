@@ -18,6 +18,7 @@ import jp.co.edi_java.app.dao.TDeliveryDao;
 import jp.co.edi_java.app.dao.TOrderDao;
 import jp.co.edi_java.app.dao.TWorkReportDao;
 import jp.co.edi_java.app.dao.gyousya.MGyousyaDao;
+import jp.co.edi_java.app.dto.GyousyaDto;
 import jp.co.edi_java.app.dto.SapSearchOrderDto;
 import jp.co.edi_java.app.dto.SearchDeliveryDto;
 import jp.co.edi_java.app.dto.SearchEstimateDto;
@@ -82,6 +83,9 @@ public class SearchService {
 
 	//発注情報検索結果上限
 	private int LIMIT_ORDER_COUNT = 200;
+
+	//取引先全て
+	private String TORIHIKI_STATUS_ALL = "2";
 
 	SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 
@@ -232,6 +236,14 @@ public class SearchService {
 		Map<String, List<String>> gyousyaMap = new HashMap<String, List<String>>();
 		List<String> gyousyaCodeList =  new ArrayList<String>();
 
+		List<GyousyaDto> gyousyaFilterList = mGyousyaDao.selectListByEigyousyoCode(form.getEigyousyoCode(), TORIHIKI_STATUS_ALL);
+		Map<String, String> gyousyaFilterMap = new HashMap<String, String>();
+		if (Objects.nonNull(gyousyaFilterList)) {
+			for (GyousyaDto gyousyaDto: gyousyaFilterList) {
+				gyousyaFilterMap.put(gyousyaDto.getGyousyaCode(), gyousyaDto.getGyousyaCode());
+			}
+		}
+
 		//工事に関連する業者を取得
 		for (SearchKoujiInfoDto kouji: koujiInfoList) {
 			log.info("kouji code: " + kouji.getKoujiCode());
@@ -248,7 +260,7 @@ public class SearchService {
 
 				for (Map<String, Object> orderTmp : orderListTmp) {
 					String gyousyaCode = orderTmp.get(SapApiConsts.PARAMS_ID_LIFNR).toString();
-					if (Objects.nonNull(gyousyaCode) && !gyousyaCode.isEmpty()) {
+					if (Objects.nonNull(gyousyaCode) && !gyousyaCode.isEmpty() && gyousyaFilterMap.containsKey(gyousyaCode)) {
 						if (!gyousyaMap.containsKey(gyousyaCode)) {
 							gyousyaCodeList.add(gyousyaCode);
 							gyousyaMap.put(gyousyaCode,new ArrayList<String>());
