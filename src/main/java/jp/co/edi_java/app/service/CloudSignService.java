@@ -203,7 +203,7 @@ public class CloudSignService {
 							}else if(formType.equals(CloudSignApi.FORM_TYPE_CANCEL)){
 								fileNo = FileApi.FILE_NO_CANCEL;
 							}
-							Map<String, Object> postRet = FileApi.postFile(order.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, fileNo, null, filePath, fileName, "pdf");
+							Map<String, Object> postRet = FileApi.postFile(order.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, fileNo, null, filePath, fileName, "application/pdf");
 							log.info("postFile done: " + orderNumber);
 							if (Objects.nonNull(postRet)) {
 								// google drive file id
@@ -419,7 +419,7 @@ public class CloudSignService {
 							}else if(formType.equals(CloudSignApi.FORM_TYPE_CANCEL)){
 								fileNo = FileApi.FILE_NO_CANCEL;
 							}
-							Map<String, Object> postRet = FileApi.postFile(order.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, fileNo, null, filePath, fileName, "pdf");
+							Map<String, Object> postRet = FileApi.postFile(order.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, fileNo, null, filePath, fileName, "application/pdf");
 							log.info("postFile done: " + orderNumber);
 							if (Objects.nonNull(postRet)) {
 								// google drive file id
