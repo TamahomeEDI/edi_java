@@ -557,20 +557,12 @@ public class SearchService {
 				} else {
 					soinfDto.setOrderStatus("1");
 				}
-			} else if (confirmationFlg.equals("1")) {
-				if (Objects.isNull(soinfDto.getWorkNumber())) {
-					soinfDto.setOrderStatus("2");
-				}
-			} else if (Objects.nonNull(soinfDto.getWorkNumber())) {
-				if (staffReceiptFlg.equals("0")) {
-					soinfDto.setOrderStatus("3");
-				}
-			} else if (staffReceiptFlg.equals("1")) {
-				if (remandFlg.equals("0")) {
-					soinfDto.setOrderStatus("4");
-				}
-			} else {
-				soinfDto.setOrderStatus("0");
+			} else if (confirmationFlg.equals("1") && Objects.isNull(soinfDto.getWorkNumber())) {
+				soinfDto.setOrderStatus("2");
+			} else if (Objects.nonNull(soinfDto.getWorkNumber()) && staffReceiptFlg.equals("0")) {
+				soinfDto.setOrderStatus("3");
+			} else if (staffReceiptFlg.equals("1") && remandFlg.equals("0")) {
+				soinfDto.setOrderStatus("4");
 			}
 		}
 	}
