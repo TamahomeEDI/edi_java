@@ -397,6 +397,8 @@ public class WorkReportService {
 		}
 		//申請番号ダミー
 		String wfNumber = workReportNumber + "_" + approveDate + approveDateTime;
+		//支店コード
+		String sapEigyousyoCode = targetObj.get(SapApiConsts.PARAMS_ID_PRCTR).toString();
 		//レコード登録日
 		String recordDate = targetObj.get(SapApiConsts.PARAMS_ID_ERDAT1).toString();
 		//シーケンス番号
@@ -406,10 +408,11 @@ public class WorkReportService {
 		//更新時間
 		String lastUpdateTime = targetObj.get(SapApiConsts.PARAMS_ID_AEZEIT).toString();
 
-		log.info("before date formatting: " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime);
+		log.info("before date formatting: " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime + " " + recordDate);
 		// Sapへ請書未受領データの排他制御用変更日付、変更時間がEnglishロケールフォーマットのため変換が必要
 		Date updateDate = parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
 		Date updateTime = parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+		Date registDate = parseDateStringToDate(recordDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
 		if (Objects.nonNull(updateDate)) {
 			// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
 			lastUpdateDate = formatDateToString(updateDate, "yyyyMMdd", "JST");
@@ -418,10 +421,14 @@ public class WorkReportService {
 			// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
 			lastUpdateTime = formatDateToString(updateTime, "HH:mm:ss", "JST");
 		}
-		log.info("after date formatting: " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime);
+		if (Objects.nonNull(registDate)) {
+			// レコード登録日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
+			recordDate = formatDateToString(registDate, "yyyyMMdd", "JST");
+		}
+		log.info("after date formatting: " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime + " " + recordDate);
 
 		// ■■■■■■■■■■■■■ 申請
-		result = SapApi.applyDeliveryWorkReport(eigyousyoCode, orderNumber, recordDate, wfSeqNo, acceptanceDate, wfNumber, lastUpdateDate, lastUpdateTime, userCode);
+		result = SapApi.applyDeliveryWorkReport(sapEigyousyoCode, orderNumber, recordDate, wfSeqNo, acceptanceDate, wfNumber, lastUpdateDate, lastUpdateTime, userCode);
 		resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
