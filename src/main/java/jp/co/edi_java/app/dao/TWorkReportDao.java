@@ -38,6 +38,9 @@ public interface TWorkReportDao {
 	@Update(excludeNull = true)
 	int update(TWorkReportEntity entity);
 
+	@Update()
+	int updateWf(TWorkReportEntity entity);
+
 	@Delete
 	int delete(TWorkReportEntity entity);
 

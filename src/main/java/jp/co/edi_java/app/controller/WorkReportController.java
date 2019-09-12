@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jp.co.edi_java.app.entity.TWorkReportEntity;
 import jp.co.edi_java.app.entity.TWorkReportItemEntity;
-import jp.co.edi_java.app.form.DeliveryForm;
 import jp.co.edi_java.app.form.WorkReportForm;
 import jp.co.edi_java.app.service.WorkReportService;
 import jp.co.keepalive.springbootfw.controller.BaseController;
@@ -84,8 +83,15 @@ public class WorkReportController extends BaseController {
 
 	/** 発注番号単位の出来高報告書一覧取得 */
 	@RequestMapping("/getList")
-	public ResponseEntity getList(@Validated DeliveryForm form) {
+	public ResponseEntity getList(@Validated WorkReportForm form) {
 		super.setResponseData("ret", workReportService.getList(form.orderNumber, form.remandFlg));
+		return super.response();
+	}
+
+	/** 納品受入用明細 */
+	@RequestMapping("/getDeliveryDetail")
+	public ResponseEntity getDeliveryDetail(@Validated WorkReportForm form) {
+		super.setResponseData("ret", workReportService.getDeliveryDetail(form.orderNumber, form.userId));
 		return super.response();
 	}
 
@@ -103,13 +109,36 @@ public class WorkReportController extends BaseController {
 		return super.response();
 	}
 
-	/** 出来高報告書受入登録 */
-	@RequestMapping("/approval")
-	public ResponseEntity approval(@Validated WorkReportForm form) {
-		workReportService.approval(form);
+	/** 受入 */
+	@RequestMapping("/approve")
+	public ResponseEntity approve(@Validated WorkReportForm form) {
+		workReportService.approve(form);
 		super.setResponseData("ret", "OK");
 		return super.response();
 	}
 
+	/** 差戻 */
+	@RequestMapping("/sendback")
+	public ResponseEntity sendback(@Validated WorkReportForm form) {
+		workReportService.sendback(form);
+		super.setResponseData("ret", "OK");
+		return super.response();
+	}
+
+	/** ジョブカン申請による受入承認待ちステータスへの更新 */
+	@RequestMapping("/apply")
+	public ResponseEntity apply(@Validated WorkReportForm form) {
+		workReportService.apply(form);
+		super.setResponseData("ret", "OK");
+		return super.response();
+	}
+
+	/** ジョブカン申請否認による未承認ステータスへの更新 */
+	@RequestMapping("/reject")
+	public ResponseEntity reject(@Validated WorkReportForm form) {
+		workReportService.reject(form);
+		super.setResponseData("ret", "OK");
+		return super.response();
+	}
 
 }

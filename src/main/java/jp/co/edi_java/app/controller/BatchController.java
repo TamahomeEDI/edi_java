@@ -50,8 +50,8 @@ public class BatchController extends BaseController {
 	@Autowired
 	public OrderService orderService;
 
-	//private String adminEmail = "t-iida@tamahome.jp, to-suzuki@tamahome.jp, shinji-yamaguchi@tamahome.jp";
-	private String adminEmail = "shinji-yamaguchi@tamahome.jp";
+	private String adminEmail = "t-iida@tamahome.jp, to-suzuki@tamahome.jp, shinji-yamaguchi@tamahome.jp";
+	//private String adminEmail = "shinji-yamaguchi@tamahome.jp";
 
 	/** 支店マスタ取得 */
 	@RequestMapping("/getEigyousyoAll")
@@ -364,7 +364,6 @@ public class BatchController extends BaseController {
 		return super.response();
 	}
 
-
 	/* 単発実行のバッチ処理 ※ データメンテナンス等 */
 	/**
 	 *
@@ -429,7 +428,7 @@ public class BatchController extends BaseController {
 			String[] array = {"4505580547","4505590757","4505610800","4505600551","4505594535",
 					"4505595491","4505601595","4505598774","4505590135","4505583792","4505588515",
 					"4505602671","4505595319","4505594146","4505605167","4505596183","4505610496",
-					"4505610589","4505611349","4505590506","4505595828","4505598149","4505607419",
+					"4505610589","4505611349","4505595828","4505598149","4505607419",
 					"4505589463","4505588389","4505596807","4505589881","4505589569","4505609562",
 					"4505585208","4505587189","4505580486","4505611905","4505610758","4505596631",
 					"4505583475","4505585967","4505600472","4505600448","4505600369","4505600348",
@@ -439,7 +438,7 @@ public class BatchController extends BaseController {
 					"4505598042","4505583896","4505599722","4505597220","4505588621","4505597456",
 					"4505504349","4505583638","4505593490","4505596820","4505599573","4505611110",
 					"4505602082","4505597095","4505583350","4505597097","4505585161","4505610759",
-					"4505593251","4505597140","4505592372","4505585980","4505610879","4505600079",
+					"4505593251","4505592372","4505585980","4505610879","4505600079",
 					"4505590297","4505579270","4505608329","4505592164","4505605231","4505610725",
 					"4505609141","4505609193","4505607415","4505594367","4505592427","4505598361",
 					"4505590171","4505583292","4505590162","4505590167","4505539128","4505599692",
@@ -463,4 +462,5 @@ public class BatchController extends BaseController {
 		}
 		return super.response();
 	}
+
 }

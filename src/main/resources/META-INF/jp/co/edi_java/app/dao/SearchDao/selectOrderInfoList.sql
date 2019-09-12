@@ -17,15 +17,15 @@ FROM
 			ELSE NULL
 		END WORK_NUMBER,
 		CASE ODR.ORDER_TYPE
-			WHEN '1' THEN N_DEL.STAFF_RECEIPT_FLG
-			WHEN '2' THEN N_WRE.STAFF_RECEIPT_FLG
+			WHEN '1' THEN N_DEL.MANAGER_RECEIPT_FLG
+			WHEN '2' THEN N_WRE.MANAGER_RECEIPT_FLG
 			ELSE NULL
-		END STAFF_RECEIPT_FLG,
+		END MANAGER_RECEIPT_FLG,
 		CASE ODR.ORDER_TYPE
-			WHEN '1' THEN N_DEL.STAFF_RECEIPT_DATE
-			WHEN '2' THEN N_WRE.STAFF_RECEIPT_DATE
+			WHEN '1' THEN N_DEL.MANAGER_RECEIPT_DATE
+			WHEN '2' THEN N_WRE.MANAGER_RECEIPT_DATE
 			ELSE NULL
-		END STAFF_RECEIPT_DATE,
+		END MANAGER_RECEIPT_DATE,
 		CASE ODR.ORDER_TYPE
 			WHEN '1' THEN N_DEL.REMAND_FLG
 			WHEN '2' THEN N_WRE.REMAND_FLG
@@ -39,6 +39,8 @@ FROM
 			ORDER_NUMBER,
 			STAFF_RECEIPT_FLG,
 			STAFF_RECEIPT_DATE,
+			MANAGER_RECEIPT_FLG,
+			MANAGER_RECEIPT_DATE,
 			REMAND_FLG
 		FROM
 			T_DELIVERY DEL
@@ -64,6 +66,8 @@ FROM
 			ORDER_NUMBER,
 			STAFF_RECEIPT_FLG,
 			STAFF_RECEIPT_DATE,
+			MANAGER_RECEIPT_FLG,
+			MANAGER_RECEIPT_DATE,
 			REMAND_FLG
 		FROM
 			T_WORK_REPORT WRE
@@ -96,10 +100,10 @@ AND CONFIRMATION_REQUEST_DATE >= /*params.confirmationDateFrom*/1
 AND CONFIRMATION_REQUEST_DATE <= /*params.confirmationDateTo*/1
 /*%end*/
 /*%if params.completionDateFrom != null && params.completionDateFrom != ""*/
-AND STAFF_RECEIPT_DATE >= /*params.completionDateFrom*/1
+AND MANAGER_RECEIPT_DATE >= /*params.completionDateFrom*/1
 /*%end*/
 /*%if params.completionDateTo != null && params.completionDateTo != ""*/
-AND STAFF_RECEIPT_DATE <= /*params.completionDateTo*/1
+AND MANAGER_RECEIPT_DATE <= /*params.completionDateTo*/1
 /*%end*/
 /*%if params.orderCancelRequestDateFrom != null && params.orderCancelRequestDateFrom != ""*/
 AND CANCEL_REQUEST_DATE >= /*params.orderCancelRequestDateFrom*/1

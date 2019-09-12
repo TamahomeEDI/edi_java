@@ -5,6 +5,18 @@ package jp.co.edi_java.app.util.sap;
  */
 public class SapApiConsts {
 
+	/**
+	 * OUTPUT_NODE名
+	 */
+	//共通ノード名
+	public static String NODE_NAME_XML = "xml";				//親階層
+	public static String NODE_NAME_T_ERROR = "T_ERROR";		//処理結果
+
+	/**
+	 * 実値
+	 */
+	public static String ZRESULT_VALUE_SUCCESS = "S";		//正常終了
+
 	//パラメータ名
 	public static String PARAMS_KEY_T_I_01001 = "T_I_01001";
 	public static String PARAMS_KEY_T_I_03001 = "T_I_03001";
@@ -39,6 +51,41 @@ public class SapApiConsts {
 	//請書受領更新
 	public static String PARAMS_KEY_T_I_09001 = "T_I_09001";
 	public static String PARAMS_KEY_T_IE_09002 = "T_IE_09002";
+
+	//納品書受入入力_詳細
+	//public static String PARAMS_KEY_T_I_04001 = "T_I_04001";
+	public static String PARAMS_KEY_T_I_04002 = "T_I_04002";
+	public static String PARAMS_KEY_T_E_04003 = "T_E_04003";
+	public static String PARAMS_KEY_T_IE_04004 = "T_IE_04004";
+
+	//出来高報告書受入入力_詳細
+	public static String PARAMS_KEY_T_IE_04001 = "T_IE_04001";
+	//public static String PARAMS_KEY_T_E_04002 = "T_E_04002";
+	//public static String PARAMS_KEY_T_E_04003 = "T_E_04003";
+	public static String PARAMS_KEY_T_E_04004 = "T_E_04004";
+	public static String PARAMS_KEY_T_I_04005 = "T_I_04005";
+	public static String PARAMS_KEY_T_IE_04006 = "T_IE_04006";
+
+	//納品書・出来高報告書受入入力_確認
+	public static String PARAMS_KEY_T_I_05001 = "T_I_05001";
+	public static String PARAMS_KEY_T_I_05002 = "T_I_05002";
+	public static String PARAMS_KEY_T_IE_05003 = "T_IE_05003";
+
+	//納品書・出来高報告書受入入力_表示
+	//public static String PARAMS_KEY_T_I_01001 = "T_I_01001";
+	public static String PARAMS_KEY_T_I_01002 = "T_I_01002";
+	public static String PARAMS_KEY_T_I_01003 = "T_I_01003";
+	//public static String PARAMS_KEY_T_E_01004 = "T_E_01004";
+	public static String PARAMS_KEY_T_IE_01005 = "T_IE_01005";
+
+	//納品書・出来高報告書受入入力_申請
+	//public static String PARAMS_KEY_T_IE_03001 = "T_IE_03001";
+	//public static String PARAMS_KEY_T_IE_03002 = "T_IE_03002";
+
+	//納品書・出来高報告書受入入力_決済
+	//public static String PARAMS_KEY_T_IE_04001 = "T_IE_04001";
+	public static String PARAMS_KEY_T_IE_04002 = "T_IE_04002";
+
 
 
 	/**
@@ -145,20 +192,7 @@ public class SapApiConsts {
 	public static String PARAMS_ID_ZHCSSF = "ZHCSSF";		//発注精算フラグ
 
 
-	/**
-	 * OUTPUT_NODE名
-	 */
-	//共通ノード名
-	public static String NODE_NAME_XML = "xml";				//親階層
-	public static String NODE_NAME_T_ERROR = "T_ERROR";		//処理結果
-
-
-	/**
-	 * 実値
-	 */
-	public static String ZRESULT_VALUE_SUCCESS = "S";		//正常終了
-
-	/** 2019/07/12 追加 */
+	/** 2019/07/12 追加,2019/09/06追加 既出項目名はコメントアウト */
 	// ■■■■■■ 発注検索（工事一覧）Z_JRI15P203_0101_GET_CNSTCT_CL
 	//T_I_01001
 	public static String PARAMS_ID_ZSTATS = "ZSTATS";		//	状態
@@ -324,6 +358,322 @@ public class SapApiConsts {
 //	public static String PARAMS_ID_AEDAT;					//	最終変更日付	必須
 //	public static String PARAMS_ID_AEZEIT;					//	最終変更時間	必須
 	// T_IE_09002
+//	public static String PARAMS_ID_ZRESULT;					//	処理結果
+//	public static String PARAMS_ID_ZMESSAGE;				//	メッセージ
+//	public static String PARAMS_ID_ZCSETF1;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF2;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF3;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF4;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF5;					//	エラー項目ID
+//	public static String PARAMS_ID_ZLOWNO;					//	行数
+//	public static String PARAMS_ID_ZMAXCNT;					//	取得制限件数
+//	public static String PARAMS_ID_ZJUSNM;					//	実ユーザ(=社員コード)
+//	public static String PARAMS_ID_ZKSFLG;					//	件数取得フラグ
+//	public static String PARAMS_ID_ZDTCNT;					//	取得データ件数
+
+	// ■■■■■■ 納品書受入入力_詳細 Z_JRI15P203_0504_SEL_GOODS_2
+	// T_I_04001
+	public static String PARAMS_ID_CHKFLG = "CHKFLG";		//	削除フラグ
+	//public static String PARAMS_ID_BUKRS;					//	会社コード
+	public static String PARAMS_ID_PRCTR = "PRCTR";			//	利益センタ
+	//public static String PARAMS_ID_EBELN;					//	購買伝票番号
+	//public static String PARAMS_ID_ZTRKMD;				//	取込日付（伝票取込日）
+	//public static String PARAMS_ID_ZMESSAGE;				//	メッセージ
+	//public static String PARAMS_ID_AEDAT;					//	最終変更日付
+	//public static String PARAMS_ID_AEZEIT;				//	変更時刻
+	public static String PARAMS_ID_AEDAT2 = "AEDAT2";		//	最終変更日付
+	public static String PARAMS_ID_AEZEIT2 = "AEZEIT2";		//	変更時刻
+	public static String PARAMS_ID_ZDTSBT = "ZDTSBT";		//	データ種別
+	public static String PARAMS_ID_ERDAT1 = "ERDAT1";		//	レコード登録日
+	//public static String PARAMS_ID_ZSEQNO;				//	SEQNO
+
+	// T_I_04002
+	public static String PARAMS_ID_BUDAT = "BUDAT";			//	納入日付
+	public static String PARAMS_ID_ZSKYKG = "ZSKYKG";		//	請求金額
+	public static String PARAMS_ID_ZSYOZG = "ZSYOZG";		//	消費税額
+	public static String PARAMS_ID_ZNNKKG = "ZNNKKG";		//	納品受入金額
+	public static String PARAMS_ID_ZWFSTA = "ZWFSTA";		//	ＷＦステータス
+	//public static String PARAMS_ID_ZSEQNO;				//	SEQNO
+	//public static String PARAMS_ID_ERDAT1;				//	レコード登録日
+	public static String PARAMS_ID_ZUSTCD = "ZUSTCD";		//	受入支店コード
+	public static String PARAMS_ID_ZUSTNM = "ZUSTNM";		//	受入支店名称
+
+	// T_E_04003
+	public static String PARAMS_ID_MATNR = "MATNR";			//	品目コード
+	public static String PARAMS_ID_TXZ01 = "TXZ01";			//	テキスト (短)
+	public static String PARAMS_ID_ZMHNAM = "ZMHNAM";		//	仕様名
+	public static String PARAMS_ID_MENGE = "MENGE";			//	発注残数量
+	//public static String PARAMS_ID_ZMENGE;				//	納入数量
+	public static String PARAMS_ID_MEINS = "MEINS";			//	発注単位
+	public static String PARAMS_ID_NETPR = "NETPR";			//	単価
+	public static String PARAMS_ID_SUMPR = "SUMPR";			//	納入金額
+	public static String PARAMS_ID_EBELP = "EBELP";			//	購買伝票の明細番号
+	public static String PARAMS_ID_ZHTMNG = "ZHTMNG";		//	発注数量
+	public static String PARAMS_ID_ZTANIC = "ZTANIC";		//	単位コード
+	//public static String PARAMS_ID_ZHTKGK;				//	発注金額
+	public static String PARAMS_ID_ZMENGE_K = "ZMENGE_K";	//	基本数量
+	public static String PARAMS_ID_ZMSEHT = "ZMSEHT";		//	基本単位テキスト
+	public static String PARAMS_ID_ZUKZKN = "ZUKZKN";		//	納品受入残金額
+
+	// T_IE_04004
+	//public static String PARAMS_ID_ZRESULT;				//	処理結果
+	//public static String PARAMS_ID_ZMESSAGE;				//	メッセージ
+	//public static String PARAMS_ID_ZCSETF1;				//	エラー項目ID
+	//public static String PARAMS_ID_ZCSETF2;				//	エラー項目ID
+	//public static String PARAMS_ID_ZCSETF3;				//	エラー項目ID
+	//public static String PARAMS_ID_ZCSETF4;				//	エラー項目ID
+	//public static String PARAMS_ID_ZCSETF5;				//	エラー項目ID
+	//public static String PARAMS_ID_ZLOWNO;				//	行数
+	//public static String PARAMS_ID_ZMAXCNT;				//	取得制限件数
+	//public static String PARAMS_ID_ZJUSNM;				//	実ユーザ(=社員コード)
+	//public static String PARAMS_ID_ZKSFLG;				//	件数取得フラグ
+	//public static String PARAMS_ID_ZDTCNT;				//	取得データ件数
+
+	// ■■■■■■ 納品書・出来高報告書受入入力_確認 Z_JRI15P203_0805_INS_DTLDATA
+	// T_I_05001
+	//public static String PARAMS_ID_PRCTR;					//	支店コード(変換ルーチン付）
+	//public static String PARAMS_ID_EBELN;					//	購買伝票番号
+	//public static String PARAMS_ID_ERDAT1;				//	レコード登録日
+	//public static String PARAMS_ID_ZSEQNO;				//	SEQNO
+	//public static String PARAMS_ID_ZDTSBT;				//	データ種別
+	public static String PARAMS_ID_ZUKDAT = "ZUKDAT";		//	受入日付
+	public static String PARAMS_ID_ZUKEST = "ZUKEST";		//	受入査定率
+	//public static String PARAMS_ID_ZUKEKN;				//	受入金額
+	public static String PARAMS_ID_ZUKEZG = "ZUKEZG";		//	受入金額税額
+	//public static String PARAMS_ID_AEDAT;					//	最終変更日付
+	//public static String PARAMS_ID_AEZEIT;				//	変更時刻
+
+	// T_I_05002
+	//public static String PARAMS_ID_MATNR;					//	品目コード
+	//public static String PARAMS_ID_TXZ01;					//	テキスト (短)
+	//public static String PARAMS_ID_ZMHNAM;				//	仕様名
+	//public static String PARAMS_ID_MENGE;					//	発注残数量
+	//public static String PARAMS_ID_ZMENGE;				//	納入数量
+	//public static String PARAMS_ID_MEINS;					//	発注単位
+	//public static String PARAMS_ID_NETPR;					//	単価
+	//public static String PARAMS_ID_SUMPR;					//	納入金額
+	//public static String PARAMS_ID_EBELP;					//	購買伝票の明細番号
+	//public static String PARAMS_ID_ZHTMNG;				//	発注数量
+	//public static String PARAMS_ID_ZTANIC;				//	単位コード
+	//public static String PARAMS_ID_ZHTKGK;				//	発注金額
+	//public static String PARAMS_ID_ZMENGE_K;				//	基本数量
+	//public static String PARAMS_ID_ZMSEHT;				//	基本単位テキスト
+	//public static String PARAMS_ID_ZUKZKN;				//	納品受入残金額
+
+	// T_IE_05003
+	//public static String PARAMS_ID_ZRESULT;				//	処理結果
+	//public static String PARAMS_ID_ZMESSAGE;				//	メッセージ
+	//public static String PARAMS_ID_ZCSETF1;				//	エラー項目ID
+	//public static String PARAMS_ID_ZCSETF2;				//	エラー項目ID
+	//public static String PARAMS_ID_ZCSETF3;				//	エラー項目ID
+	//public static String PARAMS_ID_ZCSETF4;				//	エラー項目ID
+	//public static String PARAMS_ID_ZCSETF5;				//	エラー項目ID
+	//public static String PARAMS_ID_ZLOWNO;				//	行数
+	//public static String PARAMS_ID_ZMAXCNT;				//	取得制限件数
+	//public static String PARAMS_ID_ZJUSNM;				//	実ユーザ(=社員コード)
+	//public static String PARAMS_ID_ZKSFLG;				//	件数取得フラグ
+	//public static String PARAMS_ID_ZDTCNT;				//	取得データ件数
+
+	// ■■■■■■ 納品書・出来高報告書受入入力_表示 Z_JRI15P203_0801_GET_HEADDATE
+	// T_I_01001
+//	public static String PARAMS_ID_PRCTR;					//	支店コード(変換ルーチン付）
+//	public static String PARAMS_ID_ZDTSBT;					//	データ種別
+	// T_I_01002
+//	public static String PARAMS_ID_ZWFSTA;					//	ＷＦステータス
+	// T_I_01003
+	public static String PARAMS_ID_ZKNFLG = "ZKNFLG";		//	確認済みフラグ
+	// T_E_01004
+//	public static String PARAMS_ID_CHKFLG;					//	選択フラグ
+//	public static String PARAMS_ID_BUKRS;					//	会社コード
+//	public static String PARAMS_ID_PRCTR;					//	支店コード(変換ルーチン付）
+//	public static String PARAMS_ID_EBELN;					//	購買伝票番号
+//	public static String PARAMS_ID_ERDAT1;					//	レコード登録日
+//	public static String PARAMS_ID_ZSEQNO;					//	SEQNO
+//	public static String PARAMS_ID_ZDTSBT;					//	データ種別
+//	public static String PARAMS_ID_ZUKDAT;					//	受入日付
+//	public static String PARAMS_ID_ZWFSTA;					//	ＷＦステータス
+//	public static String PARAMS_ID_ZKNFLG;					//	確認済みフラグ
+//	public static String PARAMS_ID_ZMESSAGE;				//	メッセージ
+//	public static String PARAMS_ID_AEDAT;					//	最終変更日付
+//	public static String PARAMS_ID_AEZEIT;					//	変更時刻
+//	public static String PARAMS_ID_AEDAT2;					//	最終変更日付
+//	public static String PARAMS_ID_AEZEIT2;					//	変更時刻
+//	public static String PARAMS_ID_ZUKEST;					//	受入査定率
+//	public static String PARAMS_ID_ZWRKCD;					//	工事コード(=WBS番号)
+//	public static String PARAMS_ID_ZPRJNM;					//	工事名
+//	public static String PARAMS_ID_LIFNR;					//	仕入先または債権者の勘定コード
+//	public static String PARAMS_ID_NAME1;					//	業者名
+	// T_IE_01005
+//	public static String PARAMS_ID_ZRESULT;					//	処理結果
+//	public static String PARAMS_ID_ZMESSAGE;				//	メッセージ
+//	public static String PARAMS_ID_ZCSETF1;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF2;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF3;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF4;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF5;					//	エラー項目ID
+//	public static String PARAMS_ID_ZLOWNO;					//	行数
+//	public static String PARAMS_ID_ZMAXCNT;					//	取得制限件数
+//	public static String PARAMS_ID_ZJUSNM;					//	実ユーザ(=社員コード)
+//	public static String PARAMS_ID_ZKSFLG;					//	件数取得フラグ
+//	public static String PARAMS_ID_ZDTCNT;					//	取得データ件数
+
+	// ■■■■■■ 納品書・出来高報告書受入入力_申請 Z_JRI15P203_0803_REQ_INSDATA
+	//T_IE_03001
+//	public static String PARAMS_ID_BUKRS;					//	会社コード
+//	public static String PARAMS_ID_ZBSDKY;					//	業務キー(CHAR 30)
+//	public static String PARAMS_ID_ZBSDK1;					//	業務キー(CHAR 30)
+//	public static String PARAMS_ID_ZBSDK2;					//	業務キー(CHAR 30)
+//	public static String PARAMS_ID_ZBSDK3;					//	業務キー(CHAR 30)
+//	public static String PARAMS_ID_ZBSDK4;					//	業務キー(CHAR 30)
+//	public static String PARAMS_ID_ZWKFNO;					//	ＷＦ番号（ＷＦ_ID）
+	public static String PARAMS_ID_ZTPCCD = "ZTPCCD";		//	トピックコード
+//	public static String PARAMS_ID_ZWFSTA;					//	ＷＦステータス
+	public static String PARAMS_ID_ZSSSHA = "ZSSSHA";		//	申請者コード
+	public static String PARAMS_ID_ZSSYMD = "ZSSYMD";		//	申請日
+	public static String PARAMS_ID_ZSSTIM = "ZSSTIM";		//	申請時間
+//	public static String PARAMS_ID_AEDAT;					//	対象の最終変更日
+//	public static String PARAMS_ID_AEZEIT;					//	変更時刻
+	public static String PARAMS_ID_ZSSSTC = "ZSSSTC";		//	申請支店コード
+
+	//T_IE_03002
+//	public static String PARAMS_ID_ZRESULT;					//	処理結果
+//	public static String PARAMS_ID_ZMESSAGE;				//	メッセージ
+//	public static String PARAMS_ID_ZCSETF1;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF2;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF3;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF4;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF5;					//	エラー項目ID
+//	public static String PARAMS_ID_ZLOWNO;					//	行数
+//	public static String PARAMS_ID_ZMAXCNT;					//	取得制限件数
+//	public static String PARAMS_ID_ZJUSNM;					//	実ユーザ(=社員コード)
+//	public static String PARAMS_ID_ZKSFLG;					//	件数取得フラグ
+//	public static String PARAMS_ID_ZDTCNT;					//	取得データ件数
+//	public static String PARAMS_ID_ZJUSNM;					//	実ユーザ(=社員コード)
+//	public static String PARAMS_ID_ZKSFLG;					//	件数取得フラグ
+//	public static String PARAMS_ID_ZLOWNO;					//	行数
+//	public static String PARAMS_ID_ZMAXCNT;					//	取得制限件数
+//	public static String PARAMS_ID_ZMESSAGE;				//	メッセージ
+//	public static String PARAMS_ID_ZRESULT;					//	処理結果
+
+	// ■■■■■■ 納品書・出来高報告書受入入力_決済 Z_JRI15P203_0804_APPR_INSDATA1
+
+	// T_IE_04001
+//	public static String PARAMS_ID_ZWKFNO;					//	ＷＦ番号（ＷＦ_ID）
+//	public static String PARAMS_ID_ZTPCCD;					//	トピックコード
+//	public static String PARAMS_ID_ZWFSTA;					//	ＷＦステータス
+	public static String PARAMS_ID_ZSNSHA = "ZSNSHA";		//	承認者
+	public static String PARAMS_ID_ZSNYMD = "ZSNYMD";		//	承認日
+	public static String PARAMS_ID_ZSNTIM = "ZSNTIM";		//	承認時間
+	public static String PARAMS_ID_ZKSSHA = "ZKSSHA";		//	決裁者
+	public static String PARAMS_ID_ZKSYMD = "ZKSYMD";		//	決裁日
+	public static String PARAMS_ID_ZKSTIM = "ZKSTIM";		//	決裁時間
+
+	// T_IE_04002
+//	public static String PARAMS_ID_ZRESULT;					//	処理結果
+//	public static String PARAMS_ID_ZMESSAGE;				//	メッセージ
+//	public static String PARAMS_ID_ZCSETF1;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF2;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF3;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF4;					//	エラー項目ID
+//	public static String PARAMS_ID_ZCSETF5;					//	エラー項目ID
+//	public static String PARAMS_ID_ZLOWNO;					//	行数
+//	public static String PARAMS_ID_ZMAXCNT;					//	取得制限件数
+//	public static String PARAMS_ID_ZJUSNM;					//	実ユーザ(=社員コード)
+//	public static String PARAMS_ID_ZKSFLG;					//	件数取得フラグ
+//	public static String PARAMS_ID_ZDTCNT;					//	取得データ件数
+
+	// ■■■■■■ 出来高報告書受入入力_詳細 Z_JRI15P203_0904_GET_DETAILS
+
+	//T_IE_04001
+//	public static String PARAMS_ID_ZDELFLG;					//	削除フラグ
+	public static String PARAMS_ID_ZNUMBER = "ZNUMBER";					//	No(WF番号)
+//	public static String PARAMS_ID_EBELN;					//	購買伝票番号
+	public static String PARAMS_ID_ZSATEIDT = "ZSATEIDT";				//	査定日付
+	public static String PARAMS_ID_ZSATEIRT = "ZSATEIRT";				//	査定率
+//	public static String PARAMS_ID_ZMESSAGE;				//	メッセージ
+//	public static String PARAMS_ID_AEDAT;					//	最終変更日付1
+//	public static String PARAMS_ID_AEZEIT;					//	最終変更時刻1
+//	public static String PARAMS_ID_AEDAT2;					//	最終変更日付2
+//	public static String PARAMS_ID_AEZEIT2;					//	最終変更時刻2
+//	public static String PARAMS_ID_ZDTSBT;					//	データ種別
+//	public static String PARAMS_ID_PRCTR;					//	利益センタ
+//	public static String PARAMS_ID_ERDAT1;					//	レコード登録日
+//	public static String PARAMS_ID_ZSEQNO;					//	SEQNO
+
+	//T_E_04002
+//	public static String PARAMS_ID_POSID;					//	WBS 要素
+//	public static String PARAMS_ID_ZPRJNM;					//	工事名
+	public static String PARAMS_ID_ZHCKKBN = "ZHCKKBN";		//	発注区分
+	public static String PARAMS_ID_ZTHREN = "ZTHREN";		//	追加変更連番
+	public static String PARAMS_ID_ZUOKGK = "ZUOKGK";		//	請負金額
+//	public static String PARAMS_ID_ZHTYKG;					//	発注金額
+//	public static String PARAMS_ID_ZRIEKI;					//	利益額
+//	public static String PARAMS_ID_ZRIERT;					//	利益率
+	public static String PARAMS_ID_RPIP = "RPIP";			//	IPPE/PS 関係の参照ポイント
+//	public static String PARAMS_ID_KTEXT;					//	テキスト
+	public static String PARAMS_ID_MSATZ = "MSATZ";			//	税率
+//	public static String PARAMS_ID_LIFNR;					//	仕入先または債権者の勘定コード
+//	public static String PARAMS_ID_NAME1;					//	名称 1
+//	public static String PARAMS_ID_EBELN;					//	購買伝票番号
+	public static String PARAMS_ID_ZPSBCS = "ZPSBCS";		//	予算作成者
+	public static String PARAMS_ID_ZSTFNM = "ZSTFNM";		//	社員名称
+	public static String PARAMS_ID_ZPSBCH = "ZPSBCH";		//	予算作成日
+//	public static String PARAMS_ID_ZKSYMD;					//	予算決裁日
+//	public static String PARAMS_ID_AEDAT;					//	発注日
+	public static String PARAMS_ID_ZLPYMD = "ZLPYMD";		//	発注印刷日
+	public static String PARAMS_ID_ZMSIGK = "ZMSIGK";		//	明細金額
+	public static String PARAMS_ID_ZNEBKG = "ZNEBKG";		//	値引金額
+	public static String PARAMS_ID_ZHONKG = "ZHONKG";		//	本体金額
+//	public static String PARAMS_ID_ZSYOZG;					//	消費税額
+//	public static String PARAMS_ID_ZNNKKG;					//	納入受入金額
+	public static String PARAMS_ID_ZNNZKG = "ZNNZKG";		//	納入受入残高
+
+	//T_E_04003
+//	public static String PARAMS_ID_ZSATEIDT;				//
+//	public static String PARAMS_ID_ZSATEIRT;				//	査定率
+	public static String PARAMS_ID_ZSEIKYUKG = "ZSEIKYUKG";	//
+//	public static String PARAMS_ID_ZMESSAGE;				//
+	public static String PARAMS_ID_ZSATEIRT2 = "ZSATEIRT2";	//	今回査定率
+//	public static String PARAMS_ID_ZSYOZG;					//	消費税額
+//	public static String PARAMS_ID_ZNNKKG;					//	納品受入金額
+//	public static String PARAMS_ID_ZWFSTA;					//	ＷＦステータス
+//	public static String PARAMS_ID_ZSEQNO;					//	SEQNO
+//	public static String PARAMS_ID_ERDAT1;					//	レコード登録日
+//	public static String PARAMS_ID_ZUSTCD;					//	受入支店コード
+//	public static String PARAMS_ID_ZUSTNM;					//	受入支店名称
+
+	//T_E_04004
+//	public static String PARAMS_ID_MATNR;					//	品目コード
+//	public static String PARAMS_ID_TXZ01;					//	テキスト (短)
+//	public static String PARAMS_ID_ZMHNAM;					//	仕様名
+//	public static String PARAMS_ID_MENGE;					//	発注残数量
+//	public static String PARAMS_ID_ZMENGE;					//	納入数量
+//	public static String PARAMS_ID_MEINS;					//	発注単位
+//	public static String PARAMS_ID_NETPR;					//	単価
+//	public static String PARAMS_ID_SUMPR;					//	納入金額
+//	public static String PARAMS_ID_EBELP;					//	購買伝票の明細番号
+//	public static String PARAMS_ID_ZHTMNG;					//	発注数量
+//	public static String PARAMS_ID_ZTANIC;					//	単位コード
+//	public static String PARAMS_ID_ZHTKGK;					//	発注金額
+//	public static String PARAMS_ID_ZMENGE_K;				//	基本数量
+//	public static String PARAMS_ID_ZMSEHT;					//	基本単位テキスト
+//	public static String PARAMS_ID_ZUKZKN;					//	納品受入残金額
+
+	//T_I_04005
+//	public static String PARAMS_ID_ZSATEIDT;				//
+//	public static String PARAMS_ID_ZSATEIRT;				//	査定率
+//	public static String PARAMS_ID_ZSEIKYUKG;				//
+//	public static String PARAMS_ID_ZMESSAGE;				//
+//	public static String PARAMS_ID_ZSATEIRT2;				//	今回査定率
+//	public static String PARAMS_ID_ZSYOZG;					//	消費税額
+//	public static String PARAMS_ID_ZNNKKG;					//	納品受入金額
+//	public static String PARAMS_ID_ZWFSTA;					//	ＷＦステータス
+//	public static String PARAMS_ID_ZSEQNO;					//	SEQNO
+//	public static String PARAMS_ID_ERDAT1;					//	レコード登録日
+//	public static String PARAMS_ID_ZUSTCD;					//	受入支店コード
+//	public static String PARAMS_ID_ZUSTNM;					//	受入支店名称
+
+	//T_IE_04006
 //	public static String PARAMS_ID_ZRESULT;					//	処理結果
 //	public static String PARAMS_ID_ZMESSAGE;				//	メッセージ
 //	public static String PARAMS_ID_ZCSETF1;					//	エラー項目ID

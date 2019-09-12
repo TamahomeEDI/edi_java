@@ -2,6 +2,7 @@ package jp.co.edi_java.app.util.sap;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.http.NameValuePair;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,13 +10,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Document;
 
+import jp.co.edi_java.app.entity.TDeliveryItemEntity;
 import jp.co.edi_java.app.form.SearchForm;
 import jp.co.edi_java.app.util.xml.DomParser;
-import jp.co.keepalive.springbootfw.util.dxo.JsonUtils;
 import jp.co.keepalive.springbootfw.util.http.CommonHttpClient;
 import jp.co.keepalive.springbootfw.util.http.HttpRequestHeaders;
 import jp.co.keepalive.springbootfw.util.http.HttpRequestParams;
-import jp.co.keepalive.springbootfw.util.http.HttpsUtil;
 import jp.co.keepalive.springbootfw.util.lang.StringUtils;
 
 @Component
@@ -27,26 +27,41 @@ public class SapApi {
 	private static String PARAMS_KEY_BAPI = "BAPI";
 
 	//モジュール名
+	//請書登録
 	public static String PARAMS_VALUE_MODULE_UPD_UKESHO = "Z_JRI15P203_1003_UPD_UKESHO";				//請書登録
 	public static String PARAMS_VALUE_MODULE_SEL_UKESHO = "Z_JRI15P203_1004_SEL_UKESHO";				//請書受領登録対象検索
 	public static String PARAMS_VALUE_MODULE_UPD_UKESHO_JYURYOU = "Z_JRI15P203_1009_UPD_JYURYOU";		//請書受領登録
-	public static String PARAMS_VALUE_MODULE_REQ_INSDATA = "Z_JRI15P203_0803_REQ_INSDATA";				//納品・出来高報告受入登録	※初期開発では使わない
+
 	public static String PARAMS_VALUE_MODULE_INS_KENSHU = "Z_JRI15P203_1103_INS_KENSHU";				//検収明細登録
 	public static String PARAMS_VALUE_MODULE_SEL_DATA = "Z_JRI15P206_0103_SEL_DATA";					//発注取消合意書登録
+
+	//検索表示関連
 	public static String PARAMS_VALUE_MODULE_GET_WBSLIST = "Z_JRI15P207_0101_GET_WBSLIST";				//発注一覧取得(支店、業者、工事状況単位)
 	public static String PARAMS_VALUE_MODULE_GET_WBSLIST2 = "Z_JRI15P207_0103_GET_WBSLIST2";			//発注詳細取得
 	public static String PARAMS_VALUE_MODULE_GET_CNSTCT_CL = "Z_JRI15P203_0101_GET_CNSTCT_CL";			//発注一覧取得(工事一覧)
 	public static String PARAMS_VALUE_MODULE_GET_CNSTRT_VW = "Z_JRI15P203_0102_GET_CNSTRT_VW";			//発注一覧取得(会社、工事コード単位)
 	public static String PARAMS_VALUE_MODULE_GET_ITEM_DTL2 = "Z_JRI15P203_0103_GET_ITEM_DTL2";			//発注情報取得(POSID単位)
 
-	public static String PARAMS_VALUE_MODULE_SET_ZHTYDT = "Z_JRI15P207_0104_SET_ZHTYDT";				//発注日連携
+	//納品書・出来高報告書受入
+	public static String PARAMS_VALUE_MODULE_SEL_GOODS_2 = "Z_JRI15P203_0504_SEL_GOODS_2";				//納品書受入入力_詳細
+	public static String PARAMS_VALUE_MODULE_GET_DETAILS = "Z_JRI15P203_0904_GET_DETAILS";				//出来高報告書受入入力_詳細
+	public static String PARAMS_VALUE_MODULE_INS_DTLDATA = "Z_JRI15P203_0805_INS_DTLDATA";				//納品書・出来高報告書受入入力_確認
+	public static String PARAMS_VALUE_MODULE_GET_HEADDATE = "Z_JRI15P203_0801_GET_HEADDATE";			//納品書・出来高報告書受入入力_表示
+	public static String PARAMS_VALUE_MODULE_REQ_INSDATA = "Z_JRI15P203_0803_REQ_INSDATA";				//納品書・出来高報告書受入入力_申請
+	public static String PARAMS_VALUE_MODULE_APPR_INSDATA1 = "Z_JRI15P203_0804_APPR_INSDATA1";			//納品書・出来高報告書受入入力_決済
 
+	public static String PARAMS_VALUE_MODULE_SET_ZHTYDT = "Z_JRI15P207_0104_SET_ZHTYDT";				//発注日連携
 
 	private static String PARAMS_VALUE_ZSCRID = "P30006";												//画面ID
 	private static String PARAMS_VALUE_ZAPLID = "0";													//アプリケーションID（FAX=0）
 	private static String PARAMS_VALUE_BUKRS = "1000";													//会社コード
 	private static String PARAMS_VALUE_ZFAXJU = "X";													//請書FAX未受領選択フラグ
 	private static String PARAMS_VALUE_ZGENJU = "X";													//請書原本未受領選択フラグ
+	private static String PARAMS_VALUE_ZDTSBT_DELIVERY = "1";											//データ種別 納品書
+	private static String PARAMS_VALUE_ZDTSBT_WORK_REPORT = "2";										//データ種別 出来高報告書
+	private static String PARAMS_VALUE_ZKNFLG = "X";													//確認済フラグ
+	private static String PARAMS_VALUE_ZWFSTA = "9";													//決済済
+
 	private SapApi(@Value("${sap.base.url}") String url) {
 		BASE_URL = url;
 	}
@@ -63,34 +78,6 @@ public class SapApi {
 		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
 		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
 		return parsedList;
-	}
-
-	//納品書受入登録
-	public static Map<String, Object> deliveryAcceptanceRegist(String constructionCode, String toshoCode, String fileCode, String fileNo, String fileId) {
-		HttpRequestHeaders headers = createCommonHeader();
-		String ret = HttpsUtil.post(BASE_URL, headers.getParams(), null);
-		return JsonUtils.decode(ret);
-	}
-
-	//出来高報告書受入登録
-	public static Map<String, Object> workReportAcceptanceRegist(String constructionCode, String toshoCode, String fileCode, String fileNo) {
-		HttpRequestHeaders headers = createCommonHeader();
-		String ret = HttpsUtil.get(BASE_URL, headers.getParams(), null);
-		return JsonUtils.decode(ret);
-	}
-
-	//検収明細登録
-	public static Map<String, Object> inspectionReceiptRegist() {
-		HttpRequestHeaders headers = createCommonHeader();
-		String ret = HttpsUtil.get(BASE_URL, headers.getParams(), null);
-		return JsonUtils.decode(ret);
-	}
-
-	//発注取消合意書登録
-	public static Map<String, Object> orderCancelRegist() {
-		HttpRequestHeaders headers = createCommonHeader();
-		String ret = HttpsUtil.get(BASE_URL, headers.getParams(), null);
-		return JsonUtils.decode(ret);
 	}
 
 	//発注一覧取得
@@ -316,11 +303,8 @@ public class SapApi {
 		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_GET_CNSTRT_VW);
 		//※会社コード
 		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_02001  + "." + SapApiConsts.PARAMS_ID_BUKRS, PARAMS_VALUE_BUKRS);
-
 		//※工事コード
-		if(!StringUtils.isNullString(koujiCode)) {
-			params.addParam(SapApiConsts.PARAMS_KEY_T_IE_02001  + "." + SapApiConsts.PARAMS_ID_ZWRKCD, koujiCode);
-		}
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_02001  + "." + SapApiConsts.PARAMS_ID_ZWRKCD, koujiCode);
 
 		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
 		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
@@ -336,18 +320,213 @@ public class SapApi {
 		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_BUKRS, PARAMS_VALUE_BUKRS);
 
 		//※POSID
-		if(!StringUtils.isNullString(posId)) {
-			params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_POSID, posId);
-		}
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_POSID, posId);
+
 		//※実ユーザコード（ログインユーザの社員コード）
-		if(!StringUtils.isNullString(userCode)) {
-			params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03003  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
-		}
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03003  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
+
 		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
 		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
 		parsedList.put("params", params.getParams());
 		return parsedList;
 	}
+
+	//納品書受入入力_詳細情報取得
+	public static Map<String, Object> getDeliveryItemList(String orderNumber, String userCode) {
+		HttpRequestParams params = new HttpRequestParams();
+		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_SEL_GOODS_2);
+
+		//発注書番号
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_04001  + "." + SapApiConsts.PARAMS_ID_EBELN, orderNumber);
+
+		//※実ユーザコード（ログインユーザの社員コード）
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04004  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
+
+		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
+		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
+		parsedList.put("params", params.getParams());
+		return parsedList;
+	}
+
+	//出来高報告書受入入力_詳細情報取得
+	public static Map<String, Object> getWorkReportItemList(String orderNumber, String userCode) {
+		HttpRequestParams params = new HttpRequestParams();
+		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_GET_DETAILS);
+
+		//発注書番号
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04001  + "." + SapApiConsts.PARAMS_ID_EBELN, orderNumber);
+
+		//※実ユーザコード（ログインユーザの社員コード）
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04006  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
+
+		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
+		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
+		parsedList.put("params", params.getParams());
+		return parsedList;
+	}
+
+	//納品書・出来高報告書受入入力_確認 (納品数の登録)
+	public static Map<String, Object> setDeliveryItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, List<TDeliveryItemEntity> itemList, String userCode) {
+		HttpRequestParams params = new HttpRequestParams();
+		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_INS_DTLDATA);
+		//※支店コード
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_PRCTR, eigyousyoCode);
+		//※発注番号
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_EBELN, orderNumber);
+		//※データ種別
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZDTSBT, PARAMS_VALUE_ZDTSBT_DELIVERY);
+		//※受入日付
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZUKDAT, acceptanceDate);
+		if (Objects.nonNull(itemList)) {
+			for (TDeliveryItemEntity item : itemList) {
+				// 品目コード
+//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_MATNR, "");
+				// テキスト(短)
+//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_TXZ01, "");
+				// 仕様名
+//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZMHNAM, "");
+				// 発注残数量
+//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_MENGE, String.valueOf(item.getDeliveryRemainingQuantity()));
+				// 納入数量
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZMENGE, String.valueOf(item.getDeliveryQuantity()));
+				// 発注単位
+//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_MEINS, "");
+				// 単価
+//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_NETPR, "");
+				// 納入金額
+//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_SUMPR, "");
+				// 購買伝票の明細番号
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_EBELP, item.getJcoEbelp());
+				// 発注数量
+//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZHTMNG, "");
+				// 単位コード
+//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZTANIC, "");
+			}
+		}
+		//※実ユーザコード（ログインユーザの社員コード）
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_05003  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
+
+		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
+		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
+		parsedList.put("params", params.getParams());
+		return parsedList;
+	}
+
+	//納品書・出来高報告書受入入力_確認 (査定率の登録)
+	public static Map<String, Object> setWorkReportItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, String workRate, String userCode) {
+		HttpRequestParams params = new HttpRequestParams();
+		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_INS_DTLDATA);
+		//※支店コード
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_PRCTR, eigyousyoCode);
+		//※発注番号
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_EBELN, orderNumber);
+		//※データ種別
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZDTSBT, PARAMS_VALUE_ZDTSBT_WORK_REPORT);
+		//※受入日付
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZUKDAT, acceptanceDate);
+		//※査定率
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZUKEST, workRate);
+
+		//※実ユーザコード（ログインユーザの社員コード）
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_05003  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
+
+
+		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
+		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
+		parsedList.put("params", params.getParams());
+		return parsedList;
+	}
+
+	//納品書_表示
+	public static Map<String, Object> getDeliveryWFSeqNo(String eigyousyoCode, String userCode) {
+		return getWFSeqNo(PARAMS_VALUE_ZDTSBT_DELIVERY, eigyousyoCode, userCode);
+	}
+
+	//出来高報告書_表示
+	public static Map<String, Object> getWorkReportWFSeqNo(String eigyousyoCode, String userCode) {
+		return getWFSeqNo(PARAMS_VALUE_ZDTSBT_WORK_REPORT, eigyousyoCode, userCode);
+	}
+
+	//納品書・出来高報告書受入入力_表示
+	public static Map<String, Object> getWFSeqNo(String dataType, String eigyousyoCode, String userCode) {
+		HttpRequestParams params = new HttpRequestParams();
+		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_GET_HEADDATE);
+
+		//※支店コード
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_PRCTR, eigyousyoCode);
+		//※データ種別
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_ZDTSBT, dataType);
+		//※WFステータス
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_01002  + "." + SapApiConsts.PARAMS_ID_ZWFSTA, "");
+		//※確認済フラグ
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_01003  + "." + SapApiConsts.PARAMS_ID_ZKNFLG, PARAMS_VALUE_ZKNFLG);
+		//※実ユーザコード（ログインユーザの社員コード）
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_01005  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
+
+		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
+		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
+		parsedList.put("params", params.getParams());
+		return parsedList;
+	}
+
+	//納品書・出来高報告書受入入力_申請
+	public static Map<String, Object> applyDeliveryWorkReport(String eigyousyoCode, String orderNumber, String recordDate, String wfSeqNo, String acceptanceDate,  String wfNumber, String lastUpdateDate, String lastUpdateDateTime, String userCode) {
+		HttpRequestParams params = new HttpRequestParams();
+		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_REQ_INSDATA);
+		// 会社コード
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_BUKRS, PARAMS_VALUE_BUKRS);
+		// 支店コード
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_ZBSDKY, eigyousyoCode);
+		// 発注番号
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_ZBSDK1, orderNumber);
+		// レコード登録日
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_ZBSDK2, recordDate);
+		// 連番
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_ZBSDK3, wfSeqNo);
+		// 受入日付
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_ZBSDK4, acceptanceDate);
+		// WF番号
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_ZWKFNO, wfNumber);
+		// 変更日付
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_AEDAT, lastUpdateDate);
+		// 変更時間
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03001  + "." + SapApiConsts.PARAMS_ID_AEZEIT, lastUpdateDateTime);
+		//※実ユーザコード（ログインユーザの社員コード）
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_03002  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
+
+		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
+		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
+		parsedList.put("params", params.getParams());
+		return parsedList;
+	}
+
+	//納品書・出来高報告書受入入力_決済
+	public static Map<String, Object> approveDeliveryWorkReport(String wfNumber, String approverCode, String approveDate, String approveDateTime, String userCode) {
+		HttpRequestParams params = new HttpRequestParams();
+		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_APPR_INSDATA1);
+		//T_IE_04001
+		// WF番号
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04001  + "." + SapApiConsts.PARAMS_ID_ZWKFNO, wfNumber);
+		// WFステータス
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04001  + "." + SapApiConsts.PARAMS_ID_ZWFSTA, PARAMS_VALUE_ZWFSTA);
+		//承認者
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04001  + "." + SapApiConsts.PARAMS_ID_ZSNSHA, approverCode);
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04001  + "." + SapApiConsts.PARAMS_ID_ZSNYMD, approveDate);
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04001  + "." + SapApiConsts.PARAMS_ID_ZSNTIM, approveDateTime);
+		// 決済者
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04001  + "." + SapApiConsts.PARAMS_ID_ZKSSHA, approverCode);
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04001  + "." + SapApiConsts.PARAMS_ID_ZKSYMD, approveDate);
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04001  + "." + SapApiConsts.PARAMS_ID_ZKSTIM, approveDateTime);
+
+		//※実ユーザコード（ログインユーザの社員コード）
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_04002  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
+
+		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
+		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
+		parsedList.put("params", params.getParams());
+		return parsedList;
+	}
+
 
 /** おそらく不要資材 */
 
@@ -475,7 +654,5 @@ public class SapApi {
 		}
 		return params.getParams();
 	}
-
-
 
 }

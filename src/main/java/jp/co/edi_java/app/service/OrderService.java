@@ -533,7 +533,7 @@ public class OrderService {
 		return ret;
 	}
 
-	/* 単発処理 */
+	/* ■■■■■■■■■■■■■■■■■■■■■■■■ 単発処理 ■■■■■■■■■■■■■■■■■■■■■■■ */
 	public Map<String,Integer> refreshOrderDate() {
 		Map<String,Integer> cntMap = new HashMap<String,Integer>();
 

@@ -36,22 +36,14 @@ and DEL.ORDER_NUMBER like /*@prefix(params.orderNumber)*/'smith' escape '$'
 /*%end*/
 /*%if params.receptionStatus == "1"*/
 and DEL.STAFF_RECEIPT_FLG = '0'
-and DEL.CLERK_RECEIPT_FLG = '0'
 and DEL.MANAGER_RECEIPT_FLG = '0'
 and DEL.REMAND_FLG = '0'
 /*%elseif params.receptionStatus == "2"*/
 and DEL.STAFF_RECEIPT_FLG = '1'
-and DEL.CLERK_RECEIPT_FLG = '0'
 and DEL.MANAGER_RECEIPT_FLG = '0'
 and DEL.REMAND_FLG = '0'
 /*%elseif params.receptionStatus == "3"*/
 and DEL.STAFF_RECEIPT_FLG = '1'
-and DEL.CLERK_RECEIPT_FLG = '1'
-and DEL.MANAGER_RECEIPT_FLG = '0'
-and DEL.REMAND_FLG = '0'
-/*%elseif params.receptionStatus == "4"*/
-and DEL.STAFF_RECEIPT_FLG = '1'
-and DEL.CLERK_RECEIPT_FLG = '1'
 and DEL.MANAGER_RECEIPT_FLG = '1'
 and DEL.REMAND_FLG = '0'
 /*%elseif params.receptionStatus == "5"*/
@@ -64,10 +56,10 @@ and DEL.DELIVERY_DATE >= /*params.deliveryDateFrom*/1
 and DEL.DELIVERY_DATE <= /*params.deliveryDateTo*/1
 /*%end*/
 /*%if params.inspectionReceiptDateFrom != null && params.inspectionReceiptDateFrom != ""*/
-and DEL.STAFF_RECEIPT_DATE >= /*params.inspectionReceiptDateFrom*/1
+and DEL.MANAGER_RECEIPT_DATE >= /*params.inspectionReceiptDateFrom*/1
 /*%end*/
 /*%if params.inspectionReceiptDateTo != null && params.inspectionReceiptDateTo != ""*/
-and DEL.STAFF_RECEIPT_DATE <= /*params.inspectionReceiptDateTo*/1
+and DEL.MANAGER_RECEIPT_DATE <= /*params.inspectionReceiptDateTo*/1
 /*%end*/
 
 ;

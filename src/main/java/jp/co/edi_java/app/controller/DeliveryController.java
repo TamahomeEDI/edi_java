@@ -54,6 +54,15 @@ public class DeliveryController extends BaseController {
 		return super.response();
 	}
 
+	/** 納品書No エンコード結果取得 */
+	@RequestMapping("/encodeDeliveryNumber")
+	public ResponseEntity encodeDeliveryNumber(@Validated DeliveryForm form) {
+		String encryptNumber = deliveryService.encodeDeliveryNumber(form);
+		//納品書番号返却
+		super.setResponseData("ret", encryptNumber);
+		return super.response();
+	}
+
 	/** 納品書No デコード結果取得 */
 	@RequestMapping("/decodeDeliveryNumber")
 	public ResponseEntity decodeDeliveryNumber(@Validated DeliveryForm form) {
@@ -92,6 +101,13 @@ public class DeliveryController extends BaseController {
 		return super.response();
 	}
 
+	/** 納品受入用明細 */
+	@RequestMapping("/getDeliveryDetail")
+	public ResponseEntity getDeliveryDetail(@Validated DeliveryForm form) {
+		super.setResponseData("ret", deliveryService.getDeliveryDetail(form.orderNumber, form.userId));
+		return super.response();
+	}
+
 	/** 納品情報更新 */
 	@RequestMapping("/update")
 	public ResponseEntity update(@Validated DeliveryForm form) {
@@ -108,13 +124,36 @@ public class DeliveryController extends BaseController {
 		return super.response();
 	}
 
-	/** 受入判定 */
-	@RequestMapping("/approval")
-	public ResponseEntity approval(@Validated DeliveryForm form) {
-		deliveryService.approval(form);
+	/** 受入 */
+	@RequestMapping("/approve")
+	public ResponseEntity approve(@Validated DeliveryForm form) {
+		deliveryService.approve(form);
 		super.setResponseData("ret", "OK");
 		return super.response();
 	}
 
+	/** 差戻 */
+	@RequestMapping("/sendback")
+	public ResponseEntity sendback(@Validated DeliveryForm form) {
+		deliveryService.sendback(form);
+		super.setResponseData("ret", "OK");
+		return super.response();
+	}
+
+	/** ジョブカン申請による受入承認待ちステータスへの更新 */
+	@RequestMapping("/apply")
+	public ResponseEntity apply(@Validated DeliveryForm form) {
+		deliveryService.apply(form);
+		super.setResponseData("ret", "OK");
+		return super.response();
+	}
+
+	/** ジョブカン申請否認による未承認ステータスへの更新 */
+	@RequestMapping("/reject")
+	public ResponseEntity reject(@Validated DeliveryForm form) {
+		deliveryService.reject(form);
+		super.setResponseData("ret", "OK");
+		return super.response();
+	}
 
 }

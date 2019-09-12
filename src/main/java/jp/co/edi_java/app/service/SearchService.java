@@ -541,10 +541,11 @@ public class SearchService {
 	private void setOrderStatus(SearchOrderInfoDto soinfDto, String orderDate) {
 		//オーダーステータスの算出
 		String remandFlg = Objects.nonNull(soinfDto.getRemandFlg()) ? soinfDto.getRemandFlg() : "";
-		String staffReceiptFlg = Objects.nonNull(soinfDto.getStaffReceiptFlg()) ? soinfDto.getStaffReceiptFlg() : "";
+		String receiptFlg = Objects.nonNull(soinfDto.getManagerReceiptFlg()) ? soinfDto.getManagerReceiptFlg() : "";
 		String confirmationFlg = Objects.nonNull(soinfDto.getConfirmationFlg()) ? soinfDto.getConfirmationFlg() : "";
 		orderDate = Objects.nonNull(orderDate) ? orderDate : "";
 		soinfDto.setOrderStatus("0");
+
 		if (remandFlg.equals("1")) {
 			soinfDto.setOrderStatus("5");
 		} else {
@@ -559,9 +560,9 @@ public class SearchService {
 				}
 			} else if (confirmationFlg.equals("1") && Objects.isNull(soinfDto.getWorkNumber())) {
 				soinfDto.setOrderStatus("2");
-			} else if (Objects.nonNull(soinfDto.getWorkNumber()) && staffReceiptFlg.equals("0")) {
+			} else if (Objects.nonNull(soinfDto.getWorkNumber()) && receiptFlg.equals("0")) {
 				soinfDto.setOrderStatus("3");
-			} else if (staffReceiptFlg.equals("1") && remandFlg.equals("0")) {
+			} else if (receiptFlg.equals("1") && remandFlg.equals("0")) {
 				soinfDto.setOrderStatus("4");
 			}
 		}
