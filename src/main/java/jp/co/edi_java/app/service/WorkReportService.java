@@ -330,8 +330,11 @@ public class WorkReportService {
 				TWorkReportEntity entity = this.get(dto.getWorkNumber());
 				if (Objects.equals(entity.getManagerReceiptFlg(), CommonConsts.RECEIPT_FLG_OFF) &&
 						Objects.equals(entity.getRemandFlg(), CommonConsts.REMAND_FLG_OFF)) {
-					Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-
+					//Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+					String approveDate = form.getApproveDate() + " " + form.getApproveDateTime();
+					Date receiptDate = parseDateStringToDate(approveDate, "yyyyMMdd HHmmss", Locale.ENGLISH);
+					Timestamp timestamp = new Timestamp(receiptDate.getTime());
+					log.info("approveDate: " + approveDate);
 					entity.setManagerReceiptFlg(CommonConsts.RECEIPT_FLG_ON);
 					entity.setManagerReceiptDate(timestamp);
 					entity.setRemandFlg(CommonConsts.REMAND_FLG_OFF);
@@ -360,19 +363,117 @@ public class WorkReportService {
 		String approveDateTime = form.getApproveDateTime();
 		String workRate = String.valueOf(workReport.getWorkRate());
 
-		// ■■■■■■■■■■■■■ 受入入力レコードの作成
-		Map<String, Object> result = SapApi.setWorkReportItemQuantity(eigyousyoCode, orderNumber, acceptanceDate, workRate, userCode);
-		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
+		//JCO result
+		Map<String, Object> result = null;
+		Map<String, Object> resultInfo = null;
+		//申請対象
+		Map<String, Object> targetObj = null;
+
+		//申請番号ダミー
+		String wfNumber = workReportNumber + "_" + approveDate + approveDateTime;
+
+		// ■■■■■■■■■■■■■ 受入入力レコードの存在チェック
+		// 申請済レコードの存在チェック
+		targetObj = getWorkReportSapRecord(orderNumber, acceptanceDate, eigyousyoCode, userCode, "0");
+
+		if (Objects.isNull(targetObj)) {
+			// 未申請レコードの存在チェック
+			targetObj = getWorkReportSapRecord(orderNumber, acceptanceDate, eigyousyoCode, userCode, "");
+			if (Objects.isNull(targetObj)) {
+				// ■■■■■■■■■■■■■ 受入入力レコードの作成
+				result = SapApi.setWorkReportItemQuantity(eigyousyoCode, orderNumber, acceptanceDate, workRate, userCode);
+				resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
+				if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+					throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+				}
+			} else {
+				//シーケンス番号
+				String wfSeqNo = targetObj.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString();
+				//更新日
+				String lastUpdateDate = targetObj.get(SapApiConsts.PARAMS_ID_AEDAT).toString();
+				//更新時間
+				String lastUpdateTime = targetObj.get(SapApiConsts.PARAMS_ID_AEZEIT).toString();
+				log.info("before date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime);
+				// Sapへ請書未受領データの排他制御用変更日付、変更時間がEnglishロケールフォーマットのため変換が必要
+				Date updateDate = parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+				Date updateTime = parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+				if (Objects.nonNull(updateDate)) {
+					// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
+					lastUpdateDate = formatDateToString(updateDate, "yyyyMMdd", "JST");
+				}
+				if (Objects.nonNull(updateTime)) {
+					// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
+					lastUpdateTime = formatDateToString(updateTime, "HH:mm:ss", "JST");
+				}
+				log.info("after date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime);
+				// ■■■■■■■■■■■■■ 受入入力レコードの上書き
+				result = SapApi.setWorkReportItemQuantity(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateTime, workRate, userCode);
+				resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
+				if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+					throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+				}
+			}
+			// ■■■■■■■■■■■■■ 作成したレコードの取得
+			// 作成済レコードの存在チェック
+			targetObj = getWorkReportSapRecord(orderNumber, acceptanceDate, eigyousyoCode, userCode, "");
+			// 作成したレコードが見つからない
+			if (Objects.isNull(targetObj)) {
+				throw new CoreRuntimeException("not found Sap Object: " + orderNumber);
+			}
+			//支店コード
+			String sapEigyousyoCode = targetObj.get(SapApiConsts.PARAMS_ID_PRCTR).toString();
+			//レコード登録日
+			String recordDate = targetObj.get(SapApiConsts.PARAMS_ID_ERDAT1).toString();
+			//シーケンス番号
+			String wfSeqNo = targetObj.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString();
+			//更新日
+			String lastUpdateDate = targetObj.get(SapApiConsts.PARAMS_ID_AEDAT).toString();
+			//更新時間
+			String lastUpdateTime = targetObj.get(SapApiConsts.PARAMS_ID_AEZEIT).toString();
+
+			log.info("before date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime + " " + recordDate);
+			// Sapへ請書未受領データの排他制御用変更日付、変更時間がEnglishロケールフォーマットのため変換が必要
+			Date updateDate = parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+			Date updateTime = parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+			Date registDate = parseDateStringToDate(recordDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+			if (Objects.nonNull(updateDate)) {
+				// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
+				lastUpdateDate = formatDateToString(updateDate, "yyyyMMdd", "JST");
+			}
+			if (Objects.nonNull(updateTime)) {
+				// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
+				lastUpdateTime = formatDateToString(updateTime, "HH:mm:ss", "JST");
+			}
+			if (Objects.nonNull(registDate)) {
+				// レコード登録日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
+				recordDate = formatDateToString(registDate, "yyyyMMdd", "JST");
+			}
+			log.info("after date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime + " " + recordDate);
+
+			// ■■■■■■■■■■■■■ 申請
+			result = SapApi.applyDeliveryWorkReport(sapEigyousyoCode, orderNumber, recordDate, wfSeqNo, acceptanceDate, wfNumber, lastUpdateDate, lastUpdateTime, userCode);
+			resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
+			if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+				throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+			}
+		}
+
+		// ■■■■■■■■■■■■■ 決済
+		result = SapApi.approveDeliveryWorkReport(wfNumber, approverCode, approveDate, approveDateTime, userCode);
+		resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
 		}
+	}
+
+	private Map<String, Object> getWorkReportSapRecord (String orderNumber, String acceptanceDate, String eigyousyoCode, String userCode, String wfStatus) {
 		// ■■■■■■■■■■■■■ 作成したレコードの取得
-		Map<String, Object> dataWFSeqNo = SapApi.getWorkReportWFSeqNo(eigyousyoCode, userCode);
-		resultInfo = SapApiAnalyzer.analyzeResultInfo(dataWFSeqNo);
+		Map<String, Object> data = SapApi.getWorkReportWFSeqNo(eigyousyoCode, userCode, wfStatus);
+		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
 		}
-		Object wfobj = dataWFSeqNo.get(SapApiConsts.PARAMS_KEY_T_E_01004);
+		Object wfobj = data.get(SapApiConsts.PARAMS_KEY_T_E_01004);
 		List<Map<String, Object>> applyTargetList = new ArrayList<>();
 		if(wfobj instanceof List) {
 			applyTargetList = (List<Map<String, Object>>)wfobj;
@@ -391,54 +492,7 @@ public class WorkReportService {
 				break;
 			}
 		}
-		// 作成したレコードが見つからない
-		if (Objects.isNull(targetObj)) {
-			throw new CoreRuntimeException("not found workReport Sap Object: " + orderNumber);
-		}
-		//申請番号ダミー
-		String wfNumber = workReportNumber + "_" + approveDate + approveDateTime;
-		//支店コード
-		String sapEigyousyoCode = targetObj.get(SapApiConsts.PARAMS_ID_PRCTR).toString();
-		//レコード登録日
-		String recordDate = targetObj.get(SapApiConsts.PARAMS_ID_ERDAT1).toString();
-		//シーケンス番号
-		String wfSeqNo = targetObj.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString();
-		//更新日
-		String lastUpdateDate = targetObj.get(SapApiConsts.PARAMS_ID_AEDAT).toString();
-		//更新時間
-		String lastUpdateTime = targetObj.get(SapApiConsts.PARAMS_ID_AEZEIT).toString();
-
-		log.info("before date formatting: " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime + " " + recordDate);
-		// Sapへ請書未受領データの排他制御用変更日付、変更時間がEnglishロケールフォーマットのため変換が必要
-		Date updateDate = parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
-		Date updateTime = parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
-		Date registDate = parseDateStringToDate(recordDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
-		if (Objects.nonNull(updateDate)) {
-			// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
-			lastUpdateDate = formatDateToString(updateDate, "yyyyMMdd", "JST");
-		}
-		if (Objects.nonNull(updateTime)) {
-			// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
-			lastUpdateTime = formatDateToString(updateTime, "HH:mm:ss", "JST");
-		}
-		if (Objects.nonNull(registDate)) {
-			// レコード登録日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
-			recordDate = formatDateToString(registDate, "yyyyMMdd", "JST");
-		}
-		log.info("after date formatting: " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime + " " + recordDate);
-
-		// ■■■■■■■■■■■■■ 申請
-		result = SapApi.applyDeliveryWorkReport(sapEigyousyoCode, orderNumber, recordDate, wfSeqNo, acceptanceDate, wfNumber, lastUpdateDate, lastUpdateTime, userCode);
-		resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
-		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-		}
-		// ■■■■■■■■■■■■■ 決済
-		result = SapApi.approveDeliveryWorkReport(wfNumber, approverCode, approveDate, approveDateTime, userCode);
-		resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
-		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-		}
+		return targetObj;
 	}
 
 	private Date parseDateStringToDate(String date, String format, Locale loc) {

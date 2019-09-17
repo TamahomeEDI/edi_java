@@ -365,8 +365,16 @@ public class SapApi {
 		return parsedList;
 	}
 
-	//納品書・出来高報告書受入入力_確認 (納品数の登録)
+	//納品書・出来高報告書受入入力_確認 (納品数の登録) update
+	public static Map<String, Object> setDeliveryItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, List<TDeliveryItemEntity> itemList, String userCode) {
+		return setDeliveryItemQuantityAux(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateDateTime, itemList, userCode);
+	}
+	//納品書・出来高報告書受入入力_確認 (納品数の登録) insert
 	public static Map<String, Object> setDeliveryItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, List<TDeliveryItemEntity> itemList, String userCode) {
+		return setDeliveryItemQuantityAux(eigyousyoCode, orderNumber, acceptanceDate, null, null, null, itemList, userCode);
+	}
+	//納品書・出来高報告書受入入力_確認 (納品数の登録)
+	public static Map<String, Object> setDeliveryItemQuantityAux(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, List<TDeliveryItemEntity> itemList, String userCode) {
 		HttpRequestParams params = new HttpRequestParams();
 		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_INS_DTLDATA);
 		//※支店コード
@@ -377,6 +385,18 @@ public class SapApi {
 		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZDTSBT, PARAMS_VALUE_ZDTSBT_DELIVERY);
 		//※受入日付
 		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZUKDAT, acceptanceDate);
+		if (Objects.nonNull(wfSeqNo)) {
+			//SEQ
+			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZSEQNO, wfSeqNo);
+		}
+		if (Objects.nonNull(lastUpdateDate)) {
+			//最終更新日
+			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_AEDAT, lastUpdateDate);
+		}
+		if (Objects.nonNull(lastUpdateDateTime)) {
+			//最終更新時間
+			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_AEZEIT, lastUpdateDateTime);
+		}
 		if (Objects.nonNull(itemList)) {
 			for (TDeliveryItemEntity item : itemList) {
 				// 品目コード
@@ -412,8 +432,16 @@ public class SapApi {
 		return parsedList;
 	}
 
-	//納品書・出来高報告書受入入力_確認 (査定率の登録)
+	//納品書・出来高報告書受入入力_確認 (査定率の登録) update
+	public static Map<String, Object> setWorkReportItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, String workRate, String userCode) {
+		return setWorkReportItemQuantityAux(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateDateTime, workRate, userCode);
+	}
+	//納品書・出来高報告書受入入力_確認 (査定率の登録) insert
 	public static Map<String, Object> setWorkReportItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, String workRate, String userCode) {
+		return setWorkReportItemQuantityAux(eigyousyoCode, orderNumber, acceptanceDate, null, null, null, workRate, userCode);
+	}
+	//納品書・出来高報告書受入入力_確認 (査定率の登録)
+	public static Map<String, Object> setWorkReportItemQuantityAux(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, String workRate, String userCode) {
 		HttpRequestParams params = new HttpRequestParams();
 		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_INS_DTLDATA);
 		//※支店コード
@@ -427,6 +455,19 @@ public class SapApi {
 		//※査定率
 		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZUKEST, workRate);
 
+		if (Objects.nonNull(wfSeqNo)) {
+			//SEQ
+			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZSEQNO, wfSeqNo);
+		}
+		if (Objects.nonNull(lastUpdateDate)) {
+			//最終更新日
+			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_AEDAT, lastUpdateDate);
+		}
+		if (Objects.nonNull(lastUpdateDateTime)) {
+			//最終更新時間
+			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_AEZEIT, lastUpdateDateTime);
+		}
+
 		//※実ユーザコード（ログインユーザの社員コード）
 		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_05003  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
 
@@ -438,17 +479,17 @@ public class SapApi {
 	}
 
 	//納品書_表示
-	public static Map<String, Object> getDeliveryWFSeqNo(String eigyousyoCode, String userCode) {
-		return getWFSeqNo(PARAMS_VALUE_ZDTSBT_DELIVERY, eigyousyoCode, userCode);
+	public static Map<String, Object> getDeliveryWFSeqNo(String eigyousyoCode, String userCode, String wfStatus) {
+		return getWFSeqNo(PARAMS_VALUE_ZDTSBT_DELIVERY, eigyousyoCode, userCode, wfStatus);
 	}
 
 	//出来高報告書_表示
-	public static Map<String, Object> getWorkReportWFSeqNo(String eigyousyoCode, String userCode) {
-		return getWFSeqNo(PARAMS_VALUE_ZDTSBT_WORK_REPORT, eigyousyoCode, userCode);
+	public static Map<String, Object> getWorkReportWFSeqNo(String eigyousyoCode, String userCode, String wfStatus) {
+		return getWFSeqNo(PARAMS_VALUE_ZDTSBT_WORK_REPORT, eigyousyoCode, userCode, wfStatus);
 	}
 
 	//納品書・出来高報告書受入入力_表示
-	public static Map<String, Object> getWFSeqNo(String dataType, String eigyousyoCode, String userCode) {
+	public static Map<String, Object> getWFSeqNo(String dataType, String eigyousyoCode, String userCode, String wfStatus) {
 		HttpRequestParams params = new HttpRequestParams();
 		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_GET_HEADDATE);
 
@@ -457,7 +498,7 @@ public class SapApi {
 		//※データ種別
 		params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_ZDTSBT, dataType);
 		//※WFステータス
-		params.addParam(SapApiConsts.PARAMS_KEY_T_I_01002  + "." + SapApiConsts.PARAMS_ID_ZWFSTA, "");
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_01002  + "." + SapApiConsts.PARAMS_ID_ZWFSTA, wfStatus);
 		//※確認済フラグ
 		params.addParam(SapApiConsts.PARAMS_KEY_T_I_01003  + "." + SapApiConsts.PARAMS_ID_ZKNFLG, PARAMS_VALUE_ZKNFLG);
 		//※実ユーザコード（ログインユーザの社員コード）
