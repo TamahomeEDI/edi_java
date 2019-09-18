@@ -418,7 +418,7 @@ public class WorkReportService {
 			targetObj = getWorkReportSapRecord(orderNumber, acceptanceDate, eigyousyoCode, userCode, "");
 			// 作成したレコードが見つからない
 			if (Objects.isNull(targetObj)) {
-				throw new CoreRuntimeException("not found Sap Object: " + orderNumber);
+				throw new CoreRuntimeException("not found Sap Object: " + orderNumber + " " + acceptanceDate + " " + eigyousyoCode + " " + userCode);
 			}
 			//支店コード
 			String sapEigyousyoCode = targetObj.get(SapApiConsts.PARAMS_ID_PRCTR).toString();
@@ -468,10 +468,12 @@ public class WorkReportService {
 
 	private Map<String, Object> getWorkReportSapRecord (String orderNumber, String acceptanceDate, String eigyousyoCode, String userCode, String wfStatus) {
 		// ■■■■■■■■■■■■■ 作成したレコードの取得
+		Map<String, Object> targetObj = null;
 		Map<String, Object> data = SapApi.getWorkReportWFSeqNo(eigyousyoCode, userCode, wfStatus);
 		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+			log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+			return targetObj;
 		}
 		Object wfobj = data.get(SapApiConsts.PARAMS_KEY_T_E_01004);
 		List<Map<String, Object>> applyTargetList = new ArrayList<>();
@@ -481,7 +483,6 @@ public class WorkReportService {
 			applyTargetList.add((Map<String, Object>)wfobj);
 		}
 
-		Map<String, Object> targetObj = null;
 		for (Map<String, Object> itemMap : applyTargetList) {
 			String ordNum = itemMap.get(SapApiConsts.PARAMS_ID_EBELN).toString();
 			String acptDate = itemMap.get(SapApiConsts.PARAMS_ID_ZUKDAT).toString();
