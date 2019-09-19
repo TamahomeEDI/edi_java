@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.w3c.dom.Document;
 
-import jp.co.edi_java.app.entity.TDeliveryItemEntity;
 import jp.co.edi_java.app.form.SearchForm;
 import jp.co.edi_java.app.util.xml.DomParser;
 import jp.co.keepalive.springbootfw.util.http.CommonHttpClient;
@@ -366,63 +365,94 @@ public class SapApi {
 	}
 
 	//納品書・出来高報告書受入入力_確認 (納品数の登録) update
-	public static Map<String, Object> setDeliveryItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, List<TDeliveryItemEntity> itemList, String userCode) {
-		return setDeliveryItemQuantityAux(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateDateTime, itemList, userCode);
+	public static Map<String, Object> setDeliveryItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, List<Map<String, String>> sapDetail, String userCode) {
+		return setDeliveryWorkReportItemQuantity(PARAMS_VALUE_ZDTSBT_DELIVERY, eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateDateTime, null, sapDetail, userCode);
 	}
 	//納品書・出来高報告書受入入力_確認 (納品数の登録) insert
-	public static Map<String, Object> setDeliveryItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, List<TDeliveryItemEntity> itemList, String userCode) {
-		return setDeliveryItemQuantityAux(eigyousyoCode, orderNumber, acceptanceDate, null, null, null, itemList, userCode);
+	public static Map<String, Object> setDeliveryItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, List<Map<String, String>> sapDetail, String userCode) {
+		return setDeliveryWorkReportItemQuantity(PARAMS_VALUE_ZDTSBT_DELIVERY, eigyousyoCode, orderNumber, acceptanceDate, null, null, null, null, sapDetail, userCode);
+	}
+	//納品書・出来高報告書受入入力_確認 (査定率の登録) update
+	public static Map<String, Object> setWorkReportItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, String workRate, List<Map<String, String>> sapDetail, String userCode) {
+		return setDeliveryWorkReportItemQuantity(PARAMS_VALUE_ZDTSBT_WORK_REPORT, eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateDateTime, workRate, sapDetail, userCode);
+	}
+	//納品書・出来高報告書受入入力_確認 (査定率の登録) insert
+	public static Map<String, Object> setWorkReportItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, String workRate, List<Map<String, String>> sapDetail, String userCode) {
+		return setDeliveryWorkReportItemQuantity(PARAMS_VALUE_ZDTSBT_WORK_REPORT, eigyousyoCode, orderNumber, acceptanceDate, null, null, null, workRate, sapDetail, userCode);
 	}
 	//納品書・出来高報告書受入入力_確認 (納品数の登録)
-	public static Map<String, Object> setDeliveryItemQuantityAux(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, List<TDeliveryItemEntity> itemList, String userCode) {
+	public static Map<String, Object> setDeliveryWorkReportItemQuantity(String dataType, String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, String workRate, List<Map<String, String>> sapDetail, String userCode) {
 		HttpRequestParams params = new HttpRequestParams();
 		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_INS_DTLDATA);
+
 		//※支店コード
 		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_PRCTR, eigyousyoCode);
 		//※発注番号
 		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_EBELN, orderNumber);
 		//※データ種別
-		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZDTSBT, PARAMS_VALUE_ZDTSBT_DELIVERY);
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZDTSBT, dataType);
 		//※受入日付
 		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZUKDAT, acceptanceDate);
-		if (Objects.nonNull(wfSeqNo)) {
-			//SEQ
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZSEQNO, wfSeqNo);
+
+		//受入査定率
+		if (Objects.isNull(workRate)) {
+			workRate = "0";
 		}
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZUKEST, workRate);
+
+		//受入金額
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZUKEKN, "0");
+
+		//受入金額税額
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZUKEZG, "0");
+
+		//SEQ
+		if (Objects.isNull(wfSeqNo)) {
+			wfSeqNo = "000";
+		}
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZSEQNO, wfSeqNo);
+
+		//最終更新日
 		if (Objects.nonNull(lastUpdateDate)) {
-			//最終更新日
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_AEDAT, lastUpdateDate);
 		}
-		if (Objects.nonNull(lastUpdateDateTime)) {
-			//最終更新時間
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_AEZEIT, lastUpdateDateTime);
+
+		//最終更新時間
+		if (Objects.isNull(lastUpdateDateTime)) {
+			lastUpdateDateTime = "00:00:00";
 		}
-		if (Objects.nonNull(itemList)) {
-			for (TDeliveryItemEntity item : itemList) {
+		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_AEZEIT, lastUpdateDateTime);
+
+		if (Objects.nonNull(sapDetail)) {
+			for (Map<String, String> item : sapDetail) {
 				// 品目コード
-//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_MATNR, "");
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_MATNR, item.get(SapApiConsts.PARAMS_ID_MATNR));
 				// テキスト(短)
-//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_TXZ01, "");
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_TXZ01, item.get(SapApiConsts.PARAMS_ID_TXZ01));
 				// 仕様名
-//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZMHNAM, "");
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZMHNAM, item.get(SapApiConsts.PARAMS_ID_ZMHNAM));
 				// 発注残数量
-//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_MENGE, String.valueOf(item.getDeliveryRemainingQuantity()));
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_MENGE, item.get(SapApiConsts.PARAMS_ID_MENGE));
 				// 納入数量
-				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZMENGE, String.valueOf(item.getDeliveryQuantity()));
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZMENGE, item.get(SapApiConsts.PARAMS_ID_ZMENGE));
 				// 発注単位
-//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_MEINS, "");
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_MEINS, item.get(SapApiConsts.PARAMS_ID_MEINS));
 				// 単価
-//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_NETPR, "");
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_NETPR, item.get(SapApiConsts.PARAMS_ID_NETPR));
 				// 納入金額
-//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_SUMPR, "");
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_SUMPR, item.get(SapApiConsts.PARAMS_ID_SUMPR));
 				// 購買伝票の明細番号
-				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_EBELP, item.getJcoEbelp());
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_EBELP, item.get(SapApiConsts.PARAMS_ID_EBELP));
 				// 発注数量
-//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZHTMNG, "");
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZHTMNG, item.get(SapApiConsts.PARAMS_ID_ZHTMNG));
 				// 単位コード
-//				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZTANIC, "");
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZTANIC, item.get(SapApiConsts.PARAMS_ID_ZTANIC));
+				// 納入受入残金額
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZUKZKN, item.get(SapApiConsts.PARAMS_ID_ZUKZKN));
 			}
 		}
+		//行数(上書き更新の場合も00000のままで影響無し)
+		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_05003  + "." + SapApiConsts.PARAMS_ID_ZLOWNO, "00000");
 		//※実ユーザコード（ログインユーザの社員コード）
 		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_05003  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
 
@@ -432,14 +462,7 @@ public class SapApi {
 		return parsedList;
 	}
 
-	//納品書・出来高報告書受入入力_確認 (査定率の登録) update
-	public static Map<String, Object> setWorkReportItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, String workRate, String userCode) {
-		return setWorkReportItemQuantityAux(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateDateTime, workRate, userCode);
-	}
-	//納品書・出来高報告書受入入力_確認 (査定率の登録) insert
-	public static Map<String, Object> setWorkReportItemQuantity(String eigyousyoCode, String orderNumber, String acceptanceDate, String workRate, String userCode) {
-		return setWorkReportItemQuantityAux(eigyousyoCode, orderNumber, acceptanceDate, null, null, null, workRate, userCode);
-	}
+
 	//納品書・出来高報告書受入入力_確認 (査定率の登録)
 	public static Map<String, Object> setWorkReportItemQuantityAux(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, String workRate, String userCode) {
 		HttpRequestParams params = new HttpRequestParams();

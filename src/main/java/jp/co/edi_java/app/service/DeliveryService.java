@@ -1,5 +1,6 @@
 package jp.co.edi_java.app.service;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -388,11 +389,7 @@ public class DeliveryService {
 			targetObj = getDeliverySapRecord(orderNumber, acceptanceDate, eigyousyoCode, userCode, "");
 			if (Objects.isNull(targetObj)) {
 				// ■■■■■■■■■■■■■ 受入入力レコードの作成
-				result = SapApi.setDeliveryItemQuantity(eigyousyoCode, orderNumber, acceptanceDate, itemList, userCode);
-				resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
-				if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-					throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-				}
+				createDeliverySapRecord(eigyousyoCode, orderNumber, acceptanceDate, null, null, null, itemList, userCode);
 			} else {
 				//シーケンス番号
 				String wfSeqNo = targetObj.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString();
@@ -414,11 +411,7 @@ public class DeliveryService {
 				}
 				log.info("after date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime);
 				// ■■■■■■■■■■■■■ 受入入力レコードの上書き
-				result = SapApi.setDeliveryItemQuantity(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateTime, itemList, userCode);
-				resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
-				if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-					throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-				}
+				createDeliverySapRecord(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateTime, itemList, userCode);
 			}
 			// ■■■■■■■■■■■■■ 作成したレコードの取得
 			// 作成済レコードの存在チェック
@@ -473,8 +466,108 @@ public class DeliveryService {
 		}
 	}
 
-	private Map<String, Object> getDeliverySapRecord (String orderNumber, String acceptanceDate, String eigyousyoCode, String userCode, String wfStatus) {
-		// ■■■■■■■■■■■■■ 作成したレコードの取得
+	private void createDeliverySapRecord(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateTime, List<TDeliveryItemEntity> itemList, String userCode) {
+		// ■■■■■■■■■■■■■ 受入確認モジュールでレコード作成
+
+		// EDIの明細データを取得できない
+		if (Objects.isNull(itemList) || itemList.isEmpty()) {
+			throw new CoreRuntimeException("EDI delivery detail data is empty");
+		}
+
+		// 詳細
+		Map<String, Object> result = SapApi.getDeliveryItemList(orderNumber, userCode);
+		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
+		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+		}
+
+		Object obj = result.get(SapApiConsts.PARAMS_KEY_T_E_04003);
+		List<Map<String, Object>> sapDetailData = new ArrayList<Map<String, Object>>();
+		if(obj instanceof List) {
+			sapDetailData = (List<Map<String, Object>>)obj;
+		}else {
+			sapDetailData.add((Map<String, Object>)obj);
+		}
+		// SAPの明細データを取得できない
+		if (Objects.isNull(sapDetailData) || sapDetailData.isEmpty()) {
+			throw new CoreRuntimeException("SAP delivery detail data is empty");
+		}
+
+		//業者の作成した受入入力データ
+		Map<String, TDeliveryItemEntity> detailMap = new HashMap<String, TDeliveryItemEntity>();
+		for (TDeliveryItemEntity itm : itemList) {
+			if (Objects.nonNull(itm.getJcoEbelp())) {
+				detailMap.put(itm.getJcoEbelp(), itm);
+			}
+		}
+		// 受入入力レコード作成用にデータ詰め替え
+		List<Map<String, String>> sapDetail = new ArrayList<Map<String, String>>();
+		for (Map<String, Object> sapMap : sapDetailData) {
+			String lineNo = sapMap.get(SapApiConsts.PARAMS_ID_EBELP).toString();
+			TDeliveryItemEntity itm = detailMap.get(lineNo);
+			Map<String, String> params = new HashMap<String,String>();
+			// 発注金額
+			BigDecimal zhtkgk = new BigDecimal(sapMap.get(SapApiConsts.PARAMS_ID_ZHTKGK).toString());
+			// 納入金額
+			BigDecimal sumpr = new BigDecimal(sapMap.get(SapApiConsts.PARAMS_ID_SUMPR).toString());
+			// 納入受入残金額
+			BigDecimal zukzkn = new BigDecimal(sapMap.get(SapApiConsts.PARAMS_ID_ZUKZKN).toString());
+			// 単価
+			BigDecimal netpr = new BigDecimal(sapMap.get(SapApiConsts.PARAMS_ID_NETPR).toString());
+			// 発注残数量 (EDIで入力した発注残数量)
+			BigDecimal menge = new BigDecimal(String.valueOf(itm.getDeliveryRemainingQuantity()));
+			// 納入数量 (EDIで入力した納入数量)
+			BigDecimal zmenge = new BigDecimal(String.valueOf(itm.getDeliveryQuantity()));
+
+			// 金額の再計算
+			sumpr = netpr.multiply(zmenge);
+			sumpr = sumpr.setScale(0, BigDecimal.ROUND_HALF_UP);
+			// 納入受入残金額 = 発注金額 - 納入金額
+			zukzkn = zhtkgk.subtract(sumpr);
+
+			// 品目コード
+			params.put(SapApiConsts.PARAMS_ID_MATNR, sapMap.get(SapApiConsts.PARAMS_ID_MATNR).toString());
+			// テキスト(短)
+			params.put(SapApiConsts.PARAMS_ID_TXZ01, sapMap.get(SapApiConsts.PARAMS_ID_TXZ01).toString());
+			// 仕様名
+			params.put(SapApiConsts.PARAMS_ID_ZMHNAM, sapMap.get(SapApiConsts.PARAMS_ID_ZMHNAM).toString());
+			// 発注残数量
+			params.put(SapApiConsts.PARAMS_ID_MENGE, menge.toString());
+			// 納入数量
+			params.put(SapApiConsts.PARAMS_ID_ZMENGE, zmenge.toString());
+			// 発注単位
+			params.put(SapApiConsts.PARAMS_ID_MEINS, sapMap.get(SapApiConsts.PARAMS_ID_MEINS).toString());
+			// 単価
+			params.put(SapApiConsts.PARAMS_ID_NETPR, sapMap.get(SapApiConsts.PARAMS_ID_NETPR).toString());
+			// 納入金額
+			params.put(SapApiConsts.PARAMS_ID_SUMPR, sumpr.toString());
+			// 購買伝票の明細番号
+			params.put(SapApiConsts.PARAMS_ID_EBELP, lineNo);
+			// 発注数量
+			params.put(SapApiConsts.PARAMS_ID_ZHTMNG, sapMap.get(SapApiConsts.PARAMS_ID_ZHTMNG).toString());
+			// 単位コード
+			params.put(SapApiConsts.PARAMS_ID_ZTANIC, sapMap.get(SapApiConsts.PARAMS_ID_ZTANIC).toString());
+			// 納入受入残金額
+			params.put(SapApiConsts.PARAMS_ID_ZUKZKN, zukzkn.toString());
+
+			sapDetail.add(params);
+		}
+
+		if (Objects.nonNull(wfSeqNo) && Objects.nonNull(lastUpdateDate) && Objects.nonNull(lastUpdateTime)) {
+			// ■■■■■■■■■■■■■ 受入入力レコードの上書き
+			result = SapApi.setDeliveryItemQuantity(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateTime, sapDetail, userCode);
+		} else {
+			// ■■■■■■■■■■■■■ 受入入力レコードの新規作成
+			result = SapApi.setDeliveryItemQuantity(eigyousyoCode, orderNumber, acceptanceDate, sapDetail, userCode);
+		}
+		resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
+		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+		}
+	}
+
+	private Map<String, Object> getDeliverySapRecord(String orderNumber, String acceptanceDate, String eigyousyoCode, String userCode, String wfStatus) {
+		// ■■■■■■■■■■■■■ 受入確認モジュールで作成したレコードの取得
 		Map<String, Object> targetObj = null;
 		Map<String, Object> data = SapApi.getDeliveryWFSeqNo(eigyousyoCode, userCode, wfStatus);
 		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);

@@ -381,11 +381,7 @@ public class WorkReportService {
 			targetObj = getWorkReportSapRecord(orderNumber, acceptanceDate, eigyousyoCode, userCode, "");
 			if (Objects.isNull(targetObj)) {
 				// ■■■■■■■■■■■■■ 受入入力レコードの作成
-				result = SapApi.setWorkReportItemQuantity(eigyousyoCode, orderNumber, acceptanceDate, workRate, userCode);
-				resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
-				if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-					throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-				}
+				createWorkReportSapRecord(eigyousyoCode, orderNumber, acceptanceDate, null, null, null, workRate, userCode);
 			} else {
 				//シーケンス番号
 				String wfSeqNo = targetObj.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString();
@@ -407,11 +403,7 @@ public class WorkReportService {
 				}
 				log.info("after date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime);
 				// ■■■■■■■■■■■■■ 受入入力レコードの上書き
-				result = SapApi.setWorkReportItemQuantity(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateTime, workRate, userCode);
-				resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
-				if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-					throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-				}
+				createWorkReportSapRecord(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateTime, workRate, userCode);
 			}
 			// ■■■■■■■■■■■■■ 作成したレコードの取得
 			// 作成済レコードの存在チェック
@@ -460,6 +452,75 @@ public class WorkReportService {
 
 		// ■■■■■■■■■■■■■ 決済
 		result = SapApi.approveDeliveryWorkReport(wfNumber, approverCode, approveDate, approveDateTime, userCode);
+		resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
+		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+		}
+	}
+
+
+	private void createWorkReportSapRecord(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateTime, String workRate, String userCode) {
+		// ■■■■■■■■■■■■■ 受入確認モジュールでレコード作成
+
+		// 詳細
+		Map<String, Object> result = SapApi.getWorkReportItemList(orderNumber, userCode);
+		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
+		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+		}
+
+		Object obj = result.get(SapApiConsts.PARAMS_KEY_T_E_04004);
+		List<Map<String, Object>> sapDetailData = new ArrayList<Map<String, Object>>();
+		if(obj instanceof List) {
+			sapDetailData = (List<Map<String, Object>>)obj;
+		}else {
+			sapDetailData.add((Map<String, Object>)obj);
+		}
+		// SAPの明細データを取得できない
+		if (Objects.isNull(sapDetailData) || sapDetailData.isEmpty()) {
+			throw new CoreRuntimeException("SAP workreport detail data is empty");
+		}
+
+		// 受入入力レコード作成用にデータ詰め替え
+		List<Map<String, String>> sapDetail = new ArrayList<Map<String, String>>();
+		for (Map<String, Object> sapMap : sapDetailData) {
+
+			Map<String, String> params = new HashMap<String,String>();
+			// 品目コード
+			params.put(SapApiConsts.PARAMS_ID_MATNR, sapMap.get(SapApiConsts.PARAMS_ID_MATNR).toString());
+			// テキスト(短)
+			params.put(SapApiConsts.PARAMS_ID_TXZ01, sapMap.get(SapApiConsts.PARAMS_ID_TXZ01).toString());
+			// 仕様名
+			params.put(SapApiConsts.PARAMS_ID_ZMHNAM, sapMap.get(SapApiConsts.PARAMS_ID_ZMHNAM).toString());
+			// 発注残数量
+			params.put(SapApiConsts.PARAMS_ID_MENGE, sapMap.get(SapApiConsts.PARAMS_ID_MENGE).toString());
+			// 納入数量
+			params.put(SapApiConsts.PARAMS_ID_ZMENGE, sapMap.get(SapApiConsts.PARAMS_ID_ZMENGE).toString());
+			// 発注単位
+			params.put(SapApiConsts.PARAMS_ID_MEINS, sapMap.get(SapApiConsts.PARAMS_ID_MEINS).toString());
+			// 単価
+			params.put(SapApiConsts.PARAMS_ID_NETPR, sapMap.get(SapApiConsts.PARAMS_ID_NETPR).toString());
+			// 納入金額
+			params.put(SapApiConsts.PARAMS_ID_SUMPR, sapMap.get(SapApiConsts.PARAMS_ID_SUMPR).toString());
+			// 購買伝票の明細番号
+			params.put(SapApiConsts.PARAMS_ID_EBELP, sapMap.get(SapApiConsts.PARAMS_ID_EBELP).toString());
+			// 発注数量
+			params.put(SapApiConsts.PARAMS_ID_ZHTMNG, sapMap.get(SapApiConsts.PARAMS_ID_ZHTMNG).toString());
+			// 単位コード
+			params.put(SapApiConsts.PARAMS_ID_ZTANIC, sapMap.get(SapApiConsts.PARAMS_ID_ZTANIC).toString());
+			// 納入受入残金額
+			params.put(SapApiConsts.PARAMS_ID_ZUKZKN, sapMap.get(SapApiConsts.PARAMS_ID_ZUKZKN).toString());
+
+			sapDetail.add(params);
+		}
+
+		if (Objects.nonNull(wfSeqNo) && Objects.nonNull(lastUpdateDate) && Objects.nonNull(lastUpdateTime)) {
+			// ■■■■■■■■■■■■■ 受入入力レコードの上書き
+			result = SapApi.setWorkReportItemQuantity(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateTime, workRate, sapDetail, userCode);
+		} else {
+			// ■■■■■■■■■■■■■ 受入入力レコードの新規作成
+			result = SapApi.setWorkReportItemQuantity(eigyousyoCode, orderNumber, acceptanceDate, workRate, sapDetail, userCode);
+		}
 		resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
