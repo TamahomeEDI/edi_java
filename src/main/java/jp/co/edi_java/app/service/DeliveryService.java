@@ -510,22 +510,20 @@ public class DeliveryService {
 			TDeliveryItemEntity itm = detailMap.get(lineNo);
 			Map<String, String> params = new HashMap<String,String>();
 
-			// 発注金額
-			String zhtkgkStr = "0";
-			BigDecimal zhtkgk = BigDecimal.ZERO;
-			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_ZHTKGK))) {
-				zhtkgkStr = sapMap.get(SapApiConsts.PARAMS_ID_ZHTKGK).toString();
-				zhtkgkStr = zhtkgkStr.replaceAll(",", "");
-				zhtkgk = new BigDecimal(zhtkgkStr);
-			}
 			// 単価
 			String netprStr = "0";
 			BigDecimal netpr = BigDecimal.ZERO;
 			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_NETPR))) {
-				netprStr = sapMap.get(SapApiConsts.PARAMS_ID_NETPR).toString();
-				netprStr = netprStr.replaceAll(",", "");
-				netpr = new BigDecimal(netprStr);
+				netprStr = sapMap.get(SapApiConsts.PARAMS_ID_NETPR).toString().trim();
+				log.info("NETPR: " + netprStr);
+				if (!netprStr.isEmpty()) {
+					netprStr = netprStr.replaceAll(",", "");
+					netpr = new BigDecimal(netprStr);
+				}
 			}
+
+			// 発注金額
+			BigDecimal zhtkgk = BigDecimal.ZERO;
 			// 納入金額
 			BigDecimal sumpr = BigDecimal.ZERO;
 			// 納入受入残金額
@@ -535,22 +533,26 @@ public class DeliveryService {
 			String zhtmngStr = "0";
 			BigDecimal zhtmng = BigDecimal.ZERO;
 			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_ZHTMNG))) {
-				zhtmngStr = sapMap.get(SapApiConsts.PARAMS_ID_ZHTMNG).toString();
-				zhtmngStr = zhtmngStr.replaceAll(",", "");
-				zhtmng = new BigDecimal(zhtmngStr);
+				zhtmngStr = sapMap.get(SapApiConsts.PARAMS_ID_ZHTMNG).toString().trim();
+				log.info("ZHTMNG: " + zhtmngStr);
+				if (!zhtmngStr.isEmpty()) {
+					zhtmngStr = zhtmngStr.replaceAll(",", "");
+					zhtmng = new BigDecimal(zhtmngStr);
+				}
 			}
 			// 発注残数量 (EDIで入力した発注残数量)
 			BigDecimal menge = BigDecimal.ZERO;
 			if (Objects.nonNull(itm.getDeliveryRemainingQuantity())) {
-				menge = new BigDecimal(String.valueOf(itm.getDeliveryRemainingQuantity()));
+				menge = new BigDecimal(itm.getDeliveryRemainingQuantity());
 			}
 			// 納入数量 (EDIで入力した納入数量)
 			BigDecimal zmenge = BigDecimal.ZERO;
 			if (Objects.nonNull(itm.getDeliveryQuantity())) {
-				zmenge = new BigDecimal(String.valueOf(itm.getDeliveryQuantity()));
+				zmenge = new BigDecimal(itm.getDeliveryQuantity());
 			}
-			// 金額の再計算
-			sumpr = netpr.multiply(zmenge);
+			// 金額の再計算 単価 * 発注数量
+			zhtkgk = netpr.multiply(zhtmng); // 発注金額の算出（JCOで取得できないため）
+			sumpr = netpr.multiply(zmenge); // 納入金額の算出
 			sumpr = sumpr.setScale(0, BigDecimal.ROUND_HALF_UP);
 			// 納入受入残金額 = 発注金額 - 納入金額
 			zukzkn = zhtkgk.subtract(sumpr);
@@ -577,6 +579,8 @@ public class DeliveryService {
 			params.put(SapApiConsts.PARAMS_ID_ZHTMNG, zhtmng.toString());
 			// 単位コード
 			params.put(SapApiConsts.PARAMS_ID_ZTANIC, sapMap.get(SapApiConsts.PARAMS_ID_ZTANIC).toString());
+			// 発注金額
+			params.put(SapApiConsts.PARAMS_ID_ZHTKGK, "");
 			// 納入受入残金額
 			params.put(SapApiConsts.PARAMS_ID_ZUKZKN, zukzkn.toString());
 

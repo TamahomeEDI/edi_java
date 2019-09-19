@@ -447,6 +447,8 @@ public class SapApi {
 				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZHTMNG, item.get(SapApiConsts.PARAMS_ID_ZHTMNG));
 				// 単位コード
 				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZTANIC, item.get(SapApiConsts.PARAMS_ID_ZTANIC));
+				// 発注金額
+				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZHTKGK, item.get(SapApiConsts.PARAMS_ID_ZHTKGK));
 				// 納入受入残金額
 				params.addParam(SapApiConsts.PARAMS_KEY_T_I_05002  + "." + SapApiConsts.PARAMS_ID_ZUKZKN, item.get(SapApiConsts.PARAMS_ID_ZUKZKN));
 			}
