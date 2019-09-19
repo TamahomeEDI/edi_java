@@ -462,45 +462,6 @@ public class SapApi {
 		return parsedList;
 	}
 
-
-	//納品書・出来高報告書受入入力_確認 (査定率の登録)
-	public static Map<String, Object> setWorkReportItemQuantityAux(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateDateTime, String workRate, String userCode) {
-		HttpRequestParams params = new HttpRequestParams();
-		params.addParam(PARAMS_KEY_BAPI, PARAMS_VALUE_MODULE_INS_DTLDATA);
-		//※支店コード
-		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_PRCTR, eigyousyoCode);
-		//※発注番号
-		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_EBELN, orderNumber);
-		//※データ種別
-		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZDTSBT, PARAMS_VALUE_ZDTSBT_WORK_REPORT);
-		//※受入日付
-		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZUKDAT, acceptanceDate);
-		//※査定率
-		params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZUKEST, workRate);
-
-		if (Objects.nonNull(wfSeqNo)) {
-			//SEQ
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_ZSEQNO, wfSeqNo);
-		}
-		if (Objects.nonNull(lastUpdateDate)) {
-			//最終更新日
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_AEDAT, lastUpdateDate);
-		}
-		if (Objects.nonNull(lastUpdateDateTime)) {
-			//最終更新時間
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_05001  + "." + SapApiConsts.PARAMS_ID_AEZEIT, lastUpdateDateTime);
-		}
-
-		//※実ユーザコード（ログインユーザの社員コード）
-		params.addParam(SapApiConsts.PARAMS_KEY_T_IE_05003  + "." + SapApiConsts.PARAMS_ID_ZJUSNM, userCode);
-
-
-		Document doc = CommonHttpClient.postXML(BASE_URL, null, params.getParams());
-		Map<String, Object> parsedList = DomParser.parse(doc, SapApiConsts.NODE_NAME_XML);
-		parsedList.put("params", params.getParams());
-		return parsedList;
-	}
-
 	//納品書_表示
 	public static Map<String, Object> getDeliveryWFSeqNo(String eigyousyoCode, String userCode, String wfStatus) {
 		return getWFSeqNo(PARAMS_VALUE_ZDTSBT_DELIVERY, eigyousyoCode, userCode, wfStatus);
