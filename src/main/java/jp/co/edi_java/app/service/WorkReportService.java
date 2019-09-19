@@ -1,5 +1,6 @@
 package jp.co.edi_java.app.service;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -486,6 +487,65 @@ public class WorkReportService {
 		for (Map<String, Object> sapMap : sapDetailData) {
 
 			Map<String, String> params = new HashMap<String,String>();
+
+			// 発注金額
+			String zhtkgkStr = "0";
+			BigDecimal zhtkgk = BigDecimal.ZERO;
+			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_ZHTKGK))) {
+				zhtkgkStr = sapMap.get(SapApiConsts.PARAMS_ID_ZHTKGK).toString();
+				zhtkgkStr = zhtkgkStr.replaceAll(",", "");
+				zhtkgk = new BigDecimal(zhtkgkStr);
+			}
+			// 単価
+			String netprStr = "0";
+			BigDecimal netpr = BigDecimal.ZERO;
+			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_NETPR))) {
+				netprStr = sapMap.get(SapApiConsts.PARAMS_ID_NETPR).toString();
+				netprStr = netprStr.replaceAll(",", "");
+				netpr = new BigDecimal(netprStr);
+			}
+			// 納入金額
+			String sumprStr = "0";
+			BigDecimal sumpr = BigDecimal.ZERO;
+			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_SUMPR))) {
+				sumprStr = sapMap.get(SapApiConsts.PARAMS_ID_SUMPR).toString();
+				sumprStr = sumprStr.replaceAll(",", "");
+				sumpr = new BigDecimal(sumprStr);
+			}
+			// 納入受入残金額
+			String zukzknStr = "0";
+			BigDecimal zukzkn = BigDecimal.ZERO;
+			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_ZUKZKN))) {
+				zukzknStr = sapMap.get(SapApiConsts.PARAMS_ID_ZUKZKN).toString();
+				zukzknStr = zukzknStr.replaceAll(",", "");
+				zukzkn = new BigDecimal(zukzknStr);
+			}
+
+			// 発注数量
+			String zhtmngStr = "0";
+			BigDecimal zhtmng = BigDecimal.ZERO;
+			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_ZHTMNG))) {
+				zhtmngStr = sapMap.get(SapApiConsts.PARAMS_ID_ZHTMNG).toString();
+				zhtmngStr = zhtmngStr.replaceAll(",", "");
+				zhtmng = new BigDecimal(zhtmngStr);
+			}
+			// 発注残数量 (EDIで入力した発注残数量)
+			String mengeStr = "0";
+			BigDecimal menge = BigDecimal.ZERO;
+			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_MENGE))) {
+				mengeStr = sapMap.get(SapApiConsts.PARAMS_ID_MENGE).toString();
+				mengeStr = mengeStr.replaceAll(",", "");
+				menge = new BigDecimal(mengeStr);
+			}
+			// 納入数量 (EDIで入力した納入数量)
+			String zmengeStr = "0";
+			BigDecimal zmenge = BigDecimal.ZERO;
+			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_ZMENGE))) {
+				zmengeStr = sapMap.get(SapApiConsts.PARAMS_ID_ZMENGE).toString();
+				zmengeStr = zmengeStr.replaceAll(",", "");
+				zmenge = new BigDecimal(zmengeStr);
+			}
+
 			// 品目コード
 			params.put(SapApiConsts.PARAMS_ID_MATNR, sapMap.get(SapApiConsts.PARAMS_ID_MATNR).toString());
 			// テキスト(短)
@@ -493,23 +553,23 @@ public class WorkReportService {
 			// 仕様名
 			params.put(SapApiConsts.PARAMS_ID_ZMHNAM, sapMap.get(SapApiConsts.PARAMS_ID_ZMHNAM).toString());
 			// 発注残数量
-			params.put(SapApiConsts.PARAMS_ID_MENGE, sapMap.get(SapApiConsts.PARAMS_ID_MENGE).toString());
+			params.put(SapApiConsts.PARAMS_ID_MENGE, menge.toString());
 			// 納入数量
-			params.put(SapApiConsts.PARAMS_ID_ZMENGE, sapMap.get(SapApiConsts.PARAMS_ID_ZMENGE).toString());
+			params.put(SapApiConsts.PARAMS_ID_ZMENGE, zmenge.toString());
 			// 発注単位
 			params.put(SapApiConsts.PARAMS_ID_MEINS, sapMap.get(SapApiConsts.PARAMS_ID_MEINS).toString());
 			// 単価
-			params.put(SapApiConsts.PARAMS_ID_NETPR, sapMap.get(SapApiConsts.PARAMS_ID_NETPR).toString());
+			params.put(SapApiConsts.PARAMS_ID_NETPR, netpr.toString());
 			// 納入金額
-			params.put(SapApiConsts.PARAMS_ID_SUMPR, sapMap.get(SapApiConsts.PARAMS_ID_SUMPR).toString());
+			params.put(SapApiConsts.PARAMS_ID_SUMPR, sumpr.toString());
 			// 購買伝票の明細番号
 			params.put(SapApiConsts.PARAMS_ID_EBELP, sapMap.get(SapApiConsts.PARAMS_ID_EBELP).toString());
 			// 発注数量
-			params.put(SapApiConsts.PARAMS_ID_ZHTMNG, sapMap.get(SapApiConsts.PARAMS_ID_ZHTMNG).toString());
+			params.put(SapApiConsts.PARAMS_ID_ZHTMNG, zhtmng.toString());
 			// 単位コード
 			params.put(SapApiConsts.PARAMS_ID_ZTANIC, sapMap.get(SapApiConsts.PARAMS_ID_ZTANIC).toString());
 			// 納入受入残金額
-			params.put(SapApiConsts.PARAMS_ID_ZUKZKN, sapMap.get(SapApiConsts.PARAMS_ID_ZUKZKN).toString());
+			params.put(SapApiConsts.PARAMS_ID_ZUKZKN, zukzkn.toString());
 
 			sapDetail.add(params);
 		}
