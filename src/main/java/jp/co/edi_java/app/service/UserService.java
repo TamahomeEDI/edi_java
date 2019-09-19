@@ -27,7 +27,8 @@ public class UserService {
 	public List<MSyainEntity> getListByEigyousyo(String eigyousyoCode) {
 		return mSyainDao.selectListByEigyousyo(eigyousyoCode);
 	}
-	/** 9900ユーザの代替に工務課長を取得。主にメール送信用 */
+
+	/** 990000ユーザの代替に工務課長を取得。主にメール送信用 */
 	public List<MSyainEntity> getListBySyokusyu3(String eigyousyoCode) {
 		return mSyainDao.selectListBySyokusyu3(eigyousyoCode);
 	}

@@ -37,10 +37,10 @@ public class SearchOrderInfoDto {
 
     public String workNumber;
 
-    public String staffReceiptFlg;
+    public String managerReceiptFlg;
 
     @JsonFormat(pattern = "yyyy/MM/dd HH:mm:ss")
-    public Timestamp staffReceiptDate;
+    public Timestamp managerReceiptDate;
 
     public String remandFlg;
 

@@ -48,5 +48,10 @@ public class UserController extends BaseController {
 		return super.response();
 	}
 
+	@RequestMapping("/getListBySyokusyu3")
+	public ResponseEntity getListBySyokusyu3(@Validated UserForm form) {
+		super.setResponseData("ret", userService.getListBySyokusyu3(form.eigyousyoCode));
+		return super.response();
+	}
 
 }

@@ -55,4 +55,12 @@ public class DeliveryForm extends BaseForm {
 
     public String encryptDeliveryNumber;
 
+    public String approverCode;
+
+    public String approverComments;
+
+    public String approveDate;
+
+    public String approveDateTime;
+
 }

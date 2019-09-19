@@ -35,6 +35,7 @@ import jp.co.edi_java.app.util.file.FileApi;
 import jp.co.edi_java.app.util.sap.SapApi;
 import jp.co.edi_java.app.util.sap.SapApiAnalyzer;
 import jp.co.edi_java.app.util.sap.SapApiConsts;
+import jp.co.keepalive.springbootfw.exception.CoreRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -307,9 +308,9 @@ public class CloudSignService {
 		//請書未受領一覧検索結果取得
 		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(nonJyuryouData);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-			log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-			return;
-			//throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+			//log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+			//return;
+			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
 		}
 		List<Map<String, Object>> sapList = new ArrayList<>();
 		Object sap = nonJyuryouData.get(SapApiConsts.PARAMS_KEY_T_E_04002);
@@ -346,8 +347,8 @@ public class CloudSignService {
 					Map<String, Object> result = SapApi.setOrderNumberByUkeshoJyuryou(orderNumber, lastUpdateDate, lastUpdateTime);
 					resultInfo = SapApiAnalyzer.analyzeResultInfo(result);
 					if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-						log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-						//throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+						//log.info(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+						throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
 					}
 					break;
 				}
@@ -371,7 +372,7 @@ public class CloudSignService {
 		return sdf.format(date);
 	}
 
-	/* 単発処理 */
+	/* ■■■■■■■■■■■■■■■■■■■■■■■■ 単発処理 ■■■■■■■■■■■■■■■■■■■■■■■ */
 	@SuppressWarnings("unchecked")
 	public Map<String, Object> refreshOrderReport(List<TCloudSignEntity> fileList, String formType) {
 		int agreeCount = 0;

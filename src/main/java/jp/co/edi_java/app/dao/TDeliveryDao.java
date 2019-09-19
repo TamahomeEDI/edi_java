@@ -38,6 +38,9 @@ public interface TDeliveryDao {
 	@Update(excludeNull = true)
 	int update(TDeliveryEntity entity);
 
+	@Update()
+	int updateWf(TDeliveryEntity entity);
+
 	@Delete
 	int delete(TDeliveryEntity entity);
 

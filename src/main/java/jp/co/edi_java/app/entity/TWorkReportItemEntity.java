@@ -33,4 +33,7 @@ public class TWorkReportItemEntity extends BaseEntity {
 
     public String unit;
 
+    //JCO 明細番号
+    public String jcoEbelp;
+
 }

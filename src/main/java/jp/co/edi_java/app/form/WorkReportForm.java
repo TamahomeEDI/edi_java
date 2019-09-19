@@ -59,5 +59,12 @@ public class WorkReportForm extends BaseForm {
 
     public String encryptWorkReportNumber;
 
+    public String approverCode;
+
+    public String approverComments;
+
+    public String approveDate;
+
+    public String approveDateTime;
 
 }

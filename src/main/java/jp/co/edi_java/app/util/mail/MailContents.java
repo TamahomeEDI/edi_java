@@ -3,7 +3,6 @@ package jp.co.edi_java.app.util.mail;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.http.NameValuePair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -378,7 +377,7 @@ public class MailContents {
                 + "発注番号：" + orderNumber + "\n"
                 + "\n"
                 + "\n"
-                + "受入： " + BASE_URL + "/user/delivery/acceptance/approve?t=" + encryptNumber + "\n"
+                + "受入： " + BASE_URL + "/user/delivery/acceptance/apply?t=" + encryptNumber + "\n"
                 + "\n"
                 + "差戻： " + BASE_URL + "/user/delivery/acceptance/sendback?t=" + encryptNumber + "\n"
                 + "\n\n"
@@ -427,13 +426,14 @@ public class MailContents {
                 + "発注番号：" + orderNumber + "\n"
                 + "\n"
                 + "\n</pre>"
-                + "<a href='" + BASE_URL + "/user/delivery/acceptance/approve?t=" + encryptNumber + "' target='_blank'>受入</a>"
+                + "<a href='" + BASE_URL + "/user/delivery/acceptance/apply?t=" + encryptNumber + "' target='_blank'>受入</a>"
                 + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
                 + "<a href='" + BASE_URL + "/user/delivery/acceptance/sendback?t=" + encryptNumber + "' target='_blank'>差戻</a>"
                 + "<br><br>"
                 + detail
                 + "</body></html>";
     }
+
     /*
      * 09-2_出来高受領
      * to 社員
@@ -466,7 +466,7 @@ public class MailContents {
                 + "発注番号：" + orderNumber + "\n"
                 + "\n"
                 + "\n"
-                + "受入： " + BASE_URL + "/user/workreport/acceptance/approve?t=" + encryptNumber + "\n"
+                + "受入： " + BASE_URL + "/user/workreport/acceptance/apply?t=" + encryptNumber + "\n"
                 + "\n"
                 + "差戻： " + BASE_URL + "/user/workreport/acceptance/sendback?t=" + encryptNumber + "\n"
                 + "\n\n"
@@ -478,7 +478,6 @@ public class MailContents {
 
     	String detail = "";
     	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
-    		//detail = "[品名],  [発注数量],  [単位]\n\n";
     		detail = "<table border=\"1\" style=\"border-collapse:collapse;width:100%;max-width:1024px;padding:2px 4px 2px 4px;\">\n"
     				+ "<tr><th style=\"text-align:left;\">[品名]</th><th style=\"text-align:left;\">[発注数量]</th><th style=\"text-align:left;\">[単位]</th></tr>\n";
     		for (TWorkReportItemEntity item : itemList) {
@@ -513,7 +512,125 @@ public class MailContents {
                 + "発注番号：" + orderNumber + "\n"
                 + "\n"
                 + "\n</pre>"
-                + "<a href='" + BASE_URL + "/user/workreport/acceptance/approve?t=" + encryptNumber + "' target=_blank>受入</a>"
+                + "<a href='" + BASE_URL + "/user/workreport/acceptance/apply?t=" + encryptNumber + "' target=_blank>受入</a>"
+                + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                + "<a href='" + BASE_URL + "/user/workreport/acceptance/sendback?t=" + encryptNumber + "' target=_blank>差戻</a>"
+                + "<br><br>"
+                + "<p style=\"font-weight:bold;font-size:medium;\">【出来高：" + workRate + " パーセント】</p>\n"
+                + detail
+                + "</body></html>";
+    }
+
+    public static String getDeliveryWorkReportRejectSubject() {
+    	String subject = "【否認】【納品出来高報告のお知らせ】 TH-EDI";
+
+        return PREFIX + subject;
+    }
+
+    /*
+     * 納品書 受入申請否認時メール
+     *
+     */
+    public static String getDeliveryRejectHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber, List<TDeliveryItemEntity> itemList, String comments) {
+
+    	String detail = "";
+    	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
+    		detail = "<table border=\"1\" style=\"border-collapse:collapse;width:100%;max-width:1024px;padding:2px 4px 2px 4px;\">\n"
+    				+ "<tr><th style=\"text-align:left;\">[品名]</th><th style=\"text-align:left;\">[発注数量]</th>\n"
+        			+ "<th style=\"text-align:left;\">[納入数]</th><th style=\"text-align:left;\">[納入残]</th><th style=\"text-align:left;\">[単位]</th></tr>\n";
+    		for (TDeliveryItemEntity item : itemList) {
+    			detail += "<tr><td style=\"width:40%\">" + item.getItemName()
+    				+ "</td><td style=\"text-align:right;width:15%\">" + item.getOrderQuantity()
+    				+ "</td><td style=\"text-align:right;width:15%\">" + item.getDeliveryQuantity()
+    				+ "</td><td style=\"text-align:right;width:15%\">" + item.getDeliveryRemainingQuantity()
+    				+ "</td><td style=\"width:15%;\">" + item.getUnit() + "</td></tr>\n";
+    		}
+    		detail += "</table>";
+    	}
+
+    	String encryptNumber = CipherUtils.getEncryptAES(deliveryNumber);
+
+    	return ""
+    			+ "<!DOCTYPE html>\n"
+    			+ "<html lang=\"ja\">\n"
+    			+ "<head>\n"
+    			+ "<meta name=\"viewport\" content=\"width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1\">\n"
+    			+ "<meta charset=\"UTF-8\">\n"
+    			+ "<title></title>\n"
+    			+ "<style></style></head><body>\n"
+                + "<pre>\n"
+                + "------------------------------------------------------------------\n"
+                + "本メールはTH-EDIシステムから自動送信されています。\n"
+                + "------------------------------------------------------------------\n"
+                + "\n"
+                + eigyousyoName + " 支店\n"
+                + syainName + " 様\n"
+                + "\n"
+                + "納品書の受入申請が否認されました。業者へ差戻を行うか再度申請ください。\n"
+                + "\n"
+                + "[承認者コメント]\n"
+                + comments + "\n"
+                + "\n"
+                + "工事名：" + koujiName + "\n"
+                + "業者名：" + gyousyaName + "\n"
+                + "発注番号：" + orderNumber + "\n"
+                + "\n"
+                + "\n</pre>"
+                + "<a href='" + BASE_URL + "/user/delivery/acceptance/apply?t=" + encryptNumber + "' target='_blank'>受入(再申請)</a>"
+                + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                + "<a href='" + BASE_URL + "/user/delivery/acceptance/sendback?t=" + encryptNumber + "' target='_blank'>差戻</a>"
+                + "<br><br>"
+                + detail
+                + "</body></html>";
+    }
+
+    /*
+     * 出来高報告書 受入申請否認時メール
+     *
+     */
+    public static String getWorkReportRejectHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, Integer workRate, String workReportNumber, List<TWorkReportItemEntity> itemList, String comments) {
+
+    	String detail = "";
+    	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
+
+    		detail = "<table border=\"1\" style=\"border-collapse:collapse;width:100%;max-width:1024px;padding:2px 4px 2px 4px;\">\n"
+    				+ "<tr><th style=\"text-align:left;\">[品名]</th><th style=\"text-align:left;\">[発注数量]</th><th style=\"text-align:left;\">[単位]</th></tr>\n";
+    		for (TWorkReportItemEntity item : itemList) {
+    			detail += "<tr><td style=\"width:64%\">" + item.getItemName()
+    				+ "</td><td style=\"text-align:right;width:18%\">" + item.getOrderQuantity()
+    				+ "</td><td style=\"width:18%;\">" + item.getUnit() + "</td></tr>\n";
+    		}
+    		detail += "</table>";
+    	}
+    	String encryptNumber = CipherUtils.getEncryptAES(workReportNumber);
+
+    	return ""
+    			+ "<!DOCTYPE html>\n"
+    			+ "<html lang=\"ja\">\n"
+    			+ "<head>\n"
+    			+ "<meta name=\"viewport\" content=\"width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1\">\n"
+    			+ "<meta charset=\"UTF-8\">\n"
+    			+ "<title></title>\n"
+    			+ "<style></style></head><body>\n"
+                + "<pre>\n"
+                + "------------------------------------------------------------------\n"
+                + "本メールはTH-EDIシステムから自動送信されています。\n"
+                + "------------------------------------------------------------------\n"
+                + "\n"
+                + eigyousyoName + " 支店\n"
+                + syainName + " 様\n"
+                + "\n"
+                + "出来高報告書の受入申請が否認されました。業者へ差戻を行うか再度申請ください。\n"
+                + "\n"
+                + "[承認者コメント]\n"
+                + comments + "\n"
+                + "\n"
+                + "工事名：" + koujiName + "\n"
+                + "業者名：" + gyousyaName + "\n"
+                + "発注番号：" + orderNumber + "\n"
+                + "\n"
+                + "\n</pre>"
+                + "<a href='" + BASE_URL + "/user/workreport/acceptance/apply?t=" + encryptNumber + "' target=_blank>受入(再申請)</a>"
                 + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
                 + "<a href='" + BASE_URL + "/user/workreport/acceptance/sendback?t=" + encryptNumber + "' target=_blank>差戻</a>"
                 + "<br><br>"
@@ -569,14 +686,6 @@ public class MailContents {
         return "未入力";
     }
 
-
-
-
-
-
-
-
-
     /*
      * 99_エラー通知
      * to システム管理者
@@ -592,40 +701,5 @@ public class MailContents {
     public static String getSystemBatchErrSubject() {
     	return PREFIX + "【バッチ処理エラーのお知らせ】 TH-EDI";
     }
-
-
-
-
-
-
-    /*
-     * メールテスト
-     * to 入力アカウント
-     */
-    public static String getSapSubject() {
-        return PREFIX + "【SAPパラメータ】 TH-EDI";
-    }
-
-    public static String getSapBody(List<NameValuePair> params) {
-    	String paramStr = "";
-        for (NameValuePair nameValuePair : params) {
-        	paramStr += nameValuePair.getName() + "：" + nameValuePair.getValue() + "\n";
-		}
-
-        return ""
-                + "\n"
-                + "------------------------------------------------------------------\n"
-                + "本メールはTH-EDIシステムから自動送信されています。\n"
-                + "------------------------------------------------------------------\n"
-                + "\n"
-                + "\n"
-                + "\n"
-                + paramStr
-                + "\n"
-                + "\n"
-                + "\n"
-                + "何卒宜しくお願い申し上げます。\n";
-    }
-
 
 }

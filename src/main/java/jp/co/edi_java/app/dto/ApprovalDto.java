@@ -12,6 +12,6 @@ public class ApprovalDto {
     public String judgmentKbn;
 
     public String userBikou;
-
-
+    //JCO 明細番号
+    public String jcoEbelp;
 }

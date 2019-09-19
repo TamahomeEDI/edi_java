@@ -38,5 +38,7 @@ public class TDeliveryItemEntity extends BaseEntity {
     public String unit;
 
     public String completeDeliveryFlg;
+    //JCO 明細番号
+    public String jcoEbelp;
 
 }

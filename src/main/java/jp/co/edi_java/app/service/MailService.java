@@ -15,7 +15,9 @@ import jp.co.edi_java.app.entity.TWorkReportItemEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
 import jp.co.edi_java.app.util.mail.MailContents;
 import jp.co.edi_java.app.util.mail.MailExUtils;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @Scope("request")
 public class MailService {
@@ -24,7 +26,7 @@ public class MailService {
     public static final String MAIL_ADDR_FROM_KAIKEI = "th-edi@tamahome.jp";
     public static final String MAIL_SIGN_FROM = "タマホーム電子発注システム";
 
-    public static final String STG_CC_MAIL = "to-suzuki@tamahome.jp,tmh-0398-suzuki@ezweb.ne.jp";
+    public static final String STG_CC_MAIL = "";
     public static final String STG_BCC_MAIL = "shinji-yamaguchi@tamahome.jp";
 
     /** TO：1件 */
@@ -164,7 +166,7 @@ public class MailService {
 		toList.add(to);
 		List<String> ccList = new ArrayList<String>();
 		ccList.add(cc);
-
+		log.info("delivery send mail: " + to);
 		sendMPartMail(toList,ccList,null,
 			MailContents.getDeliveryWorkReportSubject(remind),
 			//MailContents.getDeliveryBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, itemList),
@@ -182,12 +184,48 @@ public class MailService {
 		toList.add(to);
 		List<String> ccList = new ArrayList<String>();
 		ccList.add(cc);
-
+		log.info("work report send mail: " + to);
 		sendMPartMail(toList,ccList,null,
 			MailContents.getDeliveryWorkReportSubject(remind),
 			//MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber, itemList),
 			null,
 			MailContents.getWorkReportHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workRate, workReportNumber, itemList),
+			fileList
+		);
+	}
+
+	/*
+     * 納品書 受入否認メール
+     */
+	public void sendMailDeliveryReject(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList, String deliveryNumber, List<TDeliveryItemEntity> itemList, String comments) {
+		List<String> toList = new ArrayList<String>();
+		toList.add(to);
+		List<String> ccList = new ArrayList<String>();
+		ccList.add(cc);
+		log.info("delivery send mail: " + to);
+		sendMPartMail(toList,ccList,null,
+			MailContents.getDeliveryWorkReportRejectSubject(),
+			//MailContents.getDeliveryBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, itemList),
+			null,
+			MailContents.getDeliveryRejectHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, itemList, comments),
+			fileList
+		);
+	}
+
+    /*
+     * 出来高報告書 受入否認メール
+     */
+	public void sendMailWorkReportReject(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, Integer workRate, List<Map<String,String>> fileList, String workReportNumber, List<TWorkReportItemEntity> itemList, String comments) {
+		List<String> toList = new ArrayList<String>();
+		toList.add(to);
+		List<String> ccList = new ArrayList<String>();
+		ccList.add(cc);
+		log.info("work report send mail: " + to);
+		sendMPartMail(toList,ccList,null,
+			MailContents.getDeliveryWorkReportRejectSubject(),
+			//MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber, itemList),
+			null,
+			MailContents.getWorkReportRejectHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workRate, workReportNumber, itemList, comments),
 			fileList
 		);
 	}
