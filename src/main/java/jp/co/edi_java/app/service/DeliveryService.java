@@ -364,7 +364,12 @@ public class DeliveryService {
 		//工事情報
 	    MKoujiEntity kouji = mKoujiDao.select(delivery.getKoujiCode());
 		String eigyousyoCode = kouji.getEigyousyoCode();
-		String acceptanceDate = form.getApproveDate();
+
+		// 受入日は受入リンクをクリックした申請日
+		// String acceptanceDate = form.getApproveDate();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		String acceptanceDate = sdf.format(delivery.getStaffReceiptDate());
+
 		String approverCode = form.getApproverCode();
 		String approveDate = form.getApproveDate();
 		String approveDateTime = form.getApproveDateTime();
@@ -505,7 +510,7 @@ public class DeliveryService {
 		for (Map<String, Object> sapMap : sapDetailData) {
 			String lineNo = sapMap.get(SapApiConsts.PARAMS_ID_EBELP).toString();
 			if (!detailMap.containsKey(lineNo)) {
-				throw new CoreRuntimeException("not found SAP delivery detail data in EDI DeliveryItem : " + orderNumber + " , JCO_EBELP: " + lineNo);
+				throw new CoreRuntimeException("not found SAP delivery detail data in EDI DeliveryItem : " + orderNumber + " , JCO_EBELP : " + lineNo);
 			}
 			TDeliveryItemEntity itm = detailMap.get(lineNo);
 			Map<String, String> params = new HashMap<String,String>();
@@ -526,6 +531,8 @@ public class DeliveryService {
 			BigDecimal zhtkgk = BigDecimal.ZERO;
 			// 納入金額
 			BigDecimal sumpr = BigDecimal.ZERO;
+			// 納入済金額
+			BigDecimal paid = BigDecimal.ZERO;
 			// 納入受入残金額
 			BigDecimal zukzkn = BigDecimal.ZERO;
 
@@ -540,22 +547,62 @@ public class DeliveryService {
 					zhtmng = new BigDecimal(zhtmngStr);
 				}
 			}
+			// 発注残数量（SAP上の発注残）
+			String remainQtyStr = "0";
+			BigDecimal paidQty = BigDecimal.ZERO;
+			BigDecimal remainQty = BigDecimal.ZERO;
+			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_MENGE))) {
+				remainQtyStr = sapMap.get(SapApiConsts.PARAMS_ID_MENGE).toString().trim();
+				log.info("SAP MENGE: " + remainQtyStr);
+				if (!remainQtyStr.isEmpty()) {
+					remainQtyStr = remainQtyStr.replaceAll(",", "");
+					remainQty = new BigDecimal(remainQtyStr);
+				}
+			}
+			// 納入済数量 = 発注数量 - 発注残数量
+			paidQty = zhtmng.subtract(remainQty);
+
 			// 発注残数量 (EDIで入力した発注残数量)
 			BigDecimal menge = BigDecimal.ZERO;
 			if (Objects.nonNull(itm.getDeliveryRemainingQuantity())) {
-				menge = new BigDecimal(itm.getDeliveryRemainingQuantity());
+				menge = new BigDecimal(String.valueOf(itm.getDeliveryRemainingQuantity()));
+				log.info("EDI MENGE: " + menge.toString());
 			}
 			// 納入数量 (EDIで入力した納入数量)
 			BigDecimal zmenge = BigDecimal.ZERO;
 			if (Objects.nonNull(itm.getDeliveryQuantity())) {
-				zmenge = new BigDecimal(itm.getDeliveryQuantity());
+				zmenge = new BigDecimal(String.valueOf(itm.getDeliveryQuantity()));
+				log.info("EDI ZMENGE: " + zmenge.toString());
 			}
 			// 金額の再計算 単価 * 発注数量
 			zhtkgk = netpr.multiply(zhtmng); // 発注金額の算出（JCOで取得できないため）
 			sumpr = netpr.multiply(zmenge); // 納入金額の算出
+			paid = netpr.multiply(paidQty); // 納入済金額の算出
+			zhtkgk = zhtkgk.setScale(0, BigDecimal.ROUND_HALF_UP);
 			sumpr = sumpr.setScale(0, BigDecimal.ROUND_HALF_UP);
-			// 納入受入残金額 = 発注金額 - 納入金額
-			zukzkn = zhtkgk.subtract(sumpr);
+			paid = paid.setScale(0, BigDecimal.ROUND_HALF_UP);
+			if (menge.compareTo(BigDecimal.ZERO) == 0) {
+				zukzkn = BigDecimal.ZERO;
+			} else if (paid.compareTo(BigDecimal.ZERO) == 1) {
+				// 納入受入残金額 = 発注金額 - 納入金額 - 納入済金額
+				zukzkn = zhtkgk.subtract(sumpr).subtract(paid);
+			} else {
+				// 納入受入残金額 = 発注金額 - 納入金額
+				zukzkn = zhtkgk.subtract(sumpr);
+			}
+			log.info("ZHTKGK: " + zhtkgk.toString());
+			log.info("SUMPR: " + sumpr.toString());
+			log.info("PAID: " + paid.toString());
+			log.info("ZUKZKN: " + zukzkn.toString());
+
+			// EDI側の納入数量+発注残数量とJCO側の発注残数量が一致しない場合は手動で申請決済済と判断
+			BigDecimal testQty = BigDecimal.ZERO;
+			testQty = zmenge.add(menge);
+			log.info("REMAIN QTY: " + remainQty.toString());
+			log.info("TEST QTY: " + testQty.toString());
+			if (remainQty.compareTo(testQty) != 0) {
+				throw new CoreRuntimeException("Probably completed with SAP : " + orderNumber + " , JCO_EBELP : " + lineNo);
+			}
 
 			// 品目コード
 			params.put(SapApiConsts.PARAMS_ID_MATNR, sapMap.get(SapApiConsts.PARAMS_ID_MATNR).toString());
