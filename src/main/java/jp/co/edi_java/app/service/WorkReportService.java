@@ -358,7 +358,10 @@ public class WorkReportService {
 		//工事情報
 	    MKoujiEntity kouji = mKoujiDao.select(workReport.getKoujiCode());
 		String eigyousyoCode = kouji.getEigyousyoCode();
-		String acceptanceDate = form.getApproveDate();
+		// 受入日は受入リンクをクリックした申請日
+		// String acceptanceDate = form.getApproveDate();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		String acceptanceDate = sdf.format(workReport.getStaffReceiptDate());
 		String approverCode = form.getApproverCode();
 		String approveDate = form.getApproveDate();
 		String approveDateTime = form.getApproveDateTime();
