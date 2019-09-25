@@ -553,7 +553,7 @@ public class DeliveryService {
 			BigDecimal remainQty = BigDecimal.ZERO;
 			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_MENGE))) {
 				remainQtyStr = sapMap.get(SapApiConsts.PARAMS_ID_MENGE).toString().trim();
-				log.info("MENGE: " + remainQtyStr);
+				log.info("SAP MENGE: " + remainQtyStr);
 				if (!remainQtyStr.isEmpty()) {
 					remainQtyStr = remainQtyStr.replaceAll(",", "");
 					remainQty = new BigDecimal(remainQtyStr);
@@ -565,12 +565,14 @@ public class DeliveryService {
 			// 発注残数量 (EDIで入力した発注残数量)
 			BigDecimal menge = BigDecimal.ZERO;
 			if (Objects.nonNull(itm.getDeliveryRemainingQuantity())) {
-				menge = new BigDecimal(itm.getDeliveryRemainingQuantity());
+				menge = new BigDecimal(String.valueOf(itm.getDeliveryRemainingQuantity()));
+				log.info("EDI MENGE: " + menge.toString());
 			}
 			// 納入数量 (EDIで入力した納入数量)
 			BigDecimal zmenge = BigDecimal.ZERO;
 			if (Objects.nonNull(itm.getDeliveryQuantity())) {
-				zmenge = new BigDecimal(itm.getDeliveryQuantity());
+				zmenge = new BigDecimal(String.valueOf(itm.getDeliveryQuantity()));
+				log.info("EDI ZMENGE: " + zmenge.toString());
 			}
 			// 金額の再計算 単価 * 発注数量
 			zhtkgk = netpr.multiply(zhtmng); // 発注金額の算出（JCOで取得できないため）
@@ -596,6 +598,8 @@ public class DeliveryService {
 			// EDI側の納入数量+発注残数量とJCO側の発注残数量が一致しない場合は手動で申請決済済と判断
 			BigDecimal testQty = BigDecimal.ZERO;
 			testQty = zmenge.add(menge);
+			log.info("REMAIN QTY: " + remainQty.toString());
+			log.info("TEST QTY: " + testQty.toString());
 			if (remainQty.compareTo(testQty) != 0) {
 				throw new CoreRuntimeException("Probably completed with SAP : " + orderNumber + " , JCO_EBELP : " + lineNo);
 			}
