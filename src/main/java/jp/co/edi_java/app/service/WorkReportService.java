@@ -472,13 +472,35 @@ public class WorkReportService {
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
 		}
-
-		Object obj = result.get(SapApiConsts.PARAMS_KEY_T_E_04004);
-		List<Map<String, Object>> sapDetailData = new ArrayList<Map<String, Object>>();
-		if(obj instanceof List) {
-			sapDetailData = (List<Map<String, Object>>)obj;
+		// SAP workRate 100%, EDI workRate 100%  の場合は既に決裁済と判断
+		Object tE04003 = result.get(SapApiConsts.PARAMS_KEY_T_E_04003);
+		List<Map<String, Object>> sapTE04003List = new ArrayList<Map<String, Object>>();
+		if(tE04003 instanceof List) {
+			sapTE04003List = (List<Map<String, Object>>)tE04003;
 		}else {
-			sapDetailData.add((Map<String, Object>)obj);
+			sapTE04003List.add((Map<String, Object>)tE04003);
+		}
+		// SAPの明細データを取得できない
+		if (Objects.isNull(sapTE04003List) || sapTE04003List.isEmpty()) {
+			throw new CoreRuntimeException("SAP workreport detail data TE04003 is empty");
+		}
+		for (Map<String, Object> sapTE04003 : sapTE04003List) {
+			if (Objects.nonNull(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSEQNO)) && Objects.equals(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString(), "000")) {
+				if (Objects.nonNull(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSATEIRT)) && Objects.equals(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSATEIRT).toString(), "100")) {
+					if (Objects.nonNull(workRate) && Objects.deepEquals(workRate, "100")) {
+						throw new CoreRuntimeException("Probably completed with SAP (WorkReport): " + orderNumber);
+					}
+				}
+				break;
+			}
+		}
+
+		Object tE04004 = result.get(SapApiConsts.PARAMS_KEY_T_E_04004);
+		List<Map<String, Object>> sapDetailData = new ArrayList<Map<String, Object>>();
+		if(tE04004 instanceof List) {
+			sapDetailData = (List<Map<String, Object>>)tE04004;
+		}else {
+			sapDetailData.add((Map<String, Object>)tE04004);
 		}
 		// SAPの明細データを取得できない
 		if (Objects.isNull(sapDetailData) || sapDetailData.isEmpty()) {
