@@ -336,6 +336,36 @@ public class MailContents {
     }
 
     /*
+     * 08_受注拒否
+     * to 社員
+     */
+    public static String getConfirmationDismissalSubject() {
+        return PREFIX + "【発注差戻のお知らせ】 TH-EDI";
+    }
+
+    public static String getConfirmationDismissalBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber) {
+        return ""
+                + "\n"
+                + "------------------------------------------------------------------\n"
+                + "本メールはTH-EDIシステムから自動送信されています。\n"
+                + "------------------------------------------------------------------\n"
+                + "\n"
+                + eigyousyoName + " 支店\n"
+                + syainName + " 様\n"
+                + "\n"
+                + "以下発注書は受理されず、却下されました。\n"
+                + "\n"
+                + "工事名：" + koujiName + "\n"
+                + "業者名：" + gyousyaName + "\n"
+                + "発注番号：" + orderNumber + "\n"
+                + "\n"
+                + "\n"
+                + "\n"
+                + "\n"
+                + BASE_URL + "/user/order/detail/?orderNumber=" + orderNumber + "\n";
+    }
+
+    /*
      * 09-1_納品受領
      * to 社員
      */

@@ -601,7 +601,7 @@ public class DeliveryService {
 			log.info("REMAIN QTY: " + remainQty.toString());
 			log.info("TEST QTY: " + testQty.toString());
 			if (remainQty.compareTo(testQty) != 0) {
-				throw new CoreRuntimeException("Probably completed with SAP : " + orderNumber + " , JCO_EBELP : " + lineNo);
+				throw new CoreRuntimeException("Probably completed with SAP (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo);
 			}
 
 			// 品目コード

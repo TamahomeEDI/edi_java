@@ -158,6 +158,23 @@ public class MailService {
 		);
 	}
 
+	/*
+     * 08_請書受領通知
+     */
+	public void sendMailConfirmationDismissal(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList) {
+		List<String> toList = new ArrayList<String>();
+		toList.add(to);
+		List<String> ccList = new ArrayList<String>();
+		ccList.add(cc);
+
+		sendMPartMail(toList,ccList,null,
+			MailContents.getConfirmationDismissalSubject(),
+			MailContents.getConfirmationDismissalBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber),
+			null,
+			fileList
+		);
+	}
+
     /*
      * 09-1_納品受領通知
      */

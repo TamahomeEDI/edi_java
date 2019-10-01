@@ -179,49 +179,17 @@ public class CloudSignService {
 				log.info("status is agree : " + orderNumber);
 				//連携テーブルの更新
 				update(documentId);
+				//請書のダウンロード
+				Map<String, String> fileInfo = getCloudSignDocument(ret, order, documentId, formType, status);
+				//ファイル情報
+				String fileName = fileInfo.get("fileName");
+				String filePath = fileInfo.get("filePath");
+				String driveFileId = fileInfo.get("driveFileId");
 
-				String fileId = "";
-				String fileName = "";
-				String filePath = "";
-				String fileNo = "";
-				String driveFileId = "";
-
-				if (Objects.isNull(ret.get("files"))) {
-					log.info("can not get files from cloudsign: " + orderNumber + " " + documentId);
-				} else {
-					log.info("get files from cloudsign : " + orderNumber);
-					//ファイルを取得しdriveと連携
-					List<Map<String, Object>> files = (List<Map<String, Object>>)ret.get("files");
-					if (Objects.nonNull(files) && !files.isEmpty()) {
-						if (Objects.nonNull(files.get(0)) && Objects.nonNull(files.get(0).get("id"))) {
-							log.info("cloudsign file id is not null: " + orderNumber);
-							fileId = files.get(0).get("id").toString();
-							fileName = fileId + ".pdf";
-							filePath = CloudSignApi.getFile(documentId, fileId, fileName);
-
-							if(formType.equals(CloudSignApi.FORM_TYPE_ORDER)) {
-								fileNo = FileApi.FILE_NO_CONFRIMATION;
-							}else if(formType.equals(CloudSignApi.FORM_TYPE_CANCEL)){
-								fileNo = FileApi.FILE_NO_CANCEL;
-							}
-							Map<String, Object> postRet = FileApi.postFile(order.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, fileNo, null, filePath, fileName, "application/pdf");
-							log.info("postFile done: " + orderNumber);
-							if (Objects.nonNull(postRet)) {
-								// google drive file id
-								driveFileId = postRet.get("file_id").toString();
-								log.info("google drive file id is : " + driveFileId + ", order number is: " + orderNumber);
-							} else {
-								log.info("can not post files to google drive: " + orderNumber);
-							}
-						} else {
-							log.info("cloudsign file id is null : " + orderNumber);
-						}
-					} else {
-						log.info("cloudsign files is empty: " + orderNumber);
-					}
-				}
 				//発注テーブルの更新
 				updateOrderAgree(order, driveFileId, formType);
+				//発注日連携
+				sendOrderDate(order);
 				//請書受領連携
 				sendOrderNumber(order);
 				// メール送信
@@ -235,8 +203,17 @@ public class CloudSignService {
 				log.info("status is dismissal : " + orderNumber);
 				//連携テーブルの更新（削除）
 				delete(documentId);
+				//請書のダウンロード
+				Map<String, String> fileInfo = getCloudSignDocument(ret, order, documentId, formType, status);
+				//ファイル情報
+				String fileName = fileInfo.get("fileName");
+				String filePath = fileInfo.get("filePath");
+
 				//発注テーブルの更新（申請前に戻す）
 				updateOrderNotAgree(order, formType);
+
+				// メール送信
+				sendConfirmationDismissalMail(orderNumber,filePath,fileName);
 
 				dismissalCount++;
 
@@ -250,7 +227,67 @@ public class CloudSignService {
 		return count;
 	}
 
-	//発注請書受入時にメールを送信
+	/** クラウドサインの請書取得 */
+	private Map<String, String> getCloudSignDocument(Map<String, Object> ret, TOrderEntity order, String documentId, String formType, String status) {
+		Map<String, String> fileInfo = new HashMap<String, String>();
+
+		String orderNumber = order.getOrderNumber();
+
+		String fileId = "";
+		String fileName = "";
+		String filePath = "";
+		String fileNo = "";
+		String driveFileId = "";
+
+		if (Objects.isNull(ret.get("files"))) {
+			log.info("can not get files from cloudsign: " + orderNumber + " " + documentId);
+		} else {
+			log.info("get files from cloudsign : " + orderNumber);
+			//ファイルを取得しdriveと連携
+			List<Map<String, Object>> files = (List<Map<String, Object>>)ret.get("files");
+			if (Objects.nonNull(files) && !files.isEmpty()) {
+				if (Objects.nonNull(files.get(0)) && Objects.nonNull(files.get(0).get("id"))) {
+					log.info("cloudsign file id is not null: " + orderNumber);
+					fileId = files.get(0).get("id").toString();
+					fileName = fileId + ".pdf";
+					filePath = CloudSignApi.getFile(documentId, fileId, fileName);
+
+					if(formType.equals(CloudSignApi.FORM_TYPE_ORDER)) {
+						fileNo = FileApi.FILE_NO_CONFRIMATION;
+					}else if(formType.equals(CloudSignApi.FORM_TYPE_CANCEL)){
+						fileNo = FileApi.FILE_NO_CANCEL;
+					}
+					// 同意の場合のみ。却下の場合はメール添付利用のみのため
+					if(status.equals(CloudSignApi.STATUS_AGREE)) {
+						// 請書の家歴連携
+						Map<String, Object> postRet = FileApi.postFile(order.getKoujiCode(), FileApi.TOSHO_CODE_EDI, FileApi.FILE_CODE_FORM, fileNo, null, filePath, fileName, "application/pdf");
+						log.info("postFile done: " + orderNumber);
+						if (Objects.nonNull(postRet)) {
+							// google drive file id
+							driveFileId = postRet.get("file_id").toString();
+							log.info("google drive file id is : " + driveFileId + ", order number is: " + orderNumber);
+						} else {
+							log.info("can not post files to google drive: " + orderNumber);
+						}
+					}
+				} else {
+					log.info("cloudsign file id is null : " + orderNumber);
+				}
+			} else {
+				log.info("cloudsign files is empty: " + orderNumber);
+			}
+		}
+
+		fileInfo.put("fileId",fileId);
+		fileInfo.put("fileName",fileName);
+		fileInfo.put("filePath",filePath);
+		fileInfo.put("fileNo",fileNo);
+		fileInfo.put("driveFileId",driveFileId);
+
+		return fileInfo;
+	}
+
+	/** 発注請書受入時にメールを送信 */
 	public void sendConfirmationAgreeMail(String orderNumber, String filePath, String fileName) {
 
 		//発注詳細取得（SAP）
@@ -283,6 +320,40 @@ public class CloudSignService {
 		mailService.sendMailConfirmationAgree(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), dto.getGyousyaName(), orderNumber, fileList);
 	}
 
+	/** 発注請書受入却下時にメールを送信 */
+	public void sendConfirmationDismissalMail(String orderNumber, String filePath, String fileName) {
+
+		//発注詳細取得（SAP）
+		Map<String, Object> data = SapApi.orderDetail(orderNumber);
+		//基本情報取得
+		SapOrderDto dto = orderService.getHeader(data, orderNumber);
+		//工事情報取得
+		MKoujiEntity kouji = mKoujiDao.select(dto.getOrderInfo().getKoujiCode());
+		//支店情報取得
+		MEigyousyoEntity eigyousyo = mEigyousyoDao.select(kouji.getEigyousyoCode());
+		//社員情報取得
+		MSyainEntity syain = mSyainDao.select(kouji.getTantouSyainCode());
+		//CC
+		String cc = null;
+		if(!STG_FLG.equals(STG_FLG_ON)) {
+			cc = "jimu-" + eigyousyo.getEigyousyoCode() + "@tamahome.jp";
+		}else {
+			cc = MailService.STG_CC_MAIL;
+		}
+		String newFileName = "注文請書.pdf";
+		//添付ファイル
+		List<Map<String,String>> fileList = new ArrayList<Map<String,String>>();
+		if (Objects.nonNull(filePath)) {
+			Map<String,String> fileMap = new HashMap<String,String>();
+			fileMap.put("filePath", filePath);
+			fileMap.put("fileName", newFileName);
+			fileList.add(fileMap);
+		}
+		//メール送信
+		mailService.sendMailConfirmationDismissal(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), dto.getGyousyaName(), orderNumber, fileList);
+	}
+
+	/** クラウドサインのリマインド */
 	public int remindList(List<TCloudSignEntity> fileList) {
 		int count = 0;
 		for (TCloudSignEntity tCloudSignEntity : fileList) {
@@ -292,19 +363,39 @@ public class CloudSignService {
 		}
 		return count;
 	}
-
+	/** クラウドサインのリマインド単体 */
 	public void remind(String documentId) {
 		//再送する
 		CloudSignApi.postDocumentId(documentId);
 	}
 
+	/** 発注日をSAPへ連携 */
+	private void sendOrderDate(TOrderEntity order) {
+		String orderNumber = order.getOrderNumber();
+		String koujiCode = order.getKoujiCode();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		String orderDate = sdf.format(order.getConfirmationRequestDate());
+		Map<String, Object> data = SapApi.setOrderDate(orderNumber, koujiCode, orderDate);
+		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
+		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+		}
+	}
+
+	/** 請書 発注番号連携 */
 	private void sendOrderNumber(TOrderEntity order) {
 		String orderNumber = order.getOrderNumber();
 		String koujiCode = order.getKoujiCode();
 		String insertUser = order.getInsertUser();
+		//工事情報取得
+		MKoujiEntity kouji = mKoujiDao.select(koujiCode);
+		String sapUser = kouji.getTantouSyainCode();
+		if (Objects.isNull(sapUser)) {
+			sapUser = insertUser;
+		}
 		// sap 請書未受領一覧検索
-		log.info("selectUkeshoJyuryou: " + koujiCode + " " + insertUser);
-		Map<String, Object> nonJyuryouData = SapApi.selectUkeshoJyuryou(koujiCode, insertUser);
+		log.info("selectUkeshoJyuryou: " + koujiCode + " " + sapUser);
+		Map<String, Object> nonJyuryouData = SapApi.selectUkeshoJyuryou(koujiCode, sapUser);
 		//請書未受領一覧検索結果取得
 		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(nonJyuryouData);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {

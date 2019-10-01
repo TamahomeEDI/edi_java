@@ -428,18 +428,6 @@ public class OrderService {
 		tCloudSignDao.insert(entity);
 	}
 
-	//発注日をSAPへ連携
-	public void setOrderDate(String orderNumber) {
-		TOrderEntity orderInfo = selectInfo(orderNumber);
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-		String orderDate = sdf.format(orderInfo.getConfirmationRequestDate());
-		Map<String, Object> data = SapApi.setOrderDate(orderNumber, orderInfo.getKoujiCode(), orderDate);
-		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
-		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-		}
-	}
-
 	private Map<String, List<Map<String, Object>>> getFileIdListMap(List<String> orderNumberList) {
 		List<FileOrderRelEntity> fileRelList = fileOrderRelDao.selectListByMultiNum(orderNumberList);
 		Map<String, List<Map<String, Object>>> ret = new HashMap<String, List<Map<String, Object>>>();
