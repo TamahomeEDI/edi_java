@@ -724,7 +724,8 @@ public class JtmService {
 				if(copyEntity == null || (vEntity.getSaisyuuKousinDate() != null && (copyEntity != null && !copyEntity.getSaisyuuKousinDate().equals(vEntity.getSaisyuuKousinDate())))){
 					MSyainEntity entity = new MSyainEntity();
 					BeanUtils.copyBeanToBean(vEntity, entity);
-					if(copyEntity == null) {
+					// 退職者レコードは新規取り込みはしない
+					if(copyEntity == null && vEntity.getTaisyokuFlg() != 1) {
 						mSyainDao.insert(entity);
 						insertCount++;
 					}else if (copyEntity != null && !copyEntity.getSaisyuuKousinDate().equals(vEntity.getSaisyuuKousinDate())) {
