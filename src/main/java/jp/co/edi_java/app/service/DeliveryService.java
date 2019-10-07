@@ -223,11 +223,22 @@ public class DeliveryService {
 	}
 
 	/** ジョブカン承認待ち */
-	public void apply(DeliveryForm form) {
+	public List<TDeliveryEntity> apply(DeliveryForm form) {
 		List<ApprovalDto> approvalList = form.getDeliveryApprovalList();
+		List<TDeliveryEntity> errorList = new ArrayList<TDeliveryEntity>();
 		if(approvalList != null) {
 			for (ApprovalDto dto : approvalList) {
 				TDeliveryEntity entity = this.get(dto.getWorkNumber());
+				MKoujiEntity kouji = mKoujiDao.select(entity.getKoujiCode());
+				String syainCode = kouji.getTantouSyainCode();
+				//施工担当社員
+			    MSyainEntity syain = mSyainDao.select(syainCode);
+			    if (Objects.nonNull(syain.getTaisyokuFlg()) && syain.getTaisyokuFlg() == 1) {
+			    	//退職者のため申請不能
+			    	errorList.add(entity);
+			    	continue;
+			    }
+
 				if (Objects.equals(entity.getStaffReceiptFlg(), CommonConsts.RECEIPT_FLG_OFF) &&
 						Objects.equals(entity.getManagerReceiptFlg(), CommonConsts.RECEIPT_FLG_OFF) &&
 						Objects.equals(entity.getRemandFlg(), CommonConsts.REMAND_FLG_OFF)) {
@@ -242,13 +253,14 @@ public class DeliveryService {
 					entity.setUserBikou(dto.getUserBikou());
 					entity.setUpdateUser(form.getUserId());
 					tDeliveryDao.updateWf(entity);
-					applyToJobcan(entity);
+					applyToJobcan(entity,kouji,syain);
 				}
 			}
 		}
+		return errorList;
 	}
 	/** ジョブカン申請 */
-	private void applyToJobcan(TDeliveryEntity delivery) {
+	private void applyToJobcan(TDeliveryEntity delivery, MKoujiEntity kouji, MSyainEntity syain) {
 		String deliveryNumber = delivery.getDeliveryNumber();
 		String koujiCode = delivery.getKoujiCode();
 		String orderNumber = delivery.getOrderNumber();
@@ -257,7 +269,7 @@ public class DeliveryService {
 		String saimokuKousyuCode = delivery.getSaimokuKousyuCode();
 
 		//工事情報
-	    MKoujiEntity kouji = mKoujiDao.select(koujiCode);
+	    //MKoujiEntity kouji = mKoujiDao.select(koujiCode);
 	    //発注書情報
 	    SapOrderDto order = orderService.get(orderNumber);
 	    //業者情報
@@ -269,7 +281,7 @@ public class DeliveryService {
 	    MEigyousyoEntity eigyousyo = mEigyousyoDao.select(eigyousyoCode);
 	    //施工担当社員
 	    String syainCode = kouji.getTantouSyainCode();
-	    MSyainEntity syain = mSyainDao.select(syainCode);
+	    //MSyainEntity syain = mSyainDao.select(syainCode);
 	    String userId = syainCode;
 
 	    if (Objects.nonNull(syain) && Objects.nonNull(syain.getSyainCode())) {

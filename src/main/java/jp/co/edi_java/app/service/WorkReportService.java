@@ -88,6 +88,8 @@ public class WorkReportService {
 	private static String STG_FLG;
 	private static String STG_FLG_ON = "1";
 	private static String TEMPORARY_SYAIN_CODE = "990000";
+	private static String SUM_SEQNO_CODE = "000";
+	private static String LIMIT_WORK_RATE = "100";
 	private static String ORDER_TYPE_WORK_REPORT = "2";
 	public static String TOSHO_CODE_EDI = "09";
 	public static String FILE_CODE_FORM = "03";			//帳票
@@ -219,11 +221,21 @@ public class WorkReportService {
 	}
 
 	/** ジョブカン承認待ち */
-	public void apply(WorkReportForm form) {
+	public List<TWorkReportEntity> apply(WorkReportForm form) {
 		List<ApprovalDto> approvalList = form.getWorkReportApprovalList();
+		List<TWorkReportEntity> errorList = new ArrayList<TWorkReportEntity>();
 		if(approvalList != null) {
 			for (ApprovalDto dto : approvalList) {
 				TWorkReportEntity entity = this.get(dto.getWorkNumber());
+				MKoujiEntity kouji = mKoujiDao.select(entity.getKoujiCode());
+				String syainCode = kouji.getTantouSyainCode();
+				//施工担当社員
+			    MSyainEntity syain = mSyainDao.select(syainCode);
+			    if (Objects.nonNull(syain.getTaisyokuFlg()) && syain.getTaisyokuFlg() == 1) {
+			    	//退職者のため申請不能
+			    	errorList.add(entity);
+			    	continue;
+			    }
 				if (Objects.equals(entity.getStaffReceiptFlg(), CommonConsts.RECEIPT_FLG_OFF) &&
 						Objects.equals(entity.getManagerReceiptFlg(), CommonConsts.RECEIPT_FLG_OFF) &&
 						Objects.equals(entity.getRemandFlg(), CommonConsts.REMAND_FLG_OFF)) {
@@ -238,13 +250,14 @@ public class WorkReportService {
 					entity.setUserBikou(dto.getUserBikou());
 					entity.setUpdateUser(form.getUserId());
 					tWorkReportDao.updateWf(entity);
-					applyToJobcan(entity);
+					applyToJobcan(entity, kouji, syain);
 				}
 			}
 		}
+		return errorList;
 	}
 	/** ジョブカン申請 */
-	private void applyToJobcan(TWorkReportEntity workReport) {
+	private void applyToJobcan(TWorkReportEntity workReport, MKoujiEntity kouji, MSyainEntity syain) {
 		String workReportNumber = workReport.getWorkReportNumber();
 		String koujiCode = workReport.getKoujiCode();
 		String orderNumber = workReport.getOrderNumber();
@@ -253,7 +266,7 @@ public class WorkReportService {
 		String saimokuKousyuCode = workReport.getSaimokuKousyuCode();
 
 		//工事情報
-	    MKoujiEntity kouji = mKoujiDao.select(koujiCode);
+	    //MKoujiEntity kouji = mKoujiDao.select(koujiCode);
 	    //発注書情報
 	    SapOrderDto order = orderService.get(orderNumber);
 	    //業者情報
@@ -265,7 +278,7 @@ public class WorkReportService {
 	    MEigyousyoEntity eigyousyo = mEigyousyoDao.select(eigyousyoCode);
 	    //施工担当社員
 	    String syainCode = kouji.getTantouSyainCode();
-	    MSyainEntity syain = mSyainDao.select(syainCode);
+	    //MSyainEntity syain = mSyainDao.select(syainCode);
 	    String userId = syainCode;
 
 	    if (Objects.nonNull(syain) && Objects.nonNull(syain.getSyainCode())) {
@@ -485,9 +498,9 @@ public class WorkReportService {
 			throw new CoreRuntimeException("SAP workreport detail data TE04003 is empty");
 		}
 		for (Map<String, Object> sapTE04003 : sapTE04003List) {
-			if (Objects.nonNull(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSEQNO)) && Objects.equals(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString(), "000")) {
-				if (Objects.nonNull(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSATEIRT)) && Objects.equals(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSATEIRT).toString(), "100")) {
-					if (Objects.nonNull(workRate) && Objects.deepEquals(workRate, "100")) {
+			if (Objects.nonNull(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSEQNO)) && Objects.equals(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString(), SUM_SEQNO_CODE)) {
+				if (Objects.nonNull(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSATEIRT)) && Objects.equals(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSATEIRT).toString(), LIMIT_WORK_RATE)) {
+					if (Objects.nonNull(workRate) && Objects.equals(workRate, LIMIT_WORK_RATE)) {
 						throw new CoreRuntimeException("Probably completed with SAP (WorkReport): " + orderNumber);
 					}
 				}

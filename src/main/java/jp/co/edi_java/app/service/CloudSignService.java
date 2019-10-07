@@ -73,6 +73,7 @@ public class CloudSignService {
 
 	private static String STG_FLG;
 	private static String STG_FLG_ON = "1";
+	private static String TEMPORARY_SYAIN_CODE = "990000";
 
 	private CloudSignService(@Value("${stg.flg}") String flg) {
 		STG_FLG = flg;
@@ -173,6 +174,7 @@ public class CloudSignService {
 			}
 			//ステータス 1…保留、2…同意、3…却下
 			String status = ret.get("status").toString();
+
 
 			//同意の場合
 			if(status.equals(CloudSignApi.STATUS_AGREE)) {
@@ -300,13 +302,10 @@ public class CloudSignService {
 		MEigyousyoEntity eigyousyo = mEigyousyoDao.select(kouji.getEigyousyoCode());
 		//社員情報取得
 		MSyainEntity syain = mSyainDao.select(kouji.getTantouSyainCode());
-		//CC
-		String cc = null;
-		if(!STG_FLG.equals(STG_FLG_ON)) {
-			cc = "jimu-" + eigyousyo.getEigyousyoCode() + "@tamahome.jp";
-		}else {
-			cc = MailService.STG_CC_MAIL;
-		}
+
+		String to = getMailTo(syain, eigyousyo.getEigyousyoCode());
+		String cc = getMailCc(eigyousyo.getEigyousyoCode());
+
 		String newFileName = "注文請書.pdf";
 		//添付ファイル
 		List<Map<String,String>> fileList = new ArrayList<Map<String,String>>();
@@ -317,7 +316,7 @@ public class CloudSignService {
 			fileList.add(fileMap);
 		}
 		//メール送信
-		mailService.sendMailConfirmationAgree(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), dto.getGyousyaName(), orderNumber, fileList);
+		mailService.sendMailConfirmationAgree(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), dto.getGyousyaName(), orderNumber, fileList);
 	}
 
 	/** 発注請書受入却下時にメールを送信 */
@@ -333,13 +332,10 @@ public class CloudSignService {
 		MEigyousyoEntity eigyousyo = mEigyousyoDao.select(kouji.getEigyousyoCode());
 		//社員情報取得
 		MSyainEntity syain = mSyainDao.select(kouji.getTantouSyainCode());
-		//CC
-		String cc = null;
-		if(!STG_FLG.equals(STG_FLG_ON)) {
-			cc = "jimu-" + eigyousyo.getEigyousyoCode() + "@tamahome.jp";
-		}else {
-			cc = MailService.STG_CC_MAIL;
-		}
+
+		String to = getMailTo(syain, eigyousyo.getEigyousyoCode());
+		String cc = getMailCc(eigyousyo.getEigyousyoCode());
+
 		String newFileName = "注文請書.pdf";
 		//添付ファイル
 		List<Map<String,String>> fileList = new ArrayList<Map<String,String>>();
@@ -350,7 +346,7 @@ public class CloudSignService {
 			fileList.add(fileMap);
 		}
 		//メール送信
-		mailService.sendMailConfirmationDismissal(syain.getSyainMail(), cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), dto.getGyousyaName(), orderNumber, fileList);
+		mailService.sendMailConfirmationDismissal(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), dto.getGyousyaName(), orderNumber, fileList);
 	}
 
 	/** クラウドサインのリマインド */
@@ -367,6 +363,41 @@ public class CloudSignService {
 	public void remind(String documentId) {
 		//再送する
 		CloudSignApi.postDocumentId(documentId);
+	}
+
+	private String getMailTo(MSyainEntity syain, String eigyousyoCode) {
+		List<String> toList = new ArrayList<String>();
+		if (Objects.nonNull(syain) && Objects.nonNull(syain.getSyainCode())) {
+			//'990000'ユーザは工務長宛にメール
+			if (Objects.equals(syain.getSyainCode(),TEMPORARY_SYAIN_CODE) && Objects.nonNull(eigyousyoCode)) {
+				List<MSyainEntity> s3SyainList = mSyainDao.selectListBySyokusyu3(eigyousyoCode);
+				for (MSyainEntity s3Syain : s3SyainList) {
+					if (Objects.nonNull(s3Syain.getSyainMail())) {
+						toList.add(s3Syain.getSyainMail());
+					}
+				}
+			} else {
+				if (Objects.nonNull(syain.getSyainMail())) {
+					toList.add(syain.getSyainMail());
+				}
+			}
+		}
+		//to
+		String to = "";
+		if (!toList.isEmpty()) {
+			to = String.join(",", toList);
+		}
+		return to;
+	}
+
+	private String getMailCc(String eigyousyoCode) {
+		String cc = "";
+		if(!STG_FLG.equals(STG_FLG_ON) && Objects.nonNull(eigyousyoCode)) {
+			cc = "jimu-" + eigyousyoCode + "@tamahome.jp";
+		}else {
+			cc = MailService.STG_CC_MAIL;
+		}
+		return cc;
 	}
 
 	/** 発注日をSAPへ連携 */

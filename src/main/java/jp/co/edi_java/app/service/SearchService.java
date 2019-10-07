@@ -26,6 +26,7 @@ import jp.co.edi_java.app.dto.SearchKoujiInfoDto;
 import jp.co.edi_java.app.dto.SearchOrderInfoDto;
 import jp.co.edi_java.app.dto.SearchWorkReportDto;
 import jp.co.edi_java.app.entity.TCloudSignEntity;
+import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
 import jp.co.edi_java.app.form.SearchForm;
 import jp.co.edi_java.app.util.sap.SapApi;
 import jp.co.edi_java.app.util.sap.SapApiAnalyzer;
@@ -475,6 +476,12 @@ public class SearchService {
 		dto.setGyousyaName(map.get(SapApiConsts.PARAMS_ID_ZGYSNM).toString());
 		dto.setKoujiCode(koujiCode);
 		dto.setSapOrderDate(orderDate);
+
+		MGyousyaEntity gyousya = mGyousyaDao.select(map.get(SapApiConsts.PARAMS_ID_ZGYSCD).toString());
+		if (Objects.nonNull(gyousya)) {
+			dto.setGyousyaName(gyousya.getGyousyaName());
+		}
+
 		//SAPで発注済みのものはそれを優先
 		if(!StringUtils.isNullString(orderDate) && !orderDate.equals(ORDER_DATE_VALUE_NOT_ORDERING)) {
 			dto.setOrderDate(orderDate);

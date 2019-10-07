@@ -26,7 +26,7 @@ public class MailService {
     public static final String MAIL_ADDR_FROM_KAIKEI = "th-edi@tamahome.jp";
     public static final String MAIL_SIGN_FROM = "タマホーム電子発注システム";
 
-    public static final String STG_CC_MAIL = "";
+    public static final String STG_CC_MAIL = "to-suzuki@tamahome.jp, tmh-0398-suzuki@ezweb.ne.jp";
     public static final String STG_BCC_MAIL = "shinji-yamaguchi@tamahome.jp";
 
     /** TO：1件 */
