@@ -48,7 +48,8 @@ public class StringPrintWriter extends PrintWriter {
      *
      * @see java.lang.Object#toString()
      */
-    public String toString() {
+    @Override
+	public String toString() {
 
         super.flush();
         return super.out.toString();

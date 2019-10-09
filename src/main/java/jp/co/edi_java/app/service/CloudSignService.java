@@ -190,8 +190,6 @@ public class CloudSignService {
 
 				//発注テーブルの更新
 				updateOrderAgree(order, driveFileId, formType);
-				//発注日連携
-				sendOrderDate(order);
 				//請書受領連携
 				sendOrderNumber(order);
 				// メール送信
@@ -398,19 +396,6 @@ public class CloudSignService {
 			cc = MailService.STG_CC_MAIL;
 		}
 		return cc;
-	}
-
-	/** 発注日をSAPへ連携 */
-	private void sendOrderDate(TOrderEntity order) {
-		String orderNumber = order.getOrderNumber();
-		String koujiCode = order.getKoujiCode();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-		String orderDate = sdf.format(order.getConfirmationRequestDate());
-		Map<String, Object> data = SapApi.setOrderDate(orderNumber, koujiCode, orderDate);
-		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
-		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
-			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
-		}
 	}
 
 	/** 請書 発注番号連携 */

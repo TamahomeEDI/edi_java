@@ -178,17 +178,20 @@ public class MailService {
     /*
      * 09-1_納品受領通知
      */
-	public void sendMailDelivery(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList, String deliveryNumber, List<TDeliveryItemEntity> itemList, Boolean remind) {
+	public void sendMailDelivery(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, TDeliveryEntity delivery, List<Map<String,String>> fileList, List<TDeliveryItemEntity> itemList, Boolean remind) {
 		List<String> toList = new ArrayList<String>();
 		toList.add(to);
 		List<String> ccList = new ArrayList<String>();
 		ccList.add(cc);
 		log.info("delivery send mail: " + to);
+		String orderNumber = delivery.getOrderNumber();
+		String deliveryNumber = delivery.getDeliveryNumber();
+		String deliveryDate = delivery.getDeliveryDate();
 		sendMPartMail(toList,ccList,null,
 			MailContents.getDeliveryWorkReportSubject(remind),
-			//MailContents.getDeliveryBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, itemList),
+			//MailContents.getDeliveryBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, deliveryDate, itemList),
 			null,
-			MailContents.getDeliveryHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, itemList),
+			MailContents.getDeliveryHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, deliveryDate, itemList),
 			fileList
 		);
 	}
@@ -196,17 +199,21 @@ public class MailService {
     /*
      * 09-2_出来高受領通知
      */
-	public void sendMailWorkReport(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, Integer workRate, List<Map<String,String>> fileList, String workReportNumber, List<TWorkReportItemEntity> itemList, Boolean remind) {
+	public void sendMailWorkReport(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, TWorkReportEntity workReport, List<Map<String,String>> fileList, List<TWorkReportItemEntity> itemList, Boolean remind) {
 		List<String> toList = new ArrayList<String>();
 		toList.add(to);
 		List<String> ccList = new ArrayList<String>();
 		ccList.add(cc);
 		log.info("work report send mail: " + to);
+		String orderNumber = workReport.getOrderNumber();
+		String workReportNumber = workReport.getWorkReportNumber();
+		String workReportDate = workReport.getWorkReportDate();
+		int workRate = workReport.getWorkRate();
 		sendMPartMail(toList,ccList,null,
 			MailContents.getDeliveryWorkReportSubject(remind),
-			//MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber, itemList),
+			//MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber, workReportDate, itemList),
 			null,
-			MailContents.getWorkReportHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workRate, workReportNumber, itemList),
+			MailContents.getWorkReportHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workRate, workReportNumber, workReportDate, itemList),
 			fileList
 		);
 	}
@@ -214,17 +221,20 @@ public class MailService {
 	/*
      * 納品書 受入否認メール
      */
-	public void sendMailDeliveryReject(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, List<Map<String,String>> fileList, String deliveryNumber, List<TDeliveryItemEntity> itemList, String comments) {
+	public void sendMailDeliveryReject(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, TDeliveryEntity delivery, List<Map<String,String>> fileList, List<TDeliveryItemEntity> itemList, String comments) {
 		List<String> toList = new ArrayList<String>();
 		toList.add(to);
 		List<String> ccList = new ArrayList<String>();
 		ccList.add(cc);
-		log.info("delivery send mail: " + to);
+		log.info("delivery reject send mail: " + to);
+		String orderNumber = delivery.getOrderNumber();
+		String deliveryNumber = delivery.getDeliveryNumber();
+		String deliveryDate = delivery.getDeliveryDate();
 		sendMPartMail(toList,ccList,null,
 			MailContents.getDeliveryWorkReportRejectSubject(),
-			//MailContents.getDeliveryBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, itemList),
+			//MailContents.getDeliveryBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, deliveryDate, itemList, comments),
 			null,
-			MailContents.getDeliveryRejectHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, itemList, comments),
+			MailContents.getDeliveryRejectHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, deliveryNumber, deliveryDate, itemList, comments),
 			fileList
 		);
 	}
@@ -232,17 +242,21 @@ public class MailService {
     /*
      * 出来高報告書 受入否認メール
      */
-	public void sendMailWorkReportReject(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, Integer workRate, List<Map<String,String>> fileList, String workReportNumber, List<TWorkReportItemEntity> itemList, String comments) {
+	public void sendMailWorkReportReject(String to, String cc, String eigyousyoName, String syainName, String koujiName, String gyousyaName, TWorkReportEntity workReport, List<Map<String,String>> fileList, List<TWorkReportItemEntity> itemList, String comments) {
 		List<String> toList = new ArrayList<String>();
 		toList.add(to);
 		List<String> ccList = new ArrayList<String>();
 		ccList.add(cc);
-		log.info("work report send mail: " + to);
+		log.info("work report reject send mail: " + to);
+		String orderNumber = workReport.getOrderNumber();
+		String workReportNumber = workReport.getWorkReportNumber();
+		String workReportDate = workReport.getWorkReportDate();
+		int workRate = workReport.getWorkRate();
 		sendMPartMail(toList,ccList,null,
 			MailContents.getDeliveryWorkReportRejectSubject(),
-			//MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber, itemList),
+			//MailContents.getWorkReportBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workReportNumber, workReportDate, itemList, comments),
 			null,
-			MailContents.getWorkReportRejectHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workRate, workReportNumber, itemList, comments),
+			MailContents.getWorkReportRejectHtmlBody(eigyousyoName, syainName, koujiName, gyousyaName, orderNumber, workRate, workReportNumber, workReportDate, itemList, comments),
 			fileList
 		);
 	}

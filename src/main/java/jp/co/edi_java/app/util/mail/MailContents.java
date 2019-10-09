@@ -377,7 +377,7 @@ public class MailContents {
         return PREFIX + subject;
     }
 
-    public static String getDeliveryBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber, List<TDeliveryItemEntity> itemList) {
+    public static String getDeliveryBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber, String deliveryDate, List<TDeliveryItemEntity> itemList) {
 
     	String detail = "";
     	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
@@ -405,6 +405,7 @@ public class MailContents {
                 + "工事名：" + koujiName + "\n"
                 + "業者名：" + gyousyaName + "\n"
                 + "発注番号：" + orderNumber + "\n"
+                + "納品日：" + deliveryDate + "\n"
                 + "\n"
                 + "\n"
                 + "受入： " + BASE_URL + "/user/delivery/acceptance/apply?t=" + encryptNumber + "\n"
@@ -414,7 +415,7 @@ public class MailContents {
                 + detail;
     }
 
-    public static String getDeliveryHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber, List<TDeliveryItemEntity> itemList) {
+    public static String getDeliveryHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber, String deliveryDate, List<TDeliveryItemEntity> itemList) {
 
     	String detail = "";
     	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
@@ -454,6 +455,7 @@ public class MailContents {
                 + "工事名：" + koujiName + "\n"
                 + "業者名：" + gyousyaName + "\n"
                 + "発注番号：" + orderNumber + "\n"
+                + "納品日：" + deliveryDate + "\n"
                 + "\n"
                 + "\n</pre>"
                 + "<a href='" + BASE_URL + "/user/delivery/acceptance/apply?t=" + encryptNumber + "' target='_blank'>受入</a>"
@@ -468,7 +470,7 @@ public class MailContents {
      * 09-2_出来高受領
      * to 社員
      */
-    public static String getWorkReportBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, Integer workRate, String workReportNumber, List<TWorkReportItemEntity> itemList) {
+    public static String getWorkReportBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, int workRate, String workReportNumber, String workReportDate, List<TWorkReportItemEntity> itemList) {
 
     	String detail = "";
     	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
@@ -494,6 +496,7 @@ public class MailContents {
                 + "工事名：" + koujiName + "\n"
                 + "業者名：" + gyousyaName + "\n"
                 + "発注番号：" + orderNumber + "\n"
+                + "納品日：" + workReportDate + "\n"
                 + "\n"
                 + "\n"
                 + "受入： " + BASE_URL + "/user/workreport/acceptance/apply?t=" + encryptNumber + "\n"
@@ -504,7 +507,7 @@ public class MailContents {
                 + detail;
     }
 
-    public static String getWorkReportHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, Integer workRate, String workReportNumber, List<TWorkReportItemEntity> itemList) {
+    public static String getWorkReportHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, int workRate, String workReportNumber, String workReportDate, List<TWorkReportItemEntity> itemList) {
 
     	String detail = "";
     	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
@@ -540,6 +543,7 @@ public class MailContents {
                 + "工事名：" + koujiName + "\n"
                 + "業者名：" + gyousyaName + "\n"
                 + "発注番号：" + orderNumber + "\n"
+                + "納品日：" + workReportDate + "\n"
                 + "\n"
                 + "\n</pre>"
                 + "<a href='" + BASE_URL + "/user/workreport/acceptance/apply?t=" + encryptNumber + "' target=_blank>受入</a>"
@@ -561,7 +565,7 @@ public class MailContents {
      * 納品書 受入申請否認時メール
      *
      */
-    public static String getDeliveryRejectHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber, List<TDeliveryItemEntity> itemList, String comments) {
+    public static String getDeliveryRejectHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber, String deliveryDate, List<TDeliveryItemEntity> itemList, String comments) {
 
     	String detail = "";
     	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
@@ -604,6 +608,7 @@ public class MailContents {
                 + "工事名：" + koujiName + "\n"
                 + "業者名：" + gyousyaName + "\n"
                 + "発注番号：" + orderNumber + "\n"
+                + "納品日：" + deliveryDate + "\n"
                 + "\n"
                 + "\n</pre>"
                 + "<a href='" + BASE_URL + "/user/delivery/acceptance/apply?t=" + encryptNumber + "' target='_blank'>受入(再申請)</a>"
@@ -618,7 +623,7 @@ public class MailContents {
      * 出来高報告書 受入申請否認時メール
      *
      */
-    public static String getWorkReportRejectHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, Integer workRate, String workReportNumber, List<TWorkReportItemEntity> itemList, String comments) {
+    public static String getWorkReportRejectHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, int workRate, String workReportNumber, String workReportDate, List<TWorkReportItemEntity> itemList, String comments) {
 
     	String detail = "";
     	if (Objects.nonNull(itemList) && ! itemList.isEmpty()) {
@@ -658,6 +663,7 @@ public class MailContents {
                 + "工事名：" + koujiName + "\n"
                 + "業者名：" + gyousyaName + "\n"
                 + "発注番号：" + orderNumber + "\n"
+                + "納品日：" + workReportDate + "\n"
                 + "\n"
                 + "\n</pre>"
                 + "<a href='" + BASE_URL + "/user/workreport/acceptance/apply?t=" + encryptNumber + "' target=_blank>受入(再申請)</a>"

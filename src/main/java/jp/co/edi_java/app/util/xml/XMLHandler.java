@@ -99,12 +99,14 @@ public class XMLHandler extends DefaultHandler {
     /**
      * ドキュメント開始時
      */
-    public void startDocument() {}
+    @Override
+	public void startDocument() {}
 
     /**
      * 要素の開始タグ読み込み時
      */
-    @SuppressWarnings("rawtypes")
+    @Override
+	@SuppressWarnings("rawtypes")
     public void startElement(String uri, String localName, String qName, Attributes attributes) {
         if (qName.equals("Record")) {
             if (recordList == null) {
@@ -123,7 +125,8 @@ public class XMLHandler extends DefaultHandler {
      * テキストデータ読み込み時<br>
      * UTF-8で読み込んだ文字データをSJISとしてMapに格納する
      */
-    @SuppressWarnings("unchecked")
+    @Override
+	@SuppressWarnings("unchecked")
     public void characters(char[] ch, int offset, int length) {
         try {
             //UTF-8をSJISに変換する
@@ -145,7 +148,8 @@ public class XMLHandler extends DefaultHandler {
     /**
      * 要素の終了タグ読み込み時
      */
-    @SuppressWarnings("unchecked")
+    @Override
+	@SuppressWarnings("unchecked")
     public void endElement(String uri, String localName, String qName) {
         if (qName.equals("Record")) {
             recordList.add(recordMap[recordNum]);
@@ -158,5 +162,6 @@ public class XMLHandler extends DefaultHandler {
     /**
      * ドキュメント終了時
      */
-    public void endDocument() {}
+    @Override
+	public void endDocument() {}
 }

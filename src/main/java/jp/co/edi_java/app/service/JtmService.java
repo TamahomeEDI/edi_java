@@ -3,6 +3,7 @@ package jp.co.edi_java.app.service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -721,14 +722,14 @@ public class JtmService {
 			for (VOrderSyainEntity vEntity : list) {
 				CopyMSyainEntity copyEntity = copyMSyainDao.select(vEntity.getSyainCode());
 				//差分更新（データが存在しない場合はinsert、最終更新日が変更されていたらupdate）
-				if(copyEntity == null || (vEntity.getSaisyuuKousinDate() != null && (copyEntity != null && !copyEntity.getSaisyuuKousinDate().equals(vEntity.getSaisyuuKousinDate())))){
+				if(Objects.isNull(copyEntity) || (Objects.nonNull(vEntity.getSaisyuuKousinDate()) && (Objects.nonNull(copyEntity) && ! Objects.equals(copyEntity.getSaisyuuKousinDate(), vEntity.getSaisyuuKousinDate())))){
 					MSyainEntity entity = new MSyainEntity();
 					BeanUtils.copyBeanToBean(vEntity, entity);
 					// 退職者レコードは新規取り込みはしない
-					if(copyEntity == null && vEntity.getTaisyokuFlg() != 1) {
+					if(Objects.isNull(copyEntity) && Objects.nonNull(vEntity.getTaisyokuFlg()) && vEntity.getTaisyokuFlg() != 1) {
 						mSyainDao.insert(entity);
 						insertCount++;
-					}else if (copyEntity != null && !copyEntity.getSaisyuuKousinDate().equals(vEntity.getSaisyuuKousinDate())) {
+					}else if (Objects.nonNull(copyEntity) && ! Objects.equals(copyEntity.getSaisyuuKousinDate(), vEntity.getSaisyuuKousinDate())) {
 						mSyainDao.update(entity);
 						updateCount++;
 					}

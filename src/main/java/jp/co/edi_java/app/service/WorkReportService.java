@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -167,7 +168,69 @@ public class WorkReportService {
 
 	//出来高書リマインド対象のリスト取得
 	public List<TWorkReportEntity> selectRemindList() {
-		return tWorkReportDao.selectUnconfirmList();
+
+		//月末3日前から毎日
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		//本日の日付を取得
+		Date nowDate = new Date();
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(nowDate);
+		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		// 当日
+		Date today = cal.getTime();
+		// 月末日
+		int endDay = cal.getActualMaximum(Calendar.DATE);
+		// 昨日が納品日のものを検索するため昨日取得
+		cal.add(Calendar.DATE, -1);
+		Date workReportDate = cal.getTime();
+		String workReportDateStr = sdf.format(workReportDate);
+		// 月末日のDateを取得
+		cal.set(Calendar.DATE, endDay);
+		Date endDateMonth = cal.getTime();
+		// 月末日から3日前のDateを取得
+		cal.set(Calendar.DATE, endDay-3);
+		Date beforeEndDate3 = cal.getTime();
+
+		Calendar from = Calendar.getInstance();
+		from.setTime(beforeEndDate3);
+
+		Calendar to = Calendar.getInstance();
+		to.setTime(endDateMonth);
+		log.info("today: " + today.toString() + " workReportDate: " + workReportDate.toString() + " from: " + beforeEndDate3.toString() + " to: " + endDateMonth.toString());
+
+		List<TWorkReportEntity> workReportListTmp1 = new ArrayList<TWorkReportEntity>();
+		List<TWorkReportEntity> workReportListTmp2 = new ArrayList<TWorkReportEntity>();
+		List<TWorkReportEntity> workReportList = new ArrayList<TWorkReportEntity>();
+
+		// 当日が月末日3日前から月末日かどうか
+		cal.setTime(today);
+		if (cal.compareTo(from) > 0 && cal.compareTo(to) <= 0) {
+			workReportListTmp1 = tWorkReportDao.selectUnconfirmList(null);
+		}
+		// 納品日が月末日3日前から月末の期間外か
+		cal.setTime(workReportDate);
+		if (!(cal.compareTo(from) > 0 && cal.compareTo(to) <= 0)) {
+			workReportListTmp2 = tWorkReportDao.selectUnconfirmList(workReportDateStr);
+		}
+		Map<String, Boolean> exists = new HashMap<String, Boolean>();
+		for (TWorkReportEntity entity : workReportListTmp1) {
+			String workReportNumber = entity.getWorkReportNumber();
+			if (!exists.containsKey(workReportNumber)) {
+				exists.put(workReportNumber,true);
+				workReportList.add(entity);
+			}
+		}
+		for (TWorkReportEntity entity : workReportListTmp2) {
+			String workReportNumber = entity.getWorkReportNumber();
+			if (!exists.containsKey(workReportNumber)) {
+				exists.put(workReportNumber,true);
+				workReportList.add(entity);
+			}
+		}
+
+		return workReportList;
 	}
 
 	public String regist(WorkReportForm form) {
@@ -371,10 +434,14 @@ public class WorkReportService {
 		//工事情報
 	    MKoujiEntity kouji = mKoujiDao.select(workReport.getKoujiCode());
 		String eigyousyoCode = kouji.getEigyousyoCode();
-		// 受入日は受入リンクをクリックした申請日
+		// 受入日は受入リンクをクリックした申請日 => 受入日は納品日
 		// String acceptanceDate = form.getApproveDate();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-		String acceptanceDate = sdf.format(workReport.getStaffReceiptDate());
+		//SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		//String acceptanceDate = sdf.format(workReport.getStaffReceiptDate());
+
+		String workReportDate = workReport.getWorkReportDate();
+		String acceptanceDate = workReportDate.replaceAll("/", "");
+
 		String approverCode = form.getApproverCode();
 		String approveDate = form.getApproveDate();
 		String approveDateTime = form.getApproveDateTime();
@@ -825,7 +892,7 @@ public class WorkReportService {
 		List<Map<String,String>> fileList = getAttachedFile(workReport);
 
 		//メール送信
-		mailService.sendMailWorkReport(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport.getOrderNumber(), workReport.getWorkRate(), fileList, workReportNumber, itemList, remind);
+		mailService.sendMailWorkReport(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport, fileList, itemList, remind);
 	}
 
 	//出来高報告書ジョブカン申請否認時にメールを送信
@@ -857,7 +924,7 @@ public class WorkReportService {
 		String cc = getMailCc(eigyousyoCode);
 		List<Map<String,String>> fileList = getAttachedFile(workReport);
 		//メール送信
-		mailService.sendMailWorkReportReject(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport.getOrderNumber(), workReport.getWorkRate(), fileList, workReportNumber, itemList, rejectComments);
+		mailService.sendMailWorkReportReject(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport, fileList, itemList, rejectComments);
 	}
 
 	private List<Map<String,String>> getAttachedFile(TWorkReportEntity workReport) {

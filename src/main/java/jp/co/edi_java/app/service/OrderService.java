@@ -367,6 +367,20 @@ public class OrderService {
 		tOrderDao.update(orderInfo);
 	}
 
+	/** 発注日をSAPへ連携 */
+	public void sendOrderDate(OrderForm form) {
+		String orderNumber = form.getOrderNumber();
+		TOrderEntity orderInfo = selectInfo(orderNumber);
+		String koujiCode = orderInfo.getKoujiCode();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		String orderDate = sdf.format(orderInfo.getConfirmationRequestDate());
+		Map<String, Object> data = SapApi.setOrderDate(orderNumber, koujiCode, orderDate);
+		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
+		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
+			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
+		}
+	}
+
 	public void conectCloudSign(OrderForm form, String formType) {
 		String orderNumber = form.getOrderNumber();
 		String title = "";

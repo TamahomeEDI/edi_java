@@ -1,6 +1,5 @@
 package jp.co.edi_java.app.entity.gyousya;
 
-import org.seasar.doma.Column;
 import org.seasar.doma.Entity;
 import org.seasar.doma.GeneratedValue;
 import org.seasar.doma.GenerationType;

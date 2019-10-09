@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -169,7 +170,69 @@ public class DeliveryService {
 
 	//納品書リマインド対象のリスト取得
 	public List<TDeliveryEntity> selectRemindList() {
-		return tDeliveryDao.selectUnconfirmList();
+
+		//月末3日前から毎日
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		//本日の日付を取得
+		Date nowDate = new Date();
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(nowDate);
+		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		// 当日
+		Date today = cal.getTime();
+		// 月末日
+		int endDay = cal.getActualMaximum(Calendar.DATE);
+		// 昨日が納品日のものを検索するため昨日取得
+		cal.add(Calendar.DATE, -1);
+		Date deliveryDate = cal.getTime();
+		String deliveryDateStr = sdf.format(deliveryDate);
+		// 月末日のDateを取得
+		cal.set(Calendar.DATE, endDay);
+		Date endDateMonth = cal.getTime();
+		// 月末日から3日前のDateを取得
+		cal.set(Calendar.DATE, endDay-3);
+		Date beforeEndDate3 = cal.getTime();
+
+		Calendar from = Calendar.getInstance();
+		from.setTime(beforeEndDate3);
+
+		Calendar to = Calendar.getInstance();
+		to.setTime(endDateMonth);
+		log.info("today: " + today.toString() + " deliveryDate: " + deliveryDate.toString() + " from: " + beforeEndDate3.toString() + " to: " + endDateMonth.toString());
+
+		List<TDeliveryEntity> deliveryListTmp1 = new ArrayList<TDeliveryEntity>();
+		List<TDeliveryEntity> deliveryListTmp2 = new ArrayList<TDeliveryEntity>();
+		List<TDeliveryEntity> deliveryList = new ArrayList<TDeliveryEntity>();
+
+		// 当日が月末日3日前から月末日かどうか
+		cal.setTime(today);
+		if (cal.compareTo(from) > 0 && cal.compareTo(to) <= 0) {
+			deliveryListTmp1 = tDeliveryDao.selectUnconfirmList(null);
+		}
+		// 納品日が月末日3日前から月末の期間外か
+		cal.setTime(deliveryDate);
+		if (!(cal.compareTo(from) > 0 && cal.compareTo(to) <= 0)) {
+			deliveryListTmp2 = tDeliveryDao.selectUnconfirmList(deliveryDateStr);
+		}
+		Map<String, Boolean> exists = new HashMap<String, Boolean>();
+		for (TDeliveryEntity entity : deliveryListTmp1) {
+			String deliveryNumber = entity.getDeliveryNumber();
+			if (!exists.containsKey(deliveryNumber)) {
+				exists.put(deliveryNumber,true);
+				deliveryList.add(entity);
+			}
+		}
+		for (TDeliveryEntity entity : deliveryListTmp2) {
+			String deliveryNumber = entity.getDeliveryNumber();
+			if (!exists.containsKey(deliveryNumber)) {
+				exists.put(deliveryNumber,true);
+				deliveryList.add(entity);
+			}
+		}
+
+		return deliveryList;
 	}
 
 	public String regist(DeliveryForm form) {
@@ -377,10 +440,12 @@ public class DeliveryService {
 	    MKoujiEntity kouji = mKoujiDao.select(delivery.getKoujiCode());
 		String eigyousyoCode = kouji.getEigyousyoCode();
 
-		// 受入日は受入リンクをクリックした申請日
+		// 受入日は受入リンクをクリックした申請日 => 受入日は納品日
 		// String acceptanceDate = form.getApproveDate();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-		String acceptanceDate = sdf.format(delivery.getStaffReceiptDate());
+		//SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		//String acceptanceDate = sdf.format(delivery.getStaffReceiptDate());
+		String deliveryDate = delivery.getDeliveryDate();
+		String acceptanceDate = deliveryDate.replaceAll("/", "");
 
 		String approverCode = form.getApproverCode();
 		String approveDate = form.getApproveDate();
@@ -841,7 +906,7 @@ public class DeliveryService {
 		List<Map<String,String>> fileList = getAttachedFile(delivery);
 
 		//メール送信
-		mailService.sendMailDelivery(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), fileList, deliveryNumber, itemList, remind);
+		mailService.sendMailDelivery(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery, fileList, itemList, remind);
 	}
 
 	//納品書ジョブカン申請否認時にメールを送信
@@ -874,7 +939,7 @@ public class DeliveryService {
 		List<Map<String,String>> fileList = getAttachedFile(delivery);
 
 		//メール送信
-		mailService.sendMailDeliveryReject(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), fileList, deliveryNumber, itemList, rejectComments);
+		mailService.sendMailDeliveryReject(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery, fileList, itemList, rejectComments);
 	}
 
 	private List<Map<String,String>> getAttachedFile(TDeliveryEntity delivery) {

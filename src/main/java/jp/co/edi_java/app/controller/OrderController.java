@@ -47,6 +47,8 @@ public class OrderController extends BaseController {
 	public ResponseEntity confirmation(@Validated OrderForm form) {
 		orderService.confirmationInfo(form);
 		orderService.conectCloudSign(form, CloudSignApi.FORM_TYPE_ORDER);
+		//発注日連携
+		orderService.sendOrderDate(form);
 		super.setResponseData("ret", "OK");
 		return super.response();
 	}

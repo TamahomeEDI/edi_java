@@ -15,6 +15,7 @@ import jp.co.edi_java.app.dao.MEigyousyoDao;
 import jp.co.edi_java.app.dao.MKoujiDao;
 import jp.co.edi_java.app.dao.SearchDao;
 import jp.co.edi_java.app.dao.TOrderDao;
+import jp.co.edi_java.app.dao.gyousya.MGyousyaDao;
 import jp.co.edi_java.app.dto.ChecklistOrderDetailDto;
 import jp.co.edi_java.app.dto.ChecklistOrderDto;
 import jp.co.edi_java.app.dto.GyousyaEigyousyoDto;
@@ -36,6 +37,9 @@ public class ChecklistService {
 
 	@Autowired
     public SearchDao searchDao;
+
+	@Autowired
+    public MGyousyaDao mGyousyaDao;
 
 	@Autowired
     public TOrderDao tOrderDao;
@@ -263,25 +267,28 @@ public class ChecklistService {
 		String confirmationFlg = Objects.nonNull(soinfDto.getConfirmationFlg()) ? soinfDto.getConfirmationFlg() : "";
 		orderDate = Objects.nonNull(orderDate) ? orderDate : "";
 		soinfDto.setOrderStatus("0");
-
-		if (remandFlg.equals("1")) {
-			soinfDto.setOrderStatus("5");
+		if (confirmationFlg.equals("2")) {
+			soinfDto.setOrderStatus("6");
 		} else {
-			if (confirmationFlg.equals("0")) {
-				if (Objects.isNull(soinfDto.getConfirmationRequestDate())) {
-					soinfDto.setOrderStatus("0");
-					if (! orderDate.equals(ORDER_DATE_VALUE_NOT_ORDERING)) {
+			if (remandFlg.equals("1")) {
+				soinfDto.setOrderStatus("5");
+			} else {
+				if (confirmationFlg.equals("0")) {
+					if (Objects.isNull(soinfDto.getConfirmationRequestDate())) {
+						soinfDto.setOrderStatus("0");
+						if (! orderDate.equals(ORDER_DATE_VALUE_NOT_ORDERING)) {
+							soinfDto.setOrderStatus("1");
+						}
+					} else {
 						soinfDto.setOrderStatus("1");
 					}
-				} else {
-					soinfDto.setOrderStatus("1");
+				} else if (confirmationFlg.equals("1") && Objects.isNull(soinfDto.getWorkNumber())) {
+					soinfDto.setOrderStatus("2");
+				} else if (Objects.nonNull(soinfDto.getWorkNumber()) && receiptFlg.equals("0")) {
+					soinfDto.setOrderStatus("3");
+				} else if (receiptFlg.equals("1") && remandFlg.equals("0")) {
+					soinfDto.setOrderStatus("4");
 				}
-			} else if (confirmationFlg.equals("1") && Objects.isNull(soinfDto.getWorkNumber())) {
-				soinfDto.setOrderStatus("2");
-			} else if (Objects.nonNull(soinfDto.getWorkNumber()) && receiptFlg.equals("0")) {
-				soinfDto.setOrderStatus("3");
-			} else if (receiptFlg.equals("1") && remandFlg.equals("0")) {
-				soinfDto.setOrderStatus("4");
 			}
 		}
 	}
@@ -326,6 +333,12 @@ public class ChecklistService {
 		ret.setOrderNumber(retDetail.get(SapApiConsts.PARAMS_ID_SEBELN).toString());
 		ret.setGyousyaCode(retDetail.get(SapApiConsts.PARAMS_ID_ZGYSCD).toString());
 		ret.setGyousyaName(retDetail.get(SapApiConsts.PARAMS_ID_ZGYSNM).toString());
+
+//		MGyousyaEntity gyousya = mGyousyaDao.select(retDetail.get(SapApiConsts.PARAMS_ID_ZGYSCD).toString());
+//		if (Objects.nonNull(gyousya)) {
+//			ret.setGyousyaName(gyousya.getGyousyaName());
+//		}
+
 		ret.setKoujiCode(retDetail.get(SapApiConsts.PARAMS_ID_ZWRKCD).toString());
 		ret.setKoujiName(searchKoujiInfoDto.getKoujiName());
 		ret.setEigyousyoCode(searchKoujiInfoDto.getEigyousyoCode());
