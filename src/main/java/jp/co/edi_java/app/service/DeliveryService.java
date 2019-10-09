@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -169,7 +170,68 @@ public class DeliveryService {
 
 	//納品書リマインド対象のリスト取得
 	public List<TDeliveryEntity> selectRemindList() {
-		return tDeliveryDao.selectUnconfirmList();
+
+		//本日の日付を取得
+		Date nowDate = new Date();
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(nowDate);
+		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		// 当日
+		Date today = cal.getTime();
+		// 月末日
+		int endDay = cal.getActualMaximum(Calendar.DATE);
+		// 昨日が納品日のものを検索するため昨日取得
+		cal.add(Calendar.DATE, -1);
+		Date deliveryDate = cal.getTime();
+		String deliveryDateStr = formatDateToString(deliveryDate, "yyyy/MM/dd", "JST");
+		// 月末日のDateを取得
+		cal.set(Calendar.DATE, endDay);
+		Date endDateMonth = cal.getTime();
+		// 月末日から3日前のDateを取得
+		cal.set(Calendar.DATE, endDay-3);
+		Date beforeEndDate3 = cal.getTime();
+
+		Calendar from = Calendar.getInstance();
+		from.setTime(beforeEndDate3);
+
+		Calendar to = Calendar.getInstance();
+		to.setTime(endDateMonth);
+
+		log.info("today: " + today.toString() + " deliveryDate: " + deliveryDate.toString() + " from: " + beforeEndDate3.toString() + " to: " + endDateMonth.toString());
+
+		List<TDeliveryEntity> deliveryListTmp1 = new ArrayList<TDeliveryEntity>();
+		List<TDeliveryEntity> deliveryListTmp2 = new ArrayList<TDeliveryEntity>();
+		List<TDeliveryEntity> deliveryList = new ArrayList<TDeliveryEntity>();
+
+		// 当日が月末日3日前から月末日の間かどうか
+		cal.setTime(today);
+		if (cal.compareTo(from) > 0 && cal.compareTo(to) <= 0) {
+			deliveryListTmp1 = tDeliveryDao.selectUnconfirmList(null);
+		}
+		// 納品日が月末日3日前から月末の期間外か
+		cal.setTime(deliveryDate);
+		if (!(cal.compareTo(from) > 0 && cal.compareTo(to) <= 0)) {
+			deliveryListTmp2 = tDeliveryDao.selectUnconfirmList(deliveryDateStr);
+		}
+		Map<String, Boolean> exists = new HashMap<String, Boolean>();
+		for (TDeliveryEntity entity : deliveryListTmp1) {
+			String deliveryNumber = entity.getDeliveryNumber();
+			if (!exists.containsKey(deliveryNumber)) {
+				exists.put(deliveryNumber,true);
+				deliveryList.add(entity);
+			}
+		}
+		for (TDeliveryEntity entity : deliveryListTmp2) {
+			String deliveryNumber = entity.getDeliveryNumber();
+			if (!exists.containsKey(deliveryNumber)) {
+				exists.put(deliveryNumber,true);
+				deliveryList.add(entity);
+			}
+		}
+
+		return deliveryList;
 	}
 
 	public String regist(DeliveryForm form) {
@@ -223,11 +285,22 @@ public class DeliveryService {
 	}
 
 	/** ジョブカン承認待ち */
-	public void apply(DeliveryForm form) {
+	public List<TDeliveryEntity> apply(DeliveryForm form) {
 		List<ApprovalDto> approvalList = form.getDeliveryApprovalList();
+		List<TDeliveryEntity> errorList = new ArrayList<TDeliveryEntity>();
 		if(approvalList != null) {
 			for (ApprovalDto dto : approvalList) {
 				TDeliveryEntity entity = this.get(dto.getWorkNumber());
+				MKoujiEntity kouji = mKoujiDao.select(entity.getKoujiCode());
+				String syainCode = kouji.getTantouSyainCode();
+				//施工担当社員
+			    MSyainEntity syain = mSyainDao.select(syainCode);
+			    if (Objects.nonNull(syain.getTaisyokuFlg()) && syain.getTaisyokuFlg() == 1) {
+			    	//退職者のため申請不能
+			    	errorList.add(entity);
+			    	continue;
+			    }
+
 				if (Objects.equals(entity.getStaffReceiptFlg(), CommonConsts.RECEIPT_FLG_OFF) &&
 						Objects.equals(entity.getManagerReceiptFlg(), CommonConsts.RECEIPT_FLG_OFF) &&
 						Objects.equals(entity.getRemandFlg(), CommonConsts.REMAND_FLG_OFF)) {
@@ -242,13 +315,14 @@ public class DeliveryService {
 					entity.setUserBikou(dto.getUserBikou());
 					entity.setUpdateUser(form.getUserId());
 					tDeliveryDao.updateWf(entity);
-					applyToJobcan(entity);
+					applyToJobcan(entity,kouji,syain);
 				}
 			}
 		}
+		return errorList;
 	}
 	/** ジョブカン申請 */
-	private void applyToJobcan(TDeliveryEntity delivery) {
+	private void applyToJobcan(TDeliveryEntity delivery, MKoujiEntity kouji, MSyainEntity syain) {
 		String deliveryNumber = delivery.getDeliveryNumber();
 		String koujiCode = delivery.getKoujiCode();
 		String orderNumber = delivery.getOrderNumber();
@@ -257,7 +331,7 @@ public class DeliveryService {
 		String saimokuKousyuCode = delivery.getSaimokuKousyuCode();
 
 		//工事情報
-	    MKoujiEntity kouji = mKoujiDao.select(koujiCode);
+	    //MKoujiEntity kouji = mKoujiDao.select(koujiCode);
 	    //発注書情報
 	    SapOrderDto order = orderService.get(orderNumber);
 	    //業者情報
@@ -269,7 +343,7 @@ public class DeliveryService {
 	    MEigyousyoEntity eigyousyo = mEigyousyoDao.select(eigyousyoCode);
 	    //施工担当社員
 	    String syainCode = kouji.getTantouSyainCode();
-	    MSyainEntity syain = mSyainDao.select(syainCode);
+	    //MSyainEntity syain = mSyainDao.select(syainCode);
 	    String userId = syainCode;
 
 	    if (Objects.nonNull(syain) && Objects.nonNull(syain.getSyainCode())) {
@@ -365,10 +439,12 @@ public class DeliveryService {
 	    MKoujiEntity kouji = mKoujiDao.select(delivery.getKoujiCode());
 		String eigyousyoCode = kouji.getEigyousyoCode();
 
-		// 受入日は受入リンクをクリックした申請日
+		// 受入日は受入リンクをクリックした申請日 => 受入日は納品日
 		// String acceptanceDate = form.getApproveDate();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-		String acceptanceDate = sdf.format(delivery.getStaffReceiptDate());
+		//SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		//String acceptanceDate = sdf.format(delivery.getStaffReceiptDate());
+		String deliveryDate = delivery.getDeliveryDate();
+		String acceptanceDate = deliveryDate.replaceAll("/", "");
 
 		String approverCode = form.getApproverCode();
 		String approveDate = form.getApproveDate();
@@ -601,7 +677,7 @@ public class DeliveryService {
 			log.info("REMAIN QTY: " + remainQty.toString());
 			log.info("TEST QTY: " + testQty.toString());
 			if (remainQty.compareTo(testQty) != 0) {
-				throw new CoreRuntimeException("Probably completed with SAP : " + orderNumber + " , JCO_EBELP : " + lineNo);
+				throw new CoreRuntimeException("Probably completed with SAP (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo);
 			}
 
 			// 品目コード
@@ -829,7 +905,7 @@ public class DeliveryService {
 		List<Map<String,String>> fileList = getAttachedFile(delivery);
 
 		//メール送信
-		mailService.sendMailDelivery(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), fileList, deliveryNumber, itemList, remind);
+		mailService.sendMailDelivery(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery, fileList, itemList, remind);
 	}
 
 	//納品書ジョブカン申請否認時にメールを送信
@@ -862,7 +938,7 @@ public class DeliveryService {
 		List<Map<String,String>> fileList = getAttachedFile(delivery);
 
 		//メール送信
-		mailService.sendMailDeliveryReject(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery.getOrderNumber(), fileList, deliveryNumber, itemList, rejectComments);
+		mailService.sendMailDeliveryReject(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), delivery, fileList, itemList, rejectComments);
 	}
 
 	private List<Map<String,String>> getAttachedFile(TDeliveryEntity delivery) {

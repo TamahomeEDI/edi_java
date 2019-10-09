@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -88,6 +89,8 @@ public class WorkReportService {
 	private static String STG_FLG;
 	private static String STG_FLG_ON = "1";
 	private static String TEMPORARY_SYAIN_CODE = "990000";
+	private static String SUM_SEQNO_CODE = "000";
+	private static String LIMIT_WORK_RATE = "100";
 	private static String ORDER_TYPE_WORK_REPORT = "2";
 	public static String TOSHO_CODE_EDI = "09";
 	public static String FILE_CODE_FORM = "03";			//帳票
@@ -165,7 +168,69 @@ public class WorkReportService {
 
 	//出来高書リマインド対象のリスト取得
 	public List<TWorkReportEntity> selectRemindList() {
-		return tWorkReportDao.selectUnconfirmList();
+
+
+		//本日の日付を取得
+		Date nowDate = new Date();
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(nowDate);
+		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		// 当日
+		Date today = cal.getTime();
+		// 月末日
+		int endDay = cal.getActualMaximum(Calendar.DATE);
+		// 昨日が納品日のものを検索するため昨日取得
+		cal.add(Calendar.DATE, -1);
+		Date workReportDate = cal.getTime();
+		String workReportDateStr = formatDateToString(workReportDate, "yyyy/MM/dd", "JST");
+		// 月末日のDateを取得
+		cal.set(Calendar.DATE, endDay);
+		Date endDateMonth = cal.getTime();
+		// 月末日から3日前のDateを取得
+		cal.set(Calendar.DATE, endDay-3);
+		Date beforeEndDate3 = cal.getTime();
+
+		Calendar from = Calendar.getInstance();
+		from.setTime(beforeEndDate3);
+
+		Calendar to = Calendar.getInstance();
+		to.setTime(endDateMonth);
+
+		log.info("today: " + today.toString() + " workReportDate: " + workReportDate.toString() + " from: " + beforeEndDate3.toString() + " to: " + endDateMonth.toString());
+
+		List<TWorkReportEntity> workReportListTmp1 = new ArrayList<TWorkReportEntity>();
+		List<TWorkReportEntity> workReportListTmp2 = new ArrayList<TWorkReportEntity>();
+		List<TWorkReportEntity> workReportList = new ArrayList<TWorkReportEntity>();
+
+		// 当日が月末日3日前から月末日までの期間かどうか
+		cal.setTime(today);
+		if (cal.compareTo(from) > 0 && cal.compareTo(to) <= 0) {
+			workReportListTmp1 = tWorkReportDao.selectUnconfirmList(null);
+		}
+		// 納品日が月末日3日前から月末の期間外か
+		cal.setTime(workReportDate);
+		if (!(cal.compareTo(from) > 0 && cal.compareTo(to) <= 0)) {
+			workReportListTmp2 = tWorkReportDao.selectUnconfirmList(workReportDateStr);
+		}
+		Map<String, Boolean> exists = new HashMap<String, Boolean>();
+		for (TWorkReportEntity entity : workReportListTmp1) {
+			String workReportNumber = entity.getWorkReportNumber();
+			if (!exists.containsKey(workReportNumber)) {
+				exists.put(workReportNumber,true);
+				workReportList.add(entity);
+			}
+		}
+		for (TWorkReportEntity entity : workReportListTmp2) {
+			String workReportNumber = entity.getWorkReportNumber();
+			if (!exists.containsKey(workReportNumber)) {
+				exists.put(workReportNumber,true);
+				workReportList.add(entity);
+			}
+		}
+
+		return workReportList;
 	}
 
 	public String regist(WorkReportForm form) {
@@ -219,11 +284,21 @@ public class WorkReportService {
 	}
 
 	/** ジョブカン承認待ち */
-	public void apply(WorkReportForm form) {
+	public List<TWorkReportEntity> apply(WorkReportForm form) {
 		List<ApprovalDto> approvalList = form.getWorkReportApprovalList();
+		List<TWorkReportEntity> errorList = new ArrayList<TWorkReportEntity>();
 		if(approvalList != null) {
 			for (ApprovalDto dto : approvalList) {
 				TWorkReportEntity entity = this.get(dto.getWorkNumber());
+				MKoujiEntity kouji = mKoujiDao.select(entity.getKoujiCode());
+				String syainCode = kouji.getTantouSyainCode();
+				//施工担当社員
+			    MSyainEntity syain = mSyainDao.select(syainCode);
+			    if (Objects.nonNull(syain.getTaisyokuFlg()) && syain.getTaisyokuFlg() == 1) {
+			    	//退職者のため申請不能
+			    	errorList.add(entity);
+			    	continue;
+			    }
 				if (Objects.equals(entity.getStaffReceiptFlg(), CommonConsts.RECEIPT_FLG_OFF) &&
 						Objects.equals(entity.getManagerReceiptFlg(), CommonConsts.RECEIPT_FLG_OFF) &&
 						Objects.equals(entity.getRemandFlg(), CommonConsts.REMAND_FLG_OFF)) {
@@ -238,13 +313,14 @@ public class WorkReportService {
 					entity.setUserBikou(dto.getUserBikou());
 					entity.setUpdateUser(form.getUserId());
 					tWorkReportDao.updateWf(entity);
-					applyToJobcan(entity);
+					applyToJobcan(entity, kouji, syain);
 				}
 			}
 		}
+		return errorList;
 	}
 	/** ジョブカン申請 */
-	private void applyToJobcan(TWorkReportEntity workReport) {
+	private void applyToJobcan(TWorkReportEntity workReport, MKoujiEntity kouji, MSyainEntity syain) {
 		String workReportNumber = workReport.getWorkReportNumber();
 		String koujiCode = workReport.getKoujiCode();
 		String orderNumber = workReport.getOrderNumber();
@@ -253,7 +329,7 @@ public class WorkReportService {
 		String saimokuKousyuCode = workReport.getSaimokuKousyuCode();
 
 		//工事情報
-	    MKoujiEntity kouji = mKoujiDao.select(koujiCode);
+	    //MKoujiEntity kouji = mKoujiDao.select(koujiCode);
 	    //発注書情報
 	    SapOrderDto order = orderService.get(orderNumber);
 	    //業者情報
@@ -265,7 +341,7 @@ public class WorkReportService {
 	    MEigyousyoEntity eigyousyo = mEigyousyoDao.select(eigyousyoCode);
 	    //施工担当社員
 	    String syainCode = kouji.getTantouSyainCode();
-	    MSyainEntity syain = mSyainDao.select(syainCode);
+	    //MSyainEntity syain = mSyainDao.select(syainCode);
 	    String userId = syainCode;
 
 	    if (Objects.nonNull(syain) && Objects.nonNull(syain.getSyainCode())) {
@@ -358,10 +434,14 @@ public class WorkReportService {
 		//工事情報
 	    MKoujiEntity kouji = mKoujiDao.select(workReport.getKoujiCode());
 		String eigyousyoCode = kouji.getEigyousyoCode();
-		// 受入日は受入リンクをクリックした申請日
+		// 受入日は受入リンクをクリックした申請日 => 受入日は納品日
 		// String acceptanceDate = form.getApproveDate();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-		String acceptanceDate = sdf.format(workReport.getStaffReceiptDate());
+		//SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		//String acceptanceDate = sdf.format(workReport.getStaffReceiptDate());
+
+		String workReportDate = workReport.getWorkReportDate();
+		String acceptanceDate = workReportDate.replaceAll("/", "");
+
 		String approverCode = form.getApproverCode();
 		String approveDate = form.getApproveDate();
 		String approveDateTime = form.getApproveDateTime();
@@ -472,13 +552,35 @@ public class WorkReportService {
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
 		}
-
-		Object obj = result.get(SapApiConsts.PARAMS_KEY_T_E_04004);
-		List<Map<String, Object>> sapDetailData = new ArrayList<Map<String, Object>>();
-		if(obj instanceof List) {
-			sapDetailData = (List<Map<String, Object>>)obj;
+		// SAP workRate 100%, EDI workRate 100%  の場合は既に決裁済と判断
+		Object tE04003 = result.get(SapApiConsts.PARAMS_KEY_T_E_04003);
+		List<Map<String, Object>> sapTE04003List = new ArrayList<Map<String, Object>>();
+		if(tE04003 instanceof List) {
+			sapTE04003List = (List<Map<String, Object>>)tE04003;
 		}else {
-			sapDetailData.add((Map<String, Object>)obj);
+			sapTE04003List.add((Map<String, Object>)tE04003);
+		}
+		// SAPの明細データを取得できない
+		if (Objects.isNull(sapTE04003List) || sapTE04003List.isEmpty()) {
+			throw new CoreRuntimeException("SAP workreport detail data TE04003 is empty");
+		}
+		for (Map<String, Object> sapTE04003 : sapTE04003List) {
+			if (Objects.nonNull(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSEQNO)) && Objects.equals(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString(), SUM_SEQNO_CODE)) {
+				if (Objects.nonNull(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSATEIRT)) && Objects.equals(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSATEIRT).toString(), LIMIT_WORK_RATE)) {
+					if (Objects.nonNull(workRate) && Objects.equals(workRate, LIMIT_WORK_RATE)) {
+						throw new CoreRuntimeException("Probably completed with SAP (WorkReport): " + orderNumber);
+					}
+				}
+				break;
+			}
+		}
+
+		Object tE04004 = result.get(SapApiConsts.PARAMS_KEY_T_E_04004);
+		List<Map<String, Object>> sapDetailData = new ArrayList<Map<String, Object>>();
+		if(tE04004 instanceof List) {
+			sapDetailData = (List<Map<String, Object>>)tE04004;
+		}else {
+			sapDetailData.add((Map<String, Object>)tE04004);
 		}
 		// SAPの明細データを取得できない
 		if (Objects.isNull(sapDetailData) || sapDetailData.isEmpty()) {
@@ -790,7 +892,7 @@ public class WorkReportService {
 		List<Map<String,String>> fileList = getAttachedFile(workReport);
 
 		//メール送信
-		mailService.sendMailWorkReport(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport.getOrderNumber(), workReport.getWorkRate(), fileList, workReportNumber, itemList, remind);
+		mailService.sendMailWorkReport(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport, fileList, itemList, remind);
 	}
 
 	//出来高報告書ジョブカン申請否認時にメールを送信
@@ -822,7 +924,7 @@ public class WorkReportService {
 		String cc = getMailCc(eigyousyoCode);
 		List<Map<String,String>> fileList = getAttachedFile(workReport);
 		//メール送信
-		mailService.sendMailWorkReportReject(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport.getOrderNumber(), workReport.getWorkRate(), fileList, workReportNumber, itemList, rejectComments);
+		mailService.sendMailWorkReportReject(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport, fileList, itemList, rejectComments);
 	}
 
 	private List<Map<String,String>> getAttachedFile(TWorkReportEntity workReport) {

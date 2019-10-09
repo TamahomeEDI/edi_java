@@ -7,7 +7,7 @@ public class SapApiAnalyzer {
 
 	@SuppressWarnings("unchecked")
 	public static Map<String, Object> analyzeResult(Map<String, Object> data, String tagName) {
-        return (Map<String, Object>)(Map<String, Object>)data.get(tagName);
+        return (Map<String, Object>)data.get(tagName);
     }
 
 	@SuppressWarnings("unchecked")
@@ -17,7 +17,7 @@ public class SapApiAnalyzer {
 
 	@SuppressWarnings("unchecked")
 	public static Map<String, Object> analyzeResultInfo(Map<String, Object> data) {
-        Map<String, Object> resultInfo = (Map<String, Object>)(Map<String, Object>)data.get(SapApiConsts.NODE_NAME_T_ERROR);
+        Map<String, Object> resultInfo = (Map<String, Object>)data.get(SapApiConsts.NODE_NAME_T_ERROR);
         return resultInfo;
     }
 

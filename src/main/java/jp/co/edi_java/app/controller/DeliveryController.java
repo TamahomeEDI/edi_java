@@ -143,8 +143,8 @@ public class DeliveryController extends BaseController {
 	/** ジョブカン申請による受入承認待ちステータスへの更新 */
 	@RequestMapping("/apply")
 	public ResponseEntity apply(@Validated DeliveryForm form) {
-		deliveryService.apply(form);
-		super.setResponseData("ret", "OK");
+		List<TDeliveryEntity> errorList = deliveryService.apply(form);
+		super.setResponseData("ret", errorList);
 		return super.response();
 	}
 

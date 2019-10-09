@@ -475,6 +475,12 @@ public class SearchService {
 		dto.setGyousyaName(map.get(SapApiConsts.PARAMS_ID_ZGYSNM).toString());
 		dto.setKoujiCode(koujiCode);
 		dto.setSapOrderDate(orderDate);
+
+//		MGyousyaEntity gyousya = mGyousyaDao.select(map.get(SapApiConsts.PARAMS_ID_ZGYSCD).toString());
+//		if (Objects.nonNull(gyousya)) {
+//			dto.setGyousyaName(gyousya.getGyousyaName());
+//		}
+
 		//SAPで発注済みのものはそれを優先
 		if(!StringUtils.isNullString(orderDate) && !orderDate.equals(ORDER_DATE_VALUE_NOT_ORDERING)) {
 			dto.setOrderDate(orderDate);
@@ -545,25 +551,28 @@ public class SearchService {
 		String confirmationFlg = Objects.nonNull(soinfDto.getConfirmationFlg()) ? soinfDto.getConfirmationFlg() : "";
 		orderDate = Objects.nonNull(orderDate) ? orderDate : "";
 		soinfDto.setOrderStatus("0");
-
-		if (remandFlg.equals("1")) {
-			soinfDto.setOrderStatus("5");
+		if (confirmationFlg.equals("2")) {
+			soinfDto.setOrderStatus("6");
 		} else {
-			if (confirmationFlg.equals("0")) {
-				if (Objects.isNull(soinfDto.getConfirmationRequestDate())) {
-					soinfDto.setOrderStatus("0");
-					if (! orderDate.equals(ORDER_DATE_VALUE_NOT_ORDERING)) {
+			if (remandFlg.equals("1")) {
+				soinfDto.setOrderStatus("5");
+			} else {
+				if (confirmationFlg.equals("0")) {
+					if (Objects.isNull(soinfDto.getConfirmationRequestDate())) {
+						soinfDto.setOrderStatus("0");
+						if (! orderDate.equals(ORDER_DATE_VALUE_NOT_ORDERING)) {
+							soinfDto.setOrderStatus("1");
+						}
+					} else {
 						soinfDto.setOrderStatus("1");
 					}
-				} else {
-					soinfDto.setOrderStatus("1");
+				} else if (confirmationFlg.equals("1") && Objects.isNull(soinfDto.getWorkNumber())) {
+					soinfDto.setOrderStatus("2");
+				} else if (Objects.nonNull(soinfDto.getWorkNumber()) && receiptFlg.equals("0")) {
+					soinfDto.setOrderStatus("3");
+				} else if (receiptFlg.equals("1") && remandFlg.equals("0")) {
+					soinfDto.setOrderStatus("4");
 				}
-			} else if (confirmationFlg.equals("1") && Objects.isNull(soinfDto.getWorkNumber())) {
-				soinfDto.setOrderStatus("2");
-			} else if (Objects.nonNull(soinfDto.getWorkNumber()) && receiptFlg.equals("0")) {
-				soinfDto.setOrderStatus("3");
-			} else if (receiptFlg.equals("1") && remandFlg.equals("0")) {
-				soinfDto.setOrderStatus("4");
 			}
 		}
 	}

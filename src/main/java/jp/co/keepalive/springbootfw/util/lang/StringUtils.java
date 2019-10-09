@@ -825,7 +825,7 @@ public final class StringUtils {
 			result.add(str.substring(pos));
 		}
 
-		return (String[]) result.toArray(new String[result.size()]);
+		return result.toArray(new String[result.size()]);
 	}
 
 	/**
@@ -1135,7 +1135,7 @@ public final class StringUtils {
 				tokens.add(token);
 			}
 		}
-		return (String[]) tokens.toArray(new String[tokens.size()]);
+		return tokens.toArray(new String[tokens.size()]);
 	}
 
 	/**

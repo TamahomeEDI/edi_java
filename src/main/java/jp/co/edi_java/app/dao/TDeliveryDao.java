@@ -30,7 +30,7 @@ public interface TDeliveryDao {
     List<TDeliveryEntity> selectAll(String orderNumber, String remandFlg);
 
 	@Select
-    List<TDeliveryEntity> selectUnconfirmList();
+    List<TDeliveryEntity> selectUnconfirmList(String deliveryDate);
 
 	@Insert(excludeNull = true)
     int insert(TDeliveryEntity entity);

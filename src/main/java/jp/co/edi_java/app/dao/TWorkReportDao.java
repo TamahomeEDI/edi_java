@@ -30,7 +30,7 @@ public interface TWorkReportDao {
     List<TWorkReportEntity> selectAll(String orderNumber, String remandFlg);
 
 	@Select
-	List<TWorkReportEntity> selectUnconfirmList();
+	List<TWorkReportEntity> selectUnconfirmList(String workReportDate);
 
 	@Insert(excludeNull = true)
     int insert(TWorkReportEntity entity);

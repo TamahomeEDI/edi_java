@@ -54,22 +54,14 @@ and WRP.ORDER_NUMBER like /*@prefix(params.orderNumber)*/'smith' escape '$'
 /*%end*/
 /*%if params.receptionStatus == "1"*/
 and WRP.STAFF_RECEIPT_FLG = '0'
-and WRP.CLERK_RECEIPT_FLG = '0'
 and WRP.MANAGER_RECEIPT_FLG = '0'
 and WRP.REMand_FLG = '0'
 /*%elseif params.receptionStatus == "2"*/
 and WRP.STAFF_RECEIPT_FLG = '1'
-and WRP.CLERK_RECEIPT_FLG = '0'
 and WRP.MANAGER_RECEIPT_FLG = '0'
 and WRP.REMand_FLG = '0'
 /*%elseif params.receptionStatus == "3"*/
 and WRP.STAFF_RECEIPT_FLG = '1'
-and WRP.CLERK_RECEIPT_FLG = '1'
-and WRP.MANAGER_RECEIPT_FLG = '0'
-and WRP.REMand_FLG = '0'
-/*%elseif params.receptionStatus == "4"*/
-and WRP.STAFF_RECEIPT_FLG = '1'
-and WRP.CLERK_RECEIPT_FLG = '1'
 and WRP.MANAGER_RECEIPT_FLG = '1'
 and WRP.REMand_FLG = '0'
 /*%elseif params.receptionStatus == "5"*/
@@ -82,11 +74,12 @@ and WRP.WORK_REPORT_DATE >= /*params.deliveryDateFrom*/1
 and WRP.WORK_REPORT_DATE <= /*params.deliveryDateTo*/1
 /*%end*/
 /*%if params.inspectionReceiptDateFrom != null && params.inspectionReceiptDateFrom != ""*/
-and WRP.STAFF_RECEIPT_DATE >= /*params.inspectionReceiptDateFrom*/1
+and WRP.MANAGER_RECEIPT_DATE >= /*params.inspectionReceiptDateFrom*/1
 /*%end*/
 /*%if params.inspectionReceiptDateTo != null && params.inspectionReceiptDateTo != ""*/
-and WRP.STAFF_RECEIPT_DATE <= /*params.inspectionReceiptDateTo*/1
+and WRP.MANAGER_RECEIPT_DATE <= /*params.inspectionReceiptDateTo*/1
 /*%end*/
+order by WRP.WORK_REPORT_NUMBER
 LIMIT /*limit*/20 OFFSET /*offset*/1
 ;
 

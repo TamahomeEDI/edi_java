@@ -1,1 +1,9 @@
-select * from M_SYAIN where SYAIN_CODE in /*syainCodeList*/(0) AND TAISYOKU_FLG = 0;
+select * from M_SYAIN
+where
+/*%if syainCodeList == null */
+1=2
+/*%end*/
+/*%if syainCodeList != null */
+SYAIN_CODE in /*syainCodeList*/(0)
+/*%end*/
+;

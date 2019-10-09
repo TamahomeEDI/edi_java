@@ -128,8 +128,8 @@ public class WorkReportController extends BaseController {
 	/** ジョブカン申請による受入承認待ちステータスへの更新 */
 	@RequestMapping("/apply")
 	public ResponseEntity apply(@Validated WorkReportForm form) {
-		workReportService.apply(form);
-		super.setResponseData("ret", "OK");
+		List<TWorkReportEntity> errorList = workReportService.apply(form);
+		super.setResponseData("ret", errorList);
 		return super.response();
 	}
 

@@ -761,7 +761,7 @@ public class BeanUtils {
                         ret.put(fieldName, toObj.toString());
                     } else {
                         if(fromObj instanceof String) {
-                            if(!((String)fromObj).equals((String)toObj)) {
+                            if(!((String)fromObj).equals(toObj)) {
                                 ret.put(fieldName, (String)toObj);
                                 continue;
                             }

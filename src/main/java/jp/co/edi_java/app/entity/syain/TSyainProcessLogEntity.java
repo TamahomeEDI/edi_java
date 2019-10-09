@@ -1,6 +1,5 @@
 package jp.co.edi_java.app.entity.syain;
 
-import org.seasar.doma.Column;
 import org.seasar.doma.Entity;
 import org.seasar.doma.Id;
 import org.seasar.doma.Table;

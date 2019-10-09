@@ -196,7 +196,7 @@ public class DtoAssembler {
 	private static Object convertDtoType(Object value) {
 		if (value instanceof List) {
 			List list = (List) value;
-			return (Object[]) list.toArray(new Object[list.size()]);
+			return list.toArray(new Object[list.size()]);
 		} else if (value instanceof Date) {
 			Date date = (Date) value;
 			return Long.valueOf(date.getTime());
@@ -253,9 +253,9 @@ public class DtoAssembler {
 		} else if (List.class.isAssignableFrom(type) && value instanceof Object[]) {
 			retval = Arrays.asList((Object[]) value);
 		} else if (type.isArray() && value instanceof Object[]) {
-			retval = ConvertUtils.convert((Object[]) value);
+			retval = ConvertUtils.convert(value);
 		} else if (Object[].class.isAssignableFrom(type) && value.getClass().isArray()) {
-			retval = ConvertUtils.convert((Object[]) value);
+			retval = ConvertUtils.convert(value);
 		} else if (type.isArray() && value.getClass().isArray()) {
 			retval = value;
 		} else {
