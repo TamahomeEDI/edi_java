@@ -171,8 +171,6 @@ public class DeliveryService {
 	//納品書リマインド対象のリスト取得
 	public List<TDeliveryEntity> selectRemindList() {
 
-		//月末3日前から毎日
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
 		//本日の日付を取得
 		Date nowDate = new Date();
 		Calendar cal = Calendar.getInstance();
@@ -187,7 +185,7 @@ public class DeliveryService {
 		// 昨日が納品日のものを検索するため昨日取得
 		cal.add(Calendar.DATE, -1);
 		Date deliveryDate = cal.getTime();
-		String deliveryDateStr = sdf.format(deliveryDate);
+		String deliveryDateStr = formatDateToString(deliveryDate, "yyyy/MM/dd", "JST");
 		// 月末日のDateを取得
 		cal.set(Calendar.DATE, endDay);
 		Date endDateMonth = cal.getTime();
@@ -200,13 +198,14 @@ public class DeliveryService {
 
 		Calendar to = Calendar.getInstance();
 		to.setTime(endDateMonth);
+
 		log.info("today: " + today.toString() + " deliveryDate: " + deliveryDate.toString() + " from: " + beforeEndDate3.toString() + " to: " + endDateMonth.toString());
 
 		List<TDeliveryEntity> deliveryListTmp1 = new ArrayList<TDeliveryEntity>();
 		List<TDeliveryEntity> deliveryListTmp2 = new ArrayList<TDeliveryEntity>();
 		List<TDeliveryEntity> deliveryList = new ArrayList<TDeliveryEntity>();
 
-		// 当日が月末日3日前から月末日かどうか
+		// 当日が月末日3日前から月末日の間かどうか
 		cal.setTime(today);
 		if (cal.compareTo(from) > 0 && cal.compareTo(to) <= 0) {
 			deliveryListTmp1 = tDeliveryDao.selectUnconfirmList(null);

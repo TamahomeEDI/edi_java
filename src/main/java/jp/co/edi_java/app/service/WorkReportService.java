@@ -169,8 +169,7 @@ public class WorkReportService {
 	//出来高書リマインド対象のリスト取得
 	public List<TWorkReportEntity> selectRemindList() {
 
-		//月末3日前から毎日
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+
 		//本日の日付を取得
 		Date nowDate = new Date();
 		Calendar cal = Calendar.getInstance();
@@ -185,7 +184,7 @@ public class WorkReportService {
 		// 昨日が納品日のものを検索するため昨日取得
 		cal.add(Calendar.DATE, -1);
 		Date workReportDate = cal.getTime();
-		String workReportDateStr = sdf.format(workReportDate);
+		String workReportDateStr = formatDateToString(workReportDate, "yyyy/MM/dd", "JST");
 		// 月末日のDateを取得
 		cal.set(Calendar.DATE, endDay);
 		Date endDateMonth = cal.getTime();
@@ -198,13 +197,14 @@ public class WorkReportService {
 
 		Calendar to = Calendar.getInstance();
 		to.setTime(endDateMonth);
+
 		log.info("today: " + today.toString() + " workReportDate: " + workReportDate.toString() + " from: " + beforeEndDate3.toString() + " to: " + endDateMonth.toString());
 
 		List<TWorkReportEntity> workReportListTmp1 = new ArrayList<TWorkReportEntity>();
 		List<TWorkReportEntity> workReportListTmp2 = new ArrayList<TWorkReportEntity>();
 		List<TWorkReportEntity> workReportList = new ArrayList<TWorkReportEntity>();
 
-		// 当日が月末日3日前から月末日かどうか
+		// 当日が月末日3日前から月末日までの期間かどうか
 		cal.setTime(today);
 		if (cal.compareTo(from) > 0 && cal.compareTo(to) <= 0) {
 			workReportListTmp1 = tWorkReportDao.selectUnconfirmList(null);
