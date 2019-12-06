@@ -54,4 +54,12 @@ public class UserController extends BaseController {
 		return super.response();
 	}
 
+	/** 社員コード デコード結果取得 */
+	@RequestMapping("/decodeSyainCode")
+	public ResponseEntity decodeSyainCode(@Validated UserForm form) {
+		String syainCode = userService.decodeSyainCode(form);
+		//納品書番号返却
+		super.setResponseData("ret", syainCode);
+		return super.response();
+	}
 }

@@ -1,5 +1,6 @@
 package jp.co.edi_java.app.entity;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 import org.seasar.doma.Entity;
@@ -52,4 +53,31 @@ public class TOrderEntity extends BaseEntity {
 //    @JsonFormat(pattern = "yyyy/MM/dd HH:mm:ss")
     public Timestamp cancelAgreeDate;
 
+
+    // 発注日
+    public String orderDate;
+    // 納入予定日
+    public String deliveryDateY;
+    // 発注金額
+    public BigDecimal orderAmount;
+    // 消費税額
+    public BigDecimal orderAmountTax;
+    // 業者コード
+    public String gyousyaCode;
+    // 細目工種コード
+    public String saimokuKousyuCode;
+    // 進捗
+    //public String process;
+    // 1:本体発注, 2:S発注, 3:A発注, 4:B発注, 5:C発注
+ 	public int yosanFlg; // YOSAN_FLG
+ 	// 発注書まとめ番号
+ 	public String groupOrderNumber;
+ 	// JTM キー
+ 	public int jtmHattyuuSyubetuFlg;
+
+ 	public int jtmHattyuuSeqNo;
+
+ 	public int jtmKanriSeqNo;
+
 }
+

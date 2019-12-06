@@ -1,1 +1,2 @@
-select * from T_WORK_REPORT where WORK_REPORT_NUMBER = /*workReportNumber*/0;
+select * from T_WORK_REPORT
+where WORK_REPORT_NUMBER = /*workReportNumber*/0;

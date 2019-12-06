@@ -13,7 +13,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity(naming = NamingType.SNAKE_LOWER_CASE)
-@Table(name = "V_ORDER_EIGYOUSYO_GROUP")
+@Table(name = "COPY_M_EIGYOUSYO_GROUP")
 @Getter
 @Setter
 public class CopyMEigyousyoGroupEntity {

@@ -1,6 +1,7 @@
 package jp.co.edi_java.app.service;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -8,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import jp.co.edi_java.app.dao.syain.MSyainDao;
 import jp.co.edi_java.app.entity.syain.MSyainEntity;
+import jp.co.edi_java.app.form.UserForm;
+import jp.co.edi_java.app.util.crypto.CipherUtils;
 
 @Service
 @Scope("request")
@@ -33,4 +36,12 @@ public class UserService {
 		return mSyainDao.selectListBySyokusyu3(eigyousyoCode);
 	}
 
+	//社員コードのデコード
+	public String decodeSyainCode(UserForm form) {
+		String ret = "";
+		if (Objects.nonNull(form) && Objects.nonNull(form.getEncryptSyainCode())) {
+			ret = CipherUtils.getDecryptAES(form.getEncryptSyainCode());
+		}
+		return ret;
+	}
 }

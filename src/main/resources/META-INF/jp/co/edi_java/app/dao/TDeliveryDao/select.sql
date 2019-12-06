@@ -1,1 +1,2 @@
-select * from T_DELIVERY where DELIVERY_NUMBER = /*deliveryNumber*/0;
+select * from T_DELIVERY
+where DELIVERY_NUMBER = /*deliveryNumber*/0;

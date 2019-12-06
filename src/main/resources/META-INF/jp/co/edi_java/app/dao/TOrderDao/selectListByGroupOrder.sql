@@ -1,0 +1,1 @@
+select * from T_ORDER where GROUP_ORDER_NUMBER = /*groupOrderNumber*/0;

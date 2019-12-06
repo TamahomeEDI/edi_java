@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -18,18 +20,25 @@ import jp.co.edi_java.app.dao.MKoujiDao;
 import jp.co.edi_java.app.dao.MSaimokuKousyuDao;
 import jp.co.edi_java.app.dao.TCloudSignDao;
 import jp.co.edi_java.app.dao.TOrderDao;
+import jp.co.edi_java.app.dao.TOrderItemDao;
+import jp.co.edi_java.app.dao.VOrderStatusDao;
 import jp.co.edi_java.app.dao.gyousya.MGyousyaDao;
 import jp.co.edi_java.app.dao.gyousya.TGyousyaAccountDao;
 import jp.co.edi_java.app.dao.gyousya.TGyousyaMailaddressDao;
+import jp.co.edi_java.app.dao.jtm.DHattyuuKanriDao;
 import jp.co.edi_java.app.dao.syain.MSyainDao;
+import jp.co.edi_java.app.dto.OrderSummaryDto;
 import jp.co.edi_java.app.dto.SapOrderDetailDto;
 import jp.co.edi_java.app.dto.SapOrderDto;
+import jp.co.edi_java.app.dto.SearchVOrderDto;
 import jp.co.edi_java.app.entity.FileOrderRelEntity;
 import jp.co.edi_java.app.entity.MEigyousyoEntity;
 import jp.co.edi_java.app.entity.MKoujiEntity;
 import jp.co.edi_java.app.entity.MSaimokuKousyuEntity;
 import jp.co.edi_java.app.entity.TCloudSignEntity;
 import jp.co.edi_java.app.entity.TOrderEntity;
+import jp.co.edi_java.app.entity.TOrderItemEntity;
+import jp.co.edi_java.app.entity.VOrderStatusEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
 import jp.co.edi_java.app.entity.gyousya.TGyousyaAccountEntity;
 import jp.co.edi_java.app.entity.gyousya.TGyousyaMailaddressEntity;
@@ -42,7 +51,6 @@ import jp.co.edi_java.app.util.sap.SapApiAnalyzer;
 import jp.co.edi_java.app.util.sap.SapApiConsts;
 import jp.co.keepalive.springbootfw.exception.CoreRuntimeException;
 import jp.co.keepalive.springbootfw.util.consts.ResponseCode;
-import jp.co.keepalive.springbootfw.util.dxo.BeanUtils;
 import jp.co.keepalive.springbootfw.util.lang.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,6 +61,12 @@ public class OrderService {
 
 	@Autowired
     public TOrderDao tOrderDao;
+
+	@Autowired
+    public TOrderItemDao tOrderItemDao;
+
+	@Autowired
+    public VOrderStatusDao vOrderStatusDao;
 
 	@Autowired
     public MKoujiDao mKoujiDao;
@@ -81,6 +95,9 @@ public class OrderService {
 	@Autowired
 	public MSaimokuKousyuDao mSaimokuKousyuDao;
 
+	@Autowired
+	public DHattyuuKanriDao dHattyuuKanriDao;
+
 	public static String FILE_FLG_OFF = "0";
 	public static String FILE_FLG_ON = "1";
 	public static String FILE_FLG_REJECT = "2";
@@ -95,8 +112,30 @@ public class OrderService {
 
 	SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 
+	/** T_ORDERの情報を取得する */
 	public TOrderEntity selectInfo(String orderNumber) {
 		return tOrderDao.select(orderNumber);
+	}
+
+	/** T_ORDERの情報を取得する */
+	public List<TOrderEntity> selectInfo(List<String> orderNumberList) {
+		List<TOrderEntity> orderInfoList = tOrderDao.selectList(orderNumberList);
+		return orderInfoList;
+	}
+
+	/** V_ORDER_STATUSの情報を取得する。※ JTMから発注情報を取得する前提 */
+	public VOrderStatusEntity getVOrder(String orderNumber) {
+		return vOrderStatusDao.select(orderNumber);
+	}
+
+	/** V_ORDER_STATUSの情報を複数取得する。一括発注で利用する。※ JTMから発注情報を取得する前提 */
+	public List<VOrderStatusEntity> getMultiVOrder(List<String> orderNumberList) {
+		return vOrderStatusDao.selectList(orderNumberList);
+	}
+
+	/** T_ORDER_ITEMの情報を複数取得する。※ JTMから発注情報を取得する前提 */
+	public List<TOrderItemEntity> selectOrderItem(String orderNumber) {
+		return tOrderItemDao.selectAll(orderNumber);
 	}
 
 	public List<Map<String, Object>> getFileIdList(String orderNumber) {
@@ -109,6 +148,7 @@ public class OrderService {
 		return ret;
 	}
 
+	/** SAPの発注情報を取得する。 ※ JCOから発注情報を取得する前提 */
 	public SapOrderDto get(String orderNumber) {
 		//発注詳細取得（SAP）
 		Map<String, Object> data = SapApi.orderDetail(orderNumber);
@@ -123,6 +163,7 @@ public class OrderService {
 		return ret;
 	}
 
+	/** SAPの発注情報のヘッダ情報を取得する。 ※ JCOから発注情報を取得する前提 */
 	@SuppressWarnings("unchecked")
 	public SapOrderDto getHeader(Map<String, Object> data, String orderNumber) {
 
@@ -136,7 +177,67 @@ public class OrderService {
 	}
 
 	/**
-	 * 一括発注用
+	 * 一括発注用 発注情報を複数取得する。 ※ JTMから発注情報を取得する前提
+	 * @param orderNumberList
+	 * @return List<SearchVOrderDto>
+	 */
+	@SuppressWarnings("unchecked")
+	public List<SearchVOrderDto> getVOrderForMultiOrder(List<String> orderNumberList) {
+		List<SearchVOrderDto> resultList = new ArrayList<SearchVOrderDto>();
+		if (Objects.isNull(orderNumberList) || orderNumberList.isEmpty()) {
+			return resultList;
+		}
+		List<VOrderStatusEntity> vOrderList = getMultiVOrder(orderNumberList);
+		Map<String, List<Map<String, Object>>> fileListMap = getFileIdListMap(orderNumberList);
+		// 発注情報キャッシュ用
+		Map<String, VOrderStatusEntity> vOrderMap = new HashMap<String, VOrderStatusEntity>();
+		// 業者コードキャッシュ用
+		Map<String, Boolean> existsGyousya = new HashMap<String, Boolean>();
+		List<String> gyousyaCodeList = new ArrayList<String>();
+		for (VOrderStatusEntity vOrder : vOrderList) {
+			if (Objects.nonNull(vOrder) && Objects.nonNull(vOrder.getOrderNumber())) {
+				vOrderMap.put(vOrder.getOrderNumber(), vOrder);
+			}
+			//業者コードキャッシュ
+			if (!existsGyousya.containsKey(vOrder.getGyousyaCode())) {
+				gyousyaCodeList.add(vOrder.getGyousyaCode());
+				existsGyousya.put(vOrder.getGyousyaCode(),true);
+			}
+		}
+		//業者メールアドレス情報取得
+		Map<String, List<TGyousyaMailaddressEntity>> mailaddressMap = new HashMap<String, List<TGyousyaMailaddressEntity>>();
+		List<TGyousyaMailaddressEntity> mailaddressList = tGyousyaMailaddressDao.selectListByMultiCode(gyousyaCodeList);
+		for (TGyousyaMailaddressEntity mailaddress : mailaddressList) {
+			if (Objects.nonNull(mailaddress) && Objects.nonNull(mailaddress.getGyousyaCode())) {
+				// 業者情報のキャッシュ
+				if (!mailaddressMap.containsKey(mailaddress.getGyousyaCode())) {
+					mailaddressMap.put(mailaddress.getGyousyaCode(), new ArrayList<TGyousyaMailaddressEntity>());
+				}
+				mailaddressMap.get(mailaddress.getGyousyaCode()).add(mailaddress);
+			}
+		}
+		// 発注情報生成
+		for (String orderNumber : orderNumberList) {
+			SearchVOrderDto ret = new SearchVOrderDto();
+			VOrderStatusEntity vOrder = vOrderMap.get(orderNumber);
+			//発注情報
+			ret.setOrder(vOrder);
+			//発注明細一覧
+			List<TOrderItemEntity> itemList = selectOrderItem(orderNumber);
+			ret.setItemList(itemList);
+			//ファイル一覧
+			List<Map<String, Object>> fileList = fileListMap.get(orderNumber);
+			ret.setFileList(fileList);
+			//業者メールアドレス
+			List<TGyousyaMailaddressEntity> mailaddr = mailaddressMap.get(vOrder.getGyousyaCode());
+			ret.setMailaddressList(mailaddr);
+			resultList.add(ret);
+		}
+		return resultList;
+	}
+
+	/**
+	 * 一括発注用 SAPの発注情報を複数取得する。 ※ JCOから発注情報を取得する前提
 	 * @param orderNumberList
 	 * @return
 	 */
@@ -279,6 +380,7 @@ public class OrderService {
 		return orderList;
 	}
 
+	/** SAPの発注情報明細を取得する。 ※ JCOから発注情報を取得する前提 */
 	@SuppressWarnings("unchecked")
 	private List<SapOrderDetailDto> getItemList(Map<String, Object> data) {
 		ArrayList<SapOrderDetailDto> itemList = new ArrayList<SapOrderDetailDto>();
@@ -310,19 +412,41 @@ public class OrderService {
 		return itemList;
 	}
 
+	/** TOP画面用に発注情報のステータスサマリを取得する。 ※ JTMから発注情報を取得する前提 */
+	@SuppressWarnings("unchecked")
+	public List<OrderSummaryDto> getSummary(OrderForm form) {
+		ArrayList<OrderSummaryDto> itemList = new ArrayList<OrderSummaryDto>();
+
+		List<VOrderStatusEntity> vOrderList = vOrderStatusDao.countByStatus(form.getEigyousyoCode(),form.getGyousyaCode());
+		if (Objects.isNull(vOrderList) || vOrderList.isEmpty()) {
+			return itemList;
+		}
+		for (VOrderStatusEntity entity : vOrderList) {
+			OrderSummaryDto dto = new OrderSummaryDto();
+			dto.setEigyousyoCode(form.getEigyousyoCode());
+			dto.setGyousyaCode(form.getGyousyaCode());
+			dto.setOrderStatus(entity.getOrderStatus());
+			dto.setOrderCount(entity.getCount());
+			itemList.add(dto);
+		}
+		return itemList;
+	}
+
 	public String update(OrderForm form) {
 		String orderNumber = form.getOrderNumber();
 		TOrderEntity orderInfo = selectInfo(orderNumber);
 		//orderInfoが存在するならupdate
 		if(orderInfo != null) {
-			BeanUtils.copyBeanToBean(form, orderInfo);
+			//BeanUtils.copyBeanToBean(form, orderInfo);
+			setInputColumn(form, orderInfo);
 			orderInfo.setUpdateUser(form.getUserId());
 			tOrderDao.update(orderInfo);
 		}
 		//存在しないならinsert
 		else {
 			TOrderEntity entity = new TOrderEntity();
-			BeanUtils.copyBeanToBean(form, entity);
+			//BeanUtils.copyBeanToBean(form, entity);
+			setInputColumn(form, orderInfo);
 			MSaimokuKousyuEntity saimoku = mSaimokuKousyuDao.select(form.getSaimokuKousyuCode());
 			entity.setOrderType(saimoku.getHattyuuSyubetuFlg());
 			entity.setInsertUser(form.getUserId());
@@ -337,6 +461,14 @@ public class OrderService {
 		return orderNumber;
 	}
 
+	private void setInputColumn(OrderForm form, TOrderEntity orderInfo) {
+		orderInfo.setOrderNumber(form.getOrderNumber());
+		orderInfo.setKoujiCode(form.getKoujiCode());
+		orderInfo.setSaimokuKousyuCode(form.getSaimokuKousyuCode());
+		orderInfo.setUserBikou(form.getUserBikou());
+		orderInfo.setPartnerBikou(form.getPartnerBikou());
+	}
+
 	//発注添付ファイル登録
 	private void registFile(String orderNumber, List<String> fileIdList, String userId) {
 		for (String fileId : fileIdList) {
@@ -349,11 +481,31 @@ public class OrderService {
 		}
 	}
 
+	/** 発注日とまとめ発注用のキーを発注情報に反映 */
+	public void multiConfirmationInfo(OrderForm form) {
+		if (Objects.nonNull(form.getOrderNumberList())) {
+			OrderForm orderForm = new OrderForm();
+			for (String orderNumber : form.getOrderNumberList()) {
+				orderForm.setOrderNumber(orderNumber);
+				orderForm.setGroupOrderNumber(form.getGroupOrderNumber());
+				orderForm.setUserId(form.getUserId());
+				confirmationInfo(orderForm);
+			}
+		}
+	}
+
+	/** 発注日とまとめ発注用のキーを発注情報に反映 */
 	public void confirmationInfo(OrderForm form) {
 		String orderNumber = form.getOrderNumber();
 		TOrderEntity orderInfo = selectInfo(orderNumber);
+		Timestamp orderDateTime = new Timestamp(System.currentTimeMillis());
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		String orderDate = sdf.format(orderDateTime);
+		String groupOrderNumber = form.getGroupOrderNumber();
 		orderInfo.setConfirmationFlg(FILE_FLG_OFF);
 		orderInfo.setConfirmationRequestDate(new Timestamp(System.currentTimeMillis()));
+		orderInfo.setOrderDate(orderDate);
+		orderInfo.setGroupOrderNumber(groupOrderNumber);
 		orderInfo.setUpdateUser(form.getUserId());
 		tOrderDao.update(orderInfo);
 	}
@@ -367,14 +519,52 @@ public class OrderService {
 		tOrderDao.update(orderInfo);
 	}
 
-	/** 発注日をSAPへ連携 */
+	/** 発注日をSAPとJTMへ連携 */
+	public void multiSendOrderDate(OrderForm form) {
+		if (Objects.nonNull(form.getOrderNumberList())) {
+			OrderForm orderForm = new OrderForm();
+			for (String orderNumber : form.getOrderNumberList()) {
+				orderForm.setOrderNumber(orderNumber);
+				orderForm.setUserId(form.getUserId());
+				sendOrderDate(orderForm);
+			}
+		}
+	}
+
+	/** 発注日をSAPとJTMへ連携 */
 	public void sendOrderDate(OrderForm form) {
 		String orderNumber = form.getOrderNumber();
 		TOrderEntity orderInfo = selectInfo(orderNumber);
 		String koujiCode = orderInfo.getKoujiCode();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-		String orderDate = sdf.format(orderInfo.getConfirmationRequestDate());
-		Map<String, Object> data = SapApi.setOrderDate(orderNumber, koujiCode, orderDate);
+		String syainCode = form.getUserId();
+		String orderDate = orderInfo.getOrderDate();
+		String orderDateSlash = orderInfo.getOrderDate();
+		int jtmHattyuuSyubetuFlg = orderInfo.getJtmHattyuuSyubetuFlg();
+		int jtmHattyuuSeqNo = orderInfo.getJtmHattyuuSeqNo();
+		int jtmKanriSeqNo = orderInfo.getJtmKanriSeqNo();
+
+		if (Objects.isNull(orderDate) || orderDate.isEmpty()) {
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+			orderDateSlash = sdf.format(orderInfo.getConfirmationRequestDate());
+			orderDate = orderDateSlash.replaceAll("/", "");
+		} else {
+			Pattern pattern = java.util.regex.Pattern.compile("^[0-9]*$");
+		    Matcher matcher = pattern.matcher(orderDate);
+			if (orderDate.length() == 8 && matcher.matches()) {
+				String yyyy = orderDate.substring(0, 4);
+				String MM = orderDate.substring(4, 6);
+				String dd = orderDate.substring(6, 8);
+				orderDateSlash = yyyy + '/' + MM + '/' + dd;
+			} else {
+				throw new CoreRuntimeException("Can not send orderDate to JTM and SAP");
+			}
+		}
+		// TO JTM
+		dHattyuuKanriDao.updateHattyuuDate(orderDate, syainCode, koujiCode, orderNumber, jtmHattyuuSyubetuFlg, jtmHattyuuSeqNo, jtmKanriSeqNo);
+		dHattyuuKanriDao.commit();
+
+		// TO SAP
+		Map<String, Object> data = SapApi.setOrderDate(orderNumber, koujiCode, orderDateSlash);
 		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
@@ -383,23 +573,29 @@ public class OrderService {
 
 	public void conectCloudSign(OrderForm form, String formType) {
 		String orderNumber = form.getOrderNumber();
+		String groupOrderNumber = (Objects.nonNull(form.getGroupOrderNumber())) ?  form.getGroupOrderNumber() : null;
 		String title = "";
 		String fileName = "";
+		String eigyousyoCode = (Objects.nonNull(form.getEigyousyoCode())) ?  form.getEigyousyoCode() : "";
 		String eigyousyoName = (Objects.nonNull(form.getEigyousyoName())) ?  form.getEigyousyoName() : "";
+		String gyousyaCode = (Objects.nonNull(form.getGyousyaCode())) ?  form.getGyousyaCode() : "";
+		String gyousyaName = (Objects.nonNull(form.getGyousyaName())) ?  form.getGyousyaName() : "";
 		String saimokuKousyuName = (Objects.nonNull(form.getSaimokuKousyuName())) ?  form.getSaimokuKousyuName() : "";
+		String koujiCode = (Objects.nonNull(form.getKoujiCode())) ?  form.getKoujiCode() : "";
 		String koujiName = (Objects.nonNull(form.getKoujiName())) ?  form.getKoujiName() : "";
 		// メールタイトル、ファイル名の生成
 		if(formType.equals(CloudSignApi.FORM_TYPE_ORDER)) {
-			// 2019/6/24 クラウドサインメール件名変更対応(業者コード→支店名)
-			// title = CloudSignApi.PREFIX_TITLE_CONFIRMATION + form.getGyousyaCode() + "_" + orderNumber;
-			title = CloudSignApi.PREFIX_TITLE_CONFIRMATION + eigyousyoName + "_" + saimokuKousyuName + "_" + koujiName + "_" + orderNumber;
-			fileName = CloudSignApi.PREFIX_FILE_CONFIRMATION + form.getGyousyaCode() + "_" + orderNumber;
+			title = CloudSignApi.PREFIX_TITLE_CONFIRMATION;
+			fileName = CloudSignApi.PREFIX_FILE_CONFIRMATION;
 		}else {
-			// 2019/6/24 クラウドサインメール件名変更対応(業者コード→支店名)
-			// title = CloudSignApi.PREFIX_TITLE_CANCEL + form.getGyousyaCode() + "_" + orderNumber;
-			title = CloudSignApi.PREFIX_TITLE_CANCEL + eigyousyoName + "_" + saimokuKousyuName + "_" + koujiName + "_" + orderNumber;
-			fileName = CloudSignApi.PREFIX_FILE_CANCEL + form.getGyousyaCode() + "_" + orderNumber;
+			title = CloudSignApi.PREFIX_TITLE_CANCEL;
+			fileName = CloudSignApi.PREFIX_FILE_CANCEL;
 		}
+		// 2019/12/09 リリース対象外
+		//title = title + eigyousyoName + "_" + koujiName;
+		//fileName = fileName + gyousyaCode + "_" + koujiCode + "_" + eigyousyoCode;
+		title = title + eigyousyoName + "_" + saimokuKousyuName + "_" + koujiName + "_" + orderNumber;
+		fileName = fileName + gyousyaCode + "_" + orderNumber;
 
 		Map<String, Object> documentRet = CloudSignApi.postDocuments(title, "", "", null, false);
 		String documentId = documentRet.get("id").toString();
@@ -421,20 +617,21 @@ public class OrderService {
 			throw new CoreRuntimeException("mailaddress not found");
 		}
 
-		CloudSignApi.postParticipants(documentId, mailaddress, form.getGyousyaName());
+		CloudSignApi.postParticipants(documentId, mailaddress, gyousyaName);
 
 		CloudSignApi.postFile(documentId, form.getFilePath(), fileName + ".pdf");
 
 		CloudSignApi.postDocumentId(documentId);
 
 		//連携テーブルの登録
-		registCloudSign(documentId, orderNumber, formType, form.getUserId());
+		registCloudSign(documentId, orderNumber, groupOrderNumber, formType, form.getUserId());
 	}
 
-	public void registCloudSign(String fileId, String orderNumber, String formType, String userId) {
+	public void registCloudSign(String fileId, String orderNumber, String groupOrderNumber, String formType, String userId) {
 		TCloudSignEntity entity = new TCloudSignEntity();
 		entity.setFileId(fileId);
 		entity.setOrderNumber(orderNumber);
+		entity.setGroupOrderNumber(groupOrderNumber);
 		entity.setFormType(formType);
 		entity.setApplicationDate(new Timestamp(System.currentTimeMillis()));
 		entity.setInsertUser(userId);

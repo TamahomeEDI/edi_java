@@ -63,4 +63,10 @@ public class DeliveryForm extends BaseForm {
 
     public String approveDateTime;
 
+    public String eigyousyoCode;
+
+    public String orderAmount;
+
+    public String orderAmountTax;
+
 }

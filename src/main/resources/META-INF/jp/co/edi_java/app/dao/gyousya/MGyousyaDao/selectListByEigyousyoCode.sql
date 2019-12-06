@@ -5,10 +5,15 @@ SELECT
 	MGE.TORIHIKI_STATUS
 FROM
 	M_GYOUSYA_EIGYOUSYO MGE
-LEFT OUTER JOIN M_GYOUSYA MGY ON MGE.GYOUSYA_CODE = MGY.GYOUSYA_CODE
+LEFT OUTER JOIN M_GYOUSYA MGY ON MGY.GYOUSYA_CODE = MGE.GYOUSYA_CODE
 WHERE
-	MGY.GYOUSYA_CODE LIKE 'A%' AND
-	MGE.EIGYOUSYO_CODE = /*eigyousyoCode*/0
+	MGY.GYOUSYA_CODE LIKE 'A%'
+	/*%if (eigyousyoCode == null || eigyousyoCode == "")*/
+	AND 1=2
+	/*%end*/
+	/*%if (eigyousyoCode != null && eigyousyoCode != "")*/
+	AND MGE.EIGYOUSYO_CODE = /*eigyousyoCode*/'0'
+	/*%end*/
 	/*%if torihikiStatus == "0"*/
 	AND MGE.TORIHIKI_STATUS = '0'
 	/*%elseif torihikiStatus == "1"*/

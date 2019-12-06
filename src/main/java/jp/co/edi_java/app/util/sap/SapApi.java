@@ -95,10 +95,10 @@ public class SapApi {
 		if(!StringUtils.isNullString(form.getKoujiCode())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_ZWRKCD, form.getKoujiCode());
 		}
-		//※工事状況
-		if(!StringUtils.isNullString(form.getKoujiStatus())) {
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZWRKST, form.getKoujiStatus());
-		}
+//		//※工事状況
+//		if(!StringUtils.isNullString(form.getKoujiStatus())) {
+//			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZWRKST, form.getKoujiStatus());
+//		}
 		//※業者コード
 		if(!StringUtils.isNullString(form.getGyousyaCode())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZGYSCD, form.getGyousyaCode());
@@ -115,52 +115,52 @@ public class SapApi {
 		if(!StringUtils.isNullString(form.getOrderNumber())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_SEBELN, form.getOrderNumber());
 		}
-		//※進捗
-		if(!StringUtils.isNullString(form.getProcess())) {
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZPSMST, form.getProcess());
-		}
+//		//※進捗
+//		if(!StringUtils.isNullString(form.getProcess())) {
+//			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZPSMST, form.getProcess());
+//		}
 		//工務担当社員コード
 		if(!StringUtils.isNullString(form.getSyainCode())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZKMTNM, form.getSyainCode());
 		}
 		//着工実績日from
 		if(!StringUtils.isNullString(form.getKoujiStartDateFrom())) {
-			String koujiStartDateFrom = form.getKoujiStartDateFrom().replace("/", "");
+			String koujiStartDateFrom = form.getKoujiStartDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZCKJSD_F, koujiStartDateFrom);
 		}
 		//着工実績日to
 		if(!StringUtils.isNullString(form.getKoujiStartDateTo())) {
-			String koujiStartDateTo = form.getKoujiStartDateTo().replace("/", "");
+			String koujiStartDateTo = form.getKoujiStartDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZCKJSD_T, koujiStartDateTo);
 		}
 		//竣工実績日from
 		if(!StringUtils.isNullString(form.getKoujiCompleteDateFrom())) {
-			String koujiCompleteDateFrom = form.getKoujiCompleteDateFrom().replace("/", "");
+			String koujiCompleteDateFrom = form.getKoujiCompleteDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSKJSD_F, koujiCompleteDateFrom);
 		}
 		//竣工実績日to
 		if(!StringUtils.isNullString(form.getKoujiCompleteDateTo())) {
-			String koujiCompleteDateTo = form.getKoujiCompleteDateTo().replace("/", "");
+			String koujiCompleteDateTo = form.getKoujiCompleteDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSKJSD_T, koujiCompleteDateTo);
 		}
 		//引渡実績日from
 		if(!StringUtils.isNullString(form.getKoujiDeliveryDateFrom())) {
-			String koujiDeliveryDateFrom = form.getKoujiDeliveryDateFrom().replace("/", "");
+			String koujiDeliveryDateFrom = form.getKoujiDeliveryDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZHWJSD_F, koujiDeliveryDateFrom);
 		}
 		//引渡実績日to
 		if(!StringUtils.isNullString(form.getKoujiDeliveryDateTo())) {
-			String koujiDeliveryDateTo = form.getKoujiDeliveryDateTo().replace("/", "");
+			String koujiDeliveryDateTo = form.getKoujiDeliveryDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZHWJSD_T, koujiDeliveryDateTo);
 		}
 		//発注日from
 		if(!StringUtils.isNullString(form.getOrderDateFrom())) {
-			String orderDateFrom = form.getOrderDateFrom().replace("/", "");
+			String orderDateFrom = form.getOrderDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZORDDT_F, orderDateFrom);
 		}
 		//発注日to
 		if(!StringUtils.isNullString(form.getOrderDateTo())) {
-			String orderDateTo = form.getOrderDateTo().replace("/", "");
+			String orderDateTo = form.getOrderDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZORDDT_T, orderDateTo);
 		}
 
@@ -173,32 +173,32 @@ public class SapApi {
 
 		//請書発行日from
 		if(!StringUtils.isNullString(form.getConfirmationDateFrom())) {
-			String confirmationDateFrom = form.getConfirmationDateFrom().replace("/", "");
+			String confirmationDateFrom = form.getConfirmationDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSKHKD_F, confirmationDateFrom);
 		}
 		//請書発行日to
 		if(!StringUtils.isNullString(form.getConfirmationDateTo())) {
-			String confirmationDateTo = form.getConfirmationDateTo().replace("/", "");
+			String confirmationDateTo = form.getConfirmationDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSKHKD_T, confirmationDateTo);
 		}
 		//納品・出来高報告日from
 		if(!StringUtils.isNullString(form.getDeliveryDateFrom())) {
-			String deliveryDateFrom = form.getDeliveryDateFrom().replace("/", "");
+			String deliveryDateFrom = form.getDeliveryDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZNOUHD_F, deliveryDateFrom);
 		}
 		//納品・出来高報告日to
 		if(!StringUtils.isNullString(form.getDeliveryDateTo())) {
-			String deliveryDateTo = form.getDeliveryDateTo().replace("/", "");
+			String deliveryDateTo = form.getDeliveryDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZNOUHD_T, deliveryDateTo);
 		}
 		//承認完了日from
 		if(!StringUtils.isNullString(form.getCompletionDateFrom())) {
-			String completionDateFrom = form.getCompletionDateFrom().replace("/", "");
+			String completionDateFrom = form.getCompletionDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSNKRD_F, completionDateFrom);
 		}
 		//承認完了日to
 		if(!StringUtils.isNullString(form.getCompletionDateTo())) {
-			String completionDateTo = form.getCompletionDateTo().replace("/", "");
+			String completionDateTo = form.getCompletionDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSNKRD_T, completionDateTo);
 		}
 
@@ -574,9 +574,9 @@ public class SapApi {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_ZWRKCD, form.getKoujiCode());
 		}
 		//※工事状況
-		if(!StringUtils.isNullString(form.getKoujiStatus())) {
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZWRKST, form.getKoujiStatus());
-		}
+//		if(!StringUtils.isNullString(form.getKoujiStatus())) {
+//			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZWRKST, form.getKoujiStatus());
+//		}
 		//※業者コード
 		if(!StringUtils.isNullString(form.getGyousyaCode())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZGYSCD, form.getGyousyaCode());
@@ -594,51 +594,51 @@ public class SapApi {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_SEBELN, form.getOrderNumber());
 		}
 		//※進捗
-		if(!StringUtils.isNullString(form.getProcess())) {
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZPSMST, form.getProcess());
-		}
+//		if(!StringUtils.isNullString(form.getProcess())) {
+//			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZPSMST, form.getProcess());
+//		}
 		//工務担当社員コード
 		if(!StringUtils.isNullString(form.getSyainCode())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZKMTNM, form.getSyainCode());
 		}
 		//着工実績日from
 		if(!StringUtils.isNullString(form.getKoujiStartDateFrom())) {
-			String koujiStartDateFrom = form.getKoujiStartDateFrom().replace("/", "");
+			String koujiStartDateFrom = form.getKoujiStartDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZCKJSD_F, koujiStartDateFrom);
 		}
 		//着工実績日to
 		if(!StringUtils.isNullString(form.getKoujiStartDateTo())) {
-			String koujiStartDateTo = form.getKoujiStartDateTo().replace("/", "");
+			String koujiStartDateTo = form.getKoujiStartDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZCKJSD_T, koujiStartDateTo);
 		}
 		//竣工実績日from
 		if(!StringUtils.isNullString(form.getKoujiCompleteDateFrom())) {
-			String koujiCompleteDateFrom = form.getKoujiCompleteDateFrom().replace("/", "");
+			String koujiCompleteDateFrom = form.getKoujiCompleteDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSKJSD_F, koujiCompleteDateFrom);
 		}
 		//竣工実績日to
 		if(!StringUtils.isNullString(form.getKoujiCompleteDateTo())) {
-			String koujiCompleteDateTo = form.getKoujiCompleteDateTo().replace("/", "");
+			String koujiCompleteDateTo = form.getKoujiCompleteDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSKJSD_T, koujiCompleteDateTo);
 		}
 		//引渡実績日from
 		if(!StringUtils.isNullString(form.getKoujiDeliveryDateFrom())) {
-			String koujiDeliveryDateFrom = form.getKoujiDeliveryDateFrom().replace("/", "");
+			String koujiDeliveryDateFrom = form.getKoujiDeliveryDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZHWJSD_F, koujiDeliveryDateFrom);
 		}
 		//引渡実績日to
 		if(!StringUtils.isNullString(form.getKoujiDeliveryDateTo())) {
-			String koujiDeliveryDateTo = form.getKoujiDeliveryDateTo().replace("/", "");
+			String koujiDeliveryDateTo = form.getKoujiDeliveryDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZHWJSD_T, koujiDeliveryDateTo);
 		}
 		//発注日from
 		if(!StringUtils.isNullString(form.getOrderDateFrom())) {
-			String orderDateFrom = form.getOrderDateFrom().replace("/", "");
+			String orderDateFrom = form.getOrderDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZORDDT_F, orderDateFrom);
 		}
 		//発注日to
 		if(!StringUtils.isNullString(form.getOrderDateTo())) {
-			String orderDateTo = form.getOrderDateTo().replace("/", "");
+			String orderDateTo = form.getOrderDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZORDDT_T, orderDateTo);
 		}
 
@@ -651,32 +651,32 @@ public class SapApi {
 
 		//請書発行日from
 		if(!StringUtils.isNullString(form.getConfirmationDateFrom())) {
-			String confirmationDateFrom = form.getConfirmationDateFrom().replace("/", "");
+			String confirmationDateFrom = form.getConfirmationDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSKHKD_F, confirmationDateFrom);
 		}
 		//請書発行日to
 		if(!StringUtils.isNullString(form.getConfirmationDateTo())) {
-			String confirmationDateTo = form.getConfirmationDateTo().replace("/", "");
+			String confirmationDateTo = form.getConfirmationDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSKHKD_T, confirmationDateTo);
 		}
 		//納品・出来高報告日from
 		if(!StringUtils.isNullString(form.getDeliveryDateFrom())) {
-			String deliveryDateFrom = form.getDeliveryDateFrom().replace("/", "");
+			String deliveryDateFrom = form.getDeliveryDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZNOUHD_F, deliveryDateFrom);
 		}
 		//納品・出来高報告日to
 		if(!StringUtils.isNullString(form.getDeliveryDateTo())) {
-			String deliveryDateTo = form.getDeliveryDateTo().replace("/", "");
+			String deliveryDateTo = form.getDeliveryDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZNOUHD_T, deliveryDateTo);
 		}
 		//承認完了日from
 		if(!StringUtils.isNullString(form.getCompletionDateFrom())) {
-			String completionDateFrom = form.getCompletionDateFrom().replace("/", "");
+			String completionDateFrom = form.getCompletionDateFrom().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSNKRD_F, completionDateFrom);
 		}
 		//承認完了日to
 		if(!StringUtils.isNullString(form.getCompletionDateTo())) {
-			String completionDateTo = form.getCompletionDateTo().replace("/", "");
+			String completionDateTo = form.getCompletionDateTo().replaceAll("/", "");
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZSNKRD_T, completionDateTo);
 		}
 		return params.getParams();

@@ -94,6 +94,13 @@ public class DeliveryController extends BaseController {
 		return super.response();
 	}
 
+	/** 未受入納品情報存在チェック */
+	@RequestMapping("/checkUnconfirmDelivery")
+	public ResponseEntity checkUnconfirmDelivery(@Validated DeliveryForm form) {
+		super.setResponseData("ret", deliveryService.checkUnconfirmDelivery(form.orderNumber));
+		return super.response();
+	}
+
 	/** 発注番号単位の納品情報一覧取得 */
 	@RequestMapping("/getList")
 	public ResponseEntity getList(@Validated DeliveryForm form) {
@@ -112,15 +119,22 @@ public class DeliveryController extends BaseController {
 	@RequestMapping("/update")
 	public ResponseEntity update(@Validated DeliveryForm form) {
 		deliveryService.update(form);
-		super.setResponseData("ret", "OK");
 		return super.response();
 	}
 
-	/** 納品情報削除 */
-	@RequestMapping("/delete")
-	public ResponseEntity delete(@Validated DeliveryForm form) {
-		deliveryService.delete(form);
-		super.setResponseData("ret", "OK");
+	/** 納品情報取消（論理削除） */
+	@RequestMapping("/softdelete")
+	public ResponseEntity softdelete(@Validated DeliveryForm form) {
+		deliveryService.softdelete(form);
+		return super.response();
+	}
+
+	/** 納品情報登録後メール送信 */
+	@RequestMapping("/sendmailDeliveryCancel")
+	public ResponseEntity sendmailDeliveryCancel(@Validated DeliveryForm form) {
+		//納品受領通知
+		deliveryService.sendMailDeliveryCancel(form);
+
 		return super.response();
 	}
 
@@ -152,6 +166,17 @@ public class DeliveryController extends BaseController {
 	@RequestMapping("/reject")
 	public ResponseEntity reject(@Validated DeliveryForm form) {
 		deliveryService.reject(form);
+		super.setResponseData("ret", "OK");
+		return super.response();
+	}
+
+	/** 納品書 未受入対象 リマインドメール送信リクエスト */
+	@RequestMapping("/remindDeliveryAcceptance")
+	public ResponseEntity remindDeliveryAcceptance(@Validated DeliveryForm form) {
+		//納品書のID一覧取得
+		List<TDeliveryEntity> remindDList = deliveryService.selectRemindListBySyain(form.getEigyousyoCode(), form.getSyainCode());
+		//納品書 未受入対象 リマインドメール
+		deliveryService.remindList(remindDList);
 		super.setResponseData("ret", "OK");
 		return super.response();
 	}

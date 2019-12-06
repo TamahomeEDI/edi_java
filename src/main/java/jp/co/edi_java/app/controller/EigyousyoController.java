@@ -95,5 +95,13 @@ public class EigyousyoController extends BaseController {
 		return super.response();
 	}
 
+	/** 支店コード デコード結果取得 */
+	@RequestMapping("/decodeEigyousyoCode")
+	public ResponseEntity decodeEigyousyoCode(@Validated EigyousyoForm form) {
+		String eigyousyoCode = eigyousyoService.decodeEigyousyoCode(form);
+		//納品書番号返却
+		super.setResponseData("ret", eigyousyoCode);
+		return super.response();
+	}
 
 }

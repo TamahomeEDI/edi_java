@@ -26,6 +26,7 @@ import jp.co.edi_java.app.dto.SearchKoujiInfoDto;
 import jp.co.edi_java.app.dto.SearchOrderInfoDto;
 import jp.co.edi_java.app.dto.SearchWorkReportDto;
 import jp.co.edi_java.app.entity.TCloudSignEntity;
+import jp.co.edi_java.app.entity.VOrderStatusEntity;
 import jp.co.edi_java.app.form.SearchForm;
 import jp.co.edi_java.app.util.sap.SapApi;
 import jp.co.edi_java.app.util.sap.SapApiAnalyzer;
@@ -98,12 +99,37 @@ public class SearchService {
 		return searchDao.countEstimate(form);
 	}
 
+	public int countVOrder(SearchForm form) {
+		return searchDao.countVOrder(form);
+	}
+
+	public List<VOrderStatusEntity> getVOrder(SearchForm form) {
+		int offset = (form.getOpage() - 1) * form.getOlimit();
+		return searchDao.selectVOrder(form, form.getOlimit(), offset);
+	}
+
+	public List<TCloudSignEntity> getCloudSignRemindTarget(List<VOrderStatusEntity> vOrderList) {
+		List<TCloudSignEntity> cloudSignInfoList = new ArrayList<TCloudSignEntity>();
+		List<String> orderNumberList = new ArrayList<String>();
+		for (VOrderStatusEntity vOrder : vOrderList) {
+			if (Objects.nonNull(vOrder.getConfirmationRequestDate()) && Objects.isNull(vOrder.getConfirmationAgreeDate())) {
+				log.info("cloud sign: " + vOrder.getOrderNumber());
+				orderNumberList.add(vOrder.getOrderNumber());
+			}
+		}
+		if (! orderNumberList.isEmpty()) {
+			cloudSignInfoList = tCloudSignDao.selectNewestList(orderNumberList, CLOUD_SIGN_FORM_TYPE_ORDER);
+		}
+		return cloudSignInfoList;
+	}
+
 	@SuppressWarnings("unchecked")
 	public ArrayList<SapSearchOrderDto> getOrder(SearchForm form) {
 		//社員フラグ
 		String userFlg = form.getUserFlg();
 		//発注ステータス
 		String searchOrderStatus = form.getOrderStatus();
+
 
 		//検索結果リストの初期化
 		ArrayList<SapSearchOrderDto> ret = new ArrayList<SapSearchOrderDto>();

@@ -1,5 +1,7 @@
 package jp.co.edi_java.app.entity;
 
+import java.math.BigDecimal;
+
 import org.seasar.doma.Entity;
 import org.seasar.doma.GeneratedValue;
 import org.seasar.doma.GenerationType;
@@ -31,6 +33,8 @@ public class TDeliveryItemEntity extends BaseEntity {
 
     public double orderQuantity;
 
+    public double pastDeliveryQuantity;
+
     public double deliveryQuantity;
 
     public double deliveryRemainingQuantity;
@@ -41,4 +45,10 @@ public class TDeliveryItemEntity extends BaseEntity {
     //JCO 明細番号
     public String jcoEbelp;
 
+    // 発注金額
+    public BigDecimal orderAmount;
+    // 消費税額
+    public BigDecimal orderAmountTax;
+    // 単価
+    public BigDecimal orderUnitPrice;
 }

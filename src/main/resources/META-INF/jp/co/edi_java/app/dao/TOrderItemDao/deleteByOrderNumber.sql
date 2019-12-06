@@ -1,0 +1,3 @@
+DELETE FROM T_ORDER_ITEM
+WHERE ORDER_NUMBER = /*orderNumber*/'0'
+;

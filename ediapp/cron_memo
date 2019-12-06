@@ -58,3 +58,8 @@ sudo crontab -e
 50 7 * * * /opt/ediapp/bat/remindCloudSign.sh
 #AM7時55分 納品書・出来高報告書確認リマインドメール
 55 7 * * * /opt/ediapp/bat/remindDeliveryAcceptance.sh
+
+#本番設定20191209予定
+3 5 * * * /opt/ediapp/bat/tmpClear.sh
+0 8 * * * /opt/ediapp/bat/remindDeliveryAcceptanceList.sh
+*/10 * * * * /opt/ediapp/bat/getOrderAll.sh

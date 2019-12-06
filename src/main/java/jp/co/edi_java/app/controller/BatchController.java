@@ -50,6 +50,9 @@ public class BatchController extends BaseController {
 	@Autowired
 	public OrderService orderService;
 
+	@Autowired
+	public MailService mailService;
+
 	private String adminEmail = "t-iida@tamahome.jp, to-suzuki@tamahome.jp, shinji-yamaguchi@tamahome.jp";
 	//private String adminEmail = "shinji-yamaguchi@tamahome.jp";
 
@@ -260,6 +263,26 @@ public class BatchController extends BaseController {
 		return super.response();
 	}
 
+	/** 発注情報取得 */
+	@RequestMapping("/getOrderAll")
+	public ResponseEntity getOrderAll() {
+		try {
+			long start = System.currentTimeMillis();
+			//バックアップ処理
+			jtmService.backupOrder();
+
+			Map<String, Object> countMap = jtmService.upsertOrderAll();
+
+			long end = System.currentTimeMillis();
+			super.setResponseData("ret",countMap);
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
 	/** 家歴マスタ取得 */
 	@RequestMapping("/getKarekiAll")
 	public ResponseEntity getKarekiAll() {
@@ -336,7 +359,7 @@ public class BatchController extends BaseController {
 
 	/**
 	 * 納品出来高受入リマインド機能
-	 * 毎日工務担当者へ処理漏れがないかリマインド
+	 * 納品日翌日と月末までの３日間は工務担当者へ処理漏れがないかリマインド
 	 *
 	 */
 	@RequestMapping("/remindDeliveryAcceptance")
@@ -345,9 +368,9 @@ public class BatchController extends BaseController {
 			long start = System.currentTimeMillis();
 
 			//納品書のID一覧取得
-			List<TDeliveryEntity> remindDList = deliveryService.selectRemindList();
+			List<TDeliveryEntity> remindDList = deliveryService.selectRemindList(false);
 			//出来高書のID一覧取得
-			List<TWorkReportEntity> remindWList = workReportService.selectRemindList();
+			List<TWorkReportEntity> remindWList = workReportService.selectRemindList(false);
 			//メールを送信
 			int countD = remindDList.size();
 			deliveryService.remindList(remindDList);
@@ -364,7 +387,37 @@ public class BatchController extends BaseController {
 		return super.response();
 	}
 
-	/* 単発実行のバッチ処理 ※ データメンテナンス等 */
+	/**
+	 * 納品出来高受入リマインド機能(一覧)
+	 *
+	 */
+	@RequestMapping("/remindDeliveryAcceptanceList")
+	public ResponseEntity remindDeliveryAcceptanceList() {
+		try {
+			long start = System.currentTimeMillis();
+
+			//納品書のID一覧取得
+			List<TDeliveryEntity> remindDList = deliveryService.selectRemindList(true);
+			//出来高書のID一覧取得
+			List<TWorkReportEntity> remindWList = workReportService.selectRemindList(true);
+			//メールを送信
+			int countD = remindDList.size();
+			int countW = remindWList.size();
+			// 納品書、出来高報告書の未受入一覧をメール送信
+			mailService.remindDeliveryAcceptanceList(remindDList, remindWList);
+
+			long end = System.currentTimeMillis();
+			super.setResponseData("countDelivery",countD);
+			super.setResponseData("countWorkReport",countW);
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 以下単発実行のバッチ処理 ※ データメンテナンス等 ■■■■■■■■■■■■■■■■■■■■■■■■■■■■ */
 	/**
 	 *
 	 * 発注日のSAP連携

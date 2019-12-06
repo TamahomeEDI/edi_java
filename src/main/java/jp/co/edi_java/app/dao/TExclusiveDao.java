@@ -35,4 +35,6 @@ public interface TExclusiveDao {
 	@Delete(sqlFile = true, ignoreVersion = true, suppressOptimisticLockException = true)
 	int delete(TExclusiveEntity entity);
 
+	@Update(sqlFile = true, ignoreVersion = true)
+	int commit();
 }

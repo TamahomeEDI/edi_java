@@ -1,5 +1,9 @@
 package jp.co.edi_java.app.util.file;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -113,6 +117,18 @@ public class FileApi {
 		CloseableHttpResponse response = HttpUtil.delete(url, headers.getParams(), null);
 		String ret = HttpUtil.toJson(response);
 		return JsonUtils.decode(ret);
+	}
+
+	/** ディレクトリの作成 */
+	public static void createDirectories(String folderPath) {
+		try {
+			Path path = Paths.get(folderPath);
+			if (! Files.exists(path)) {
+				Files.createDirectories(path);
+			}
+		} catch (IOException e) {
+			throw new CoreRuntimeException(e.getMessage());
+		}
 	}
 
 	private static HttpRequestHeaders createCommonHeader() {

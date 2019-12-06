@@ -30,5 +30,18 @@ public class ChecklistController extends BaseController {
 		super.setResponseData("totalCount", orderList.size());
 		return super.response();
 	}
+	/** チェックリスト対象カウント */
+	@RequestMapping("/countCheckList")
+	public ResponseEntity countCheckList(@Validated SearchForm form) {
+		super.setResponseData("ret", checklistService.countCheckList(form));
+		return super.response();
+	}
+
+	/** チェックリスト出力 */
+	@RequestMapping("/createCheckList")
+	public ResponseEntity createCheckList(@Validated SearchForm form) {
+		checklistService.createCheckList(form);
+		return super.response();
+	}
 
 }

@@ -29,6 +29,4 @@ public class SapOrderDetailDto {
 
     public int remainAmount;
 
-
-
 }

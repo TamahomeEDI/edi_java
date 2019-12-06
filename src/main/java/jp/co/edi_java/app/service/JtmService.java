@@ -1,19 +1,31 @@
 package jp.co.edi_java.app.service;
 
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
+import jp.co.edi_java.app.dao.MConstantsDao;
 import jp.co.edi_java.app.dao.MEigyousyoDao;
 import jp.co.edi_java.app.dao.MEigyousyoGroupDao;
 import jp.co.edi_java.app.dao.MKarekiDao;
 import jp.co.edi_java.app.dao.MKoujiDao;
 import jp.co.edi_java.app.dao.MSaimokuKousyuDao;
+import jp.co.edi_java.app.dao.TOrderDao;
+import jp.co.edi_java.app.dao.TOrderItemDao;
+import jp.co.edi_java.app.dao.TOrderKeywordDao;
 import jp.co.edi_java.app.dao.copy.CopyMEigyousyoDao;
 import jp.co.edi_java.app.dao.copy.CopyMEigyousyoGroupDao;
 import jp.co.edi_java.app.dao.copy.CopyMGyousyaDao;
@@ -24,14 +36,18 @@ import jp.co.edi_java.app.dao.copy.CopyMKoujiDao;
 import jp.co.edi_java.app.dao.copy.CopyMSaimokuKousyuDao;
 import jp.co.edi_java.app.dao.copy.CopyMSyainDao;
 import jp.co.edi_java.app.dao.copy.CopyMSyainEigyousyoDao;
+import jp.co.edi_java.app.dao.copy.CopyTOrderDao;
+import jp.co.edi_java.app.dao.copy.CopyTOrderItemDao;
 import jp.co.edi_java.app.dao.gyousya.MGyousyaDao;
 import jp.co.edi_java.app.dao.gyousya.MGyousyaEigyousyoDao;
 import jp.co.edi_java.app.dao.gyousya.MGyousyaSaimokuDao;
+import jp.co.edi_java.app.dao.jtm.VOrderDao;
 import jp.co.edi_java.app.dao.jtm.VOrderEigyousyoDao;
 import jp.co.edi_java.app.dao.jtm.VOrderEigyousyoGroupDao;
 import jp.co.edi_java.app.dao.jtm.VOrderGyousyaDao;
 import jp.co.edi_java.app.dao.jtm.VOrderGyousyaEigyousyoDao;
 import jp.co.edi_java.app.dao.jtm.VOrderGyousyaSaimokuDao;
+import jp.co.edi_java.app.dao.jtm.VOrderItemDao;
 import jp.co.edi_java.app.dao.jtm.VOrderKarekiDao;
 import jp.co.edi_java.app.dao.jtm.VOrderKoujiDao;
 import jp.co.edi_java.app.dao.jtm.VOrderSaimokuKousyuDao;
@@ -39,11 +55,15 @@ import jp.co.edi_java.app.dao.jtm.VOrderSyainDao;
 import jp.co.edi_java.app.dao.jtm.VOrderSyainEigyousyoDao;
 import jp.co.edi_java.app.dao.syain.MSyainDao;
 import jp.co.edi_java.app.dao.syain.MSyainEigyousyoDao;
+import jp.co.edi_java.app.entity.MConstantsEntity;
 import jp.co.edi_java.app.entity.MEigyousyoEntity;
 import jp.co.edi_java.app.entity.MEigyousyoGroupEntity;
 import jp.co.edi_java.app.entity.MKarekiEntity;
 import jp.co.edi_java.app.entity.MKoujiEntity;
 import jp.co.edi_java.app.entity.MSaimokuKousyuEntity;
+import jp.co.edi_java.app.entity.TExclusiveEntity;
+import jp.co.edi_java.app.entity.TOrderEntity;
+import jp.co.edi_java.app.entity.TOrderItemEntity;
 import jp.co.edi_java.app.entity.copy.CopyMEigyousyoEntity;
 import jp.co.edi_java.app.entity.copy.CopyMEigyousyoGroupEntity;
 import jp.co.edi_java.app.entity.copy.CopyMGyousyaEigyousyoEntity;
@@ -59,9 +79,11 @@ import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaSaimokuEntity;
 import jp.co.edi_java.app.entity.jtm.VOrderEigyousyoEntity;
 import jp.co.edi_java.app.entity.jtm.VOrderEigyousyoGroupEntity;
+import jp.co.edi_java.app.entity.jtm.VOrderEntity;
 import jp.co.edi_java.app.entity.jtm.VOrderGyousyaEigyousyoEntity;
 import jp.co.edi_java.app.entity.jtm.VOrderGyousyaEntity;
 import jp.co.edi_java.app.entity.jtm.VOrderGyousyaSaimokuEntity;
+import jp.co.edi_java.app.entity.jtm.VOrderItemEntity;
 import jp.co.edi_java.app.entity.jtm.VOrderKarekiEntity;
 import jp.co.edi_java.app.entity.jtm.VOrderKoujiEntity;
 import jp.co.edi_java.app.entity.jtm.VOrderSaimokuKousyuEntity;
@@ -69,8 +91,12 @@ import jp.co.edi_java.app.entity.jtm.VOrderSyainEigyousyoEntity;
 import jp.co.edi_java.app.entity.jtm.VOrderSyainEntity;
 import jp.co.edi_java.app.entity.syain.MSyainEigyousyoEntity;
 import jp.co.edi_java.app.entity.syain.MSyainEntity;
+import jp.co.edi_java.app.form.ExclusiveForm;
+import jp.co.edi_java.app.util.consts.CommonConsts;
 import jp.co.keepalive.springbootfw.util.dxo.BeanUtils;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @Scope("request")
 public class JtmService {
@@ -155,6 +181,35 @@ public class JtmService {
 	@Autowired
     public CopyMKarekiDao copyMKarekiDao;
 
+	//発注情報
+	@Autowired
+	public VOrderDao vOrderDao;
+	@Autowired
+	public TOrderDao tOrderDao;
+	@Autowired
+	public CopyTOrderDao copyTOrderDao;
+
+	//発注情報明細
+	@Autowired
+	public VOrderItemDao vOrderItemDao;
+	@Autowired
+	public TOrderItemDao tOrderItemDao;
+	@Autowired
+	public CopyTOrderItemDao copyTOrderItemDao;
+
+	//発注情報キーワード
+	@Autowired
+	public TOrderKeywordDao tOrderKeywordDao;
+
+	//定数マスタ（発注情報連携時間記録用）
+	@Autowired
+	public MConstantsDao mConstantsDao;
+
+	//排他制御用（発注情報連携用）
+	@Autowired
+	public ExclusiveService exclusiveService;
+
+	private static String TEMPORARY_SYAIN_CODE = "990000";
 
 	/** 支店マスタ */
 	public void backupEigyousyo() {
@@ -931,6 +986,266 @@ public class JtmService {
 		countMap.put("insertCount", insertCount);
 		countMap.put("updateCount", updateCount);
 		return countMap;
+	}
+
+	public void backupOrder() {
+		//コピーテーブルの削除
+		copyTOrderDao.deleteAll();
+		copyTOrderItemDao.deleteAll();
+		//トランザクションテーブルからコピーテーブルへコピー
+		copyTOrderDao.insertAll();
+		copyTOrderItemDao.insertAll();
+	}
+
+	/** 発注情報取得 */
+	public Map<String, Object> upsertOrderAll() {
+		Map<String, Object> countMap = new HashMap<>();
+		int chkCount = 5000;
+		countMap.put("insertCount", 0);
+		countMap.put("updateCount", 0);
+		countMap.put("insertDtlCount", 0);
+		countMap.put("deleteDtlCount", 0);
+		countMap.put("totalCount", 0);
+		countMap.put("totalDtlCount", 0);
+
+		// 前回処理日を取得する
+		MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.V_ORDER_LAST_GET_TIME);
+		Date prevDate = null;
+		if (Objects.nonNull(mConstants)) {
+			prevDate = java.sql.Date.valueOf(mConstants.getConstantsValue());
+		} else {
+			mConstants = new MConstantsEntity();
+			mConstants.setConstantsKey(CommonConsts.V_ORDER_LAST_GET_TIME);
+			mConstantsDao.insert(mConstants);
+		}
+
+		//排他制御用
+		ExclusiveForm exform = new ExclusiveForm();
+		exform.setExclusiveObjectName("T_ORDER");
+		UUID uuid = UUID.randomUUID();
+        String sessionId = uuid.toString();
+        exform.setExclusiveSessionId(sessionId);
+
+		List<VOrderEntity> orderList = new ArrayList<VOrderEntity>();
+		List<VOrderItemEntity> itemList = new ArrayList<VOrderItemEntity>();
+		List<String> lockFailOrderNumbers = new ArrayList<String>();
+		// 件数取得
+		int totalCount = vOrderDao.count(prevDate);
+		int totalDtlCount = vOrderItemDao.count(prevDate);
+		countMap.put("totalCount", totalCount);
+		countMap.put("totalDtlCount", totalDtlCount);
+
+		double forCount = Math.ceil((double)totalCount / chkCount);
+		for (int i = 0; i < forCount; i++) {
+			int from = (i * chkCount) + 1;
+			int to = (i + 1) * chkCount;
+			// 差分取得（1日4000件程度）
+			// 全件取得（発注日が20190801以降 （20191114までで120000件））
+			orderList = vOrderDao.selectByDate(prevDate,from,to);
+			itemList = vOrderItemDao.selectByDate(prevDate,from,to);
+			Map<String,List<VOrderItemEntity>> vOrderItemInMap = new HashMap<String,List<VOrderItemEntity>>();
+			List<String> orderNumberList = new ArrayList<String>();
+			// 明細のキャッシュ
+			// 新規用、更新用のマップにそれぞれキャッシュ
+			for (VOrderItemEntity vOrderItem : itemList) {
+				String orderNumber = vOrderItem.getDenpyouNo();
+				if (! vOrderItemInMap.containsKey(orderNumber)) {
+					vOrderItemInMap.put(orderNumber, new ArrayList<VOrderItemEntity>());
+					orderNumberList.add(orderNumber);
+				}
+				vOrderItemInMap.get(orderNumber).add(vOrderItem);
+			}
+			// multi lock
+			exform.setExclusiveObjectKeyList(orderNumberList);
+			Map<String,List<TExclusiveEntity>> lockResult = exclusiveService.getMultiLock(exform);
+			// ロックに失敗したリストからマップ生成、失敗したものは取り込みせず次回取り込みを行う。
+			Map<String, String> ignoreMap = new HashMap<String, String>();
+			for (TExclusiveEntity exEntity : lockResult.get(exclusiveService.getFailKey())) {
+				ignoreMap.put(exEntity.getExclusiveObjectKey(), exEntity.getExclusiveObjectKey());
+				lockFailOrderNumbers.add(exEntity.getExclusiveObjectKey());
+			}
+			// 発注情報の更新
+			upsertOrderAux(orderList,vOrderItemInMap,ignoreMap,countMap);
+			// release multi lock
+			exclusiveService.releaseMultiLock(exform);
+		}
+
+		// 前回Lockされていて更新できなかったものを取得
+		MConstantsEntity mConstants2 = mConstantsDao.select(CommonConsts.V_ORDER_LOCK_FAIL_ORDER_NUMBERS);
+		if (Objects.isNull(mConstants2)) {
+			mConstants2 = new MConstantsEntity();
+			mConstants2.setConstantsKey(CommonConsts.V_ORDER_LOCK_FAIL_ORDER_NUMBERS);
+			mConstantsDao.insert(mConstants2);
+		} else {
+			String additionalOrderNumbers = mConstants2.getConstantsValue();
+			if (Objects.nonNull(additionalOrderNumbers) && ! additionalOrderNumbers.isEmpty()) {
+				List<String> additionalOrderNumberList = new ArrayList<String>(Arrays.asList(additionalOrderNumbers.split(",")));
+
+				orderList = vOrderDao.selectListByOrderNumber(additionalOrderNumberList);
+				itemList = vOrderItemDao.selectListByOrderNumber(additionalOrderNumberList);
+				countMap.put("totalCount", (int)countMap.get("totalCount") + orderList.size());
+				countMap.put("totalDtlCount", (int)countMap.get("totalDtlCount") + itemList.size());
+
+				Map<String,List<VOrderItemEntity>> vOrderItemInMap = new HashMap<String,List<VOrderItemEntity>>();
+				for (VOrderItemEntity vOrderItem : itemList) {
+					String orderNumber = vOrderItem.getDenpyouNo();
+					if (! vOrderItemInMap.containsKey(orderNumber)) {
+						vOrderItemInMap.put(orderNumber, new ArrayList<VOrderItemEntity>());
+					}
+					vOrderItemInMap.get(orderNumber).add(vOrderItem);
+				}
+
+				// multi lock
+				exform.setExclusiveObjectKeyList(additionalOrderNumberList);
+				Map<String,List<TExclusiveEntity>> lockResult = exclusiveService.getMultiLock(exform);
+				// ロックに失敗したリストからマップ生成、失敗したものは取り込みせず次回取り込みを行う。
+				Map<String, String> ignoreMap = new HashMap<String, String>();
+				for (TExclusiveEntity exEntity : lockResult.get(exclusiveService.getFailKey())) {
+					ignoreMap.put(exEntity.getExclusiveObjectKey(), exEntity.getExclusiveObjectKey());
+					lockFailOrderNumbers.add(exEntity.getExclusiveObjectKey());
+				}
+
+				// 発注情報の更新
+				upsertOrderAux(orderList,vOrderItemInMap,ignoreMap,countMap);
+
+				// release multi lock
+				exclusiveService.releaseMultiLock(exform);
+			}
+		}
+		String lockFailOrderNumbersStr = null;
+		// 排他制御により更新できなかった発注情報を記録（次回取り込み対象に加える）
+		if (Objects.nonNull(lockFailOrderNumbers) && !lockFailOrderNumbers.isEmpty()) {
+			lockFailOrderNumbersStr = String.join(",",lockFailOrderNumbers);
+		}
+		mConstants2 = mConstantsDao.select(CommonConsts.V_ORDER_LOCK_FAIL_ORDER_NUMBERS);
+		mConstants2.setConstantsValue(lockFailOrderNumbersStr);
+		mConstantsDao.update(mConstants2);
+
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		Timestamp today = new Timestamp(System.currentTimeMillis());
+		mConstants = mConstantsDao.select(CommonConsts.V_ORDER_LAST_GET_TIME);
+		//連携日を記録（JTM側で時間を持っていないため日で記録）
+		mConstants.setConstantsValue(sdf.format(today));
+		mConstantsDao.update(mConstants);
+
+		return countMap;
+	}
+
+	private void upsertOrderAux(List<VOrderEntity> orderList, Map<String, List<VOrderItemEntity>> vOrderItemInMap, Map<String, String> ignoreMap, Map<String, Object> countMap) {
+
+		for (VOrderEntity vOrder : orderList) {
+			String orderNumber = vOrder.getDenpyouNo();
+			String koujiCode = vOrder.getKoujiCode();
+			String gyousyaCode = vOrder.getGyousyaCode();
+			String saimokuKousyuCode = vOrder.getSaimokuKousyuCode();
+			String orderDate =  dateStringFormat(vOrder.getHattyuuDate());
+			String userId = vOrder.getHattyuuSyainCode();
+
+			if (Objects.isNull(userId)) {
+				userId = TEMPORARY_SYAIN_CODE;
+			}
+			if (Objects.isNull(orderNumber)) {
+				continue;
+			}
+			// Locked
+			if (ignoreMap.containsKey(orderNumber)) {
+				continue;
+			}
+			TOrderEntity oldOrder = tOrderDao.select(orderNumber);
+			List<TOrderItemEntity> oldOrderItemList = tOrderItemDao.selectAll(orderNumber);
+			// TOrderの作成、更新
+			if (Objects.nonNull(oldOrder) && !oldOrder.getOrderNumber().isEmpty()) {
+				// update
+				TOrderEntity order = new TOrderEntity();
+				BeanUtils.copyBeanToBean(oldOrder, order);
+				order.setOrderNumber(orderNumber);
+				order.setGyousyaCode(gyousyaCode);
+				order.setSaimokuKousyuCode(saimokuKousyuCode);
+				order.setOrderType(vOrder.getOrderType());
+				order.setKoujiCode(koujiCode);
+				order.setOrderAmount(vOrder.getHattyuuKingaku());
+				order.setOrderAmountTax(vOrder.getHattyuuKingakuTax());
+				order.setYosanFlg(vOrder.getYosanFlg());
+				order.setJtmHattyuuSeqNo(vOrder.getHattyuuSeqNo());
+				order.setJtmKanriSeqNo(vOrder.getKanriSeqNo());
+				order.setJtmHattyuuSyubetuFlg(vOrder.getHattyuuSyubetuFlg());
+				order.setUpdateUser(userId);
+//				if (!orderDate.isEmpty()) {
+//					order.setOrderDate(orderDate);
+//				}
+				tOrderDao.update(order);
+				countMap.put("updateCount", (int)countMap.get("updateCount") + 1);
+			} else {
+				// insert
+				TOrderEntity order = new TOrderEntity();
+				order.setOrderNumber(orderNumber);
+				order.setGyousyaCode(gyousyaCode);
+				order.setSaimokuKousyuCode(saimokuKousyuCode);
+				order.setOrderType(vOrder.getOrderType());
+				order.setKoujiCode(koujiCode);
+				order.setOrderAmount(vOrder.getHattyuuKingaku());
+				order.setOrderAmountTax(vOrder.getHattyuuKingakuTax());
+				order.setYosanFlg(vOrder.getYosanFlg());
+				order.setJtmHattyuuSeqNo(vOrder.getHattyuuSeqNo());
+				order.setJtmKanriSeqNo(vOrder.getKanriSeqNo());
+				order.setJtmHattyuuSyubetuFlg(vOrder.getHattyuuSyubetuFlg());
+				order.setInsertUser(userId);
+				order.setUpdateUser(userId);
+//				if (!orderDate.isEmpty()) {
+//					order.setOrderDate(orderDate);
+//				}
+				tOrderDao.insert(order);
+				countMap.put("insertCount", (int)countMap.get("insertCount") + 1);
+			}
+			// キーワード更新
+			tOrderKeywordDao.delete(orderNumber);
+			tOrderKeywordDao.insert(orderNumber);
+			// delete detail
+			int deleteDtlCount = tOrderItemDao.deleteByOrderNumber(orderNumber);
+			countMap.put("deleteDtlCount", (int)countMap.get("deleteDtlCount") + deleteDtlCount);
+			// insert detail
+			List<VOrderItemEntity> vOrderItemList = vOrderItemInMap.get(orderNumber);
+			int itemNumber = 1;
+			for (VOrderItemEntity vOrderItem :vOrderItemList) {
+				TOrderItemEntity orderItem = new TOrderItemEntity();
+				orderItem.setOrderNumber(orderNumber);
+				orderItem.setItemNumber(itemNumber++);
+				String itemName = "";
+				if (Objects.nonNull(vOrderItem.getBuzaiName())) {
+					itemName = vOrderItem.getBuzaiName();
+					itemName = itemName.replaceAll("\t", " ");
+					itemName = itemName.trim();
+				}
+				orderItem.setItemName(itemName);
+				orderItem.setOrderAmount(vOrderItem.getKingaku());
+				orderItem.setOrderAmountTax(vOrderItem.getKingakuTax());
+				String suuryou = "0";
+				if (Objects.nonNull(vOrderItem.getSuuryou())) {
+					suuryou = vOrderItem.getSuuryou().toString();
+				}
+				orderItem.setOrderQuantity(Double.valueOf(suuryou));
+				orderItem.setOrderUnitPrice(vOrderItem.getTanka());
+				orderItem.setUnit(vOrderItem.getTaniName());
+				orderItem.setJtmMeisaiSeqNo(vOrderItem.getMeisaiSeqNo());
+				orderItem.setInsertUser(userId);
+				orderItem.setUpdateUser(userId);
+				tOrderItemDao.insert(orderItem);
+				countMap.put("insertDtlCount", (int)countMap.get("insertDtlCount") + 1);
+			}
+		}
+	}
+
+	private String dateStringFormat(String date) {
+		String ret = "";
+		if (Objects.isNull(date) || date.isEmpty()) {
+			return ret;
+		}
+        Pattern pattern = java.util.regex.Pattern.compile("^[0-9]*$");
+	    Matcher matcher = pattern.matcher(date.trim());
+		if (date.length() == 8 && matcher.matches()) {
+			ret = date.trim();
+		}
+		return ret;
 	}
 
 }

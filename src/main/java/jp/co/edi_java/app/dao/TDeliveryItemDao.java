@@ -29,6 +29,9 @@ public interface TDeliveryItemDao {
 	@Update(excludeNull = true)
 	int update(TDeliveryItemEntity entity);
 
+	@Update()
+	int softdelete(TDeliveryItemEntity entity);
+
 	@Delete
 	int delete(TDeliveryItemEntity entity);
 

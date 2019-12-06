@@ -12,6 +12,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,12 +25,13 @@ import jp.co.edi_java.app.dao.TCloudSignDao;
 import jp.co.edi_java.app.dao.TOrderDao;
 import jp.co.edi_java.app.dao.gyousya.MGyousyaDao;
 import jp.co.edi_java.app.dao.syain.MSyainDao;
-import jp.co.edi_java.app.dto.SapOrderDto;
-import jp.co.edi_java.app.entity.MEigyousyoEntity;
 import jp.co.edi_java.app.entity.MKoujiEntity;
 import jp.co.edi_java.app.entity.TCloudSignEntity;
+import jp.co.edi_java.app.entity.TExclusiveEntity;
 import jp.co.edi_java.app.entity.TOrderEntity;
+import jp.co.edi_java.app.entity.VOrderStatusEntity;
 import jp.co.edi_java.app.entity.syain.MSyainEntity;
+import jp.co.edi_java.app.form.ExclusiveForm;
 import jp.co.edi_java.app.util.cloudsign.CloudSignApi;
 import jp.co.edi_java.app.util.file.FileApi;
 import jp.co.edi_java.app.util.sap.SapApi;
@@ -66,6 +68,11 @@ public class CloudSignService {
 
 	@Autowired
     public MGyousyaDao mGyousyaDao;
+
+	//排他制御用（発注情報更新用）
+	@Autowired
+	public ExclusiveService exclusiveService;
+
 
 	public static String FILE_FLG_OFF = "0";
 	public static String FILE_FLG_ON = "1";
@@ -159,10 +166,49 @@ public class CloudSignService {
 	public Map<String, Object> chkFileList(List<TCloudSignEntity> fileList, String formType) {
 		int agreeCount = 0;
 		int dismissalCount = 0;
-		log.info("call chkFileList");
+
+		//排他制御用
+		ExclusiveForm exform = new ExclusiveForm();
+		exform.setExclusiveObjectName("T_ORDER");
+		UUID uuid = UUID.randomUUID();
+        String sessionId = uuid.toString();
+        exform.setExclusiveSessionId(sessionId);
+
 		for (TCloudSignEntity tCloudSignEntity : fileList) {
 			//発注情報の取得
+			List<String> orderNumberList = new ArrayList<String>();
+			List<TOrderEntity> groupOrderList = new ArrayList<TOrderEntity>();
+
 			String orderNumber = tCloudSignEntity.getOrderNumber();
+			String groupOrderNumber = tCloudSignEntity.getGroupOrderNumber();
+
+			//まとめ発注の発注書
+			if (Objects.nonNull(groupOrderNumber)) {
+				groupOrderList = tOrderDao.selectListByGroupOrder(groupOrderNumber);
+				if (Objects.nonNull(groupOrderList)) {
+					for (TOrderEntity groupOrder : groupOrderList) {
+						orderNumberList.add(groupOrder.getOrderNumber());
+					}
+				}
+			} else {
+				orderNumberList.add(orderNumber);
+			}
+
+			//対象が見つからない
+			if (Objects.isNull(orderNumberList) || orderNumberList.isEmpty()) {
+				continue;
+			}
+
+			//発注情報のロック
+			exform.setExclusiveObjectKeyList(orderNumberList);
+			Map<String,List<TExclusiveEntity>> lockResult = exclusiveService.getMultiLock(exform);
+			List<TExclusiveEntity> failList = lockResult.get(exclusiveService.getFailKey());
+			//まとめてロック取得できない場合は次回更新
+			if (Objects.nonNull(failList) && !failList.isEmpty()) {
+				exclusiveService.releaseMultiLock(exform);
+				continue;
+			}
+
 			TOrderEntity order = tOrderDao.select(orderNumber);
 
 			//連携書類情報の取得
@@ -170,15 +216,14 @@ public class CloudSignService {
 			Map<String, Object> ret = CloudSignApi.getDocumentId(documentId);
 			if (Objects.isNull(ret) || Objects.isNull(ret.get("status"))) {
 				log.info("can not get documentId from cloudsign : " + orderNumber + " " + documentId);
+				exclusiveService.releaseMultiLock(exform);
 				continue;
 			}
 			//ステータス 1…保留、2…同意、3…却下
 			String status = ret.get("status").toString();
 
-
-			//同意の場合
-			if(status.equals(CloudSignApi.STATUS_AGREE)) {
-				log.info("status is agree : " + orderNumber);
+			if (status.equals(CloudSignApi.STATUS_AGREE)) { //同意の場合
+				log.info("status is agree : " + orderNumber );
 				//連携テーブルの更新
 				update(documentId);
 				//請書のダウンロード
@@ -188,18 +233,24 @@ public class CloudSignService {
 				String filePath = fileInfo.get("filePath");
 				String driveFileId = fileInfo.get("driveFileId");
 
-				//発注テーブルの更新
-				updateOrderAgree(order, driveFileId, formType);
-				//請書受領連携
-				sendOrderNumber(order);
+				if (Objects.nonNull(groupOrderList) && !groupOrderList.isEmpty()) {
+					for (TOrderEntity groupOrder : groupOrderList) {
+						//発注テーブルの更新
+						updateOrderAgree(groupOrder, driveFileId, formType);
+						//請書受領連携
+						sendOrderNumber(groupOrder);
+					}
+				} else {
+					//発注テーブルの更新
+					updateOrderAgree(order, driveFileId, formType);
+					//請書受領連携
+					sendOrderNumber(order);
+				}
 				// メール送信
-				sendConfirmationAgreeMail(orderNumber,filePath,fileName);
+				sendConfirmationAgreeMail(orderNumberList,filePath,fileName);
 
 				agreeCount++;
-
-			}
-			//却下の場合
-			else if(status.equals(CloudSignApi.STATUS_DISMISSAL)) {
+			} else if (status.equals(CloudSignApi.STATUS_DISMISSAL)) { //却下の場合
 				log.info("status is dismissal : " + orderNumber);
 				//連携テーブルの更新（削除）
 				delete(documentId);
@@ -209,15 +260,21 @@ public class CloudSignService {
 				String fileName = fileInfo.get("fileName");
 				String filePath = fileInfo.get("filePath");
 
-				//発注テーブルの更新（申請前に戻す）
-				updateOrderNotAgree(order, formType);
-
+				if (Objects.nonNull(groupOrderList) && !groupOrderList.isEmpty()) {
+					for (TOrderEntity groupOrder : groupOrderList) {
+						//発注テーブルの更新
+						updateOrderNotAgree(groupOrder, formType);
+					}
+				} else {
+					//発注テーブルの更新（申請前に戻す）
+					updateOrderNotAgree(order, formType);
+				}
 				// メール送信
-				sendConfirmationDismissalMail(orderNumber,filePath,fileName);
+				sendConfirmationDismissalMail(orderNumberList,filePath,fileName);
 
 				dismissalCount++;
-
 			}
+			exclusiveService.releaseMultiLock(exform);
 			//確認中の場合はなにもしない
 			log.info("status is confirming : " + orderNumber);
 		}
@@ -288,21 +345,25 @@ public class CloudSignService {
 	}
 
 	/** 発注請書受入時にメールを送信 */
-	public void sendConfirmationAgreeMail(String orderNumber, String filePath, String fileName) {
+	public void sendConfirmationAgreeMail(List<String> orderNumberList, String filePath, String fileName) {
+		String orderNumber = orderNumberList.get(0);
 
-		//発注詳細取得（SAP）
-		Map<String, Object> data = SapApi.orderDetail(orderNumber);
-		//基本情報取得
-		SapOrderDto dto = orderService.getHeader(data, orderNumber);
-		//工事情報取得
-		MKoujiEntity kouji = mKoujiDao.select(dto.getOrderInfo().getKoujiCode());
+		//発注情報取得
+		 VOrderStatusEntity vOrder = orderService.getVOrder(orderNumber);
+
+		//工事名取得
+		String koujiName = vOrder.getKoujiName();
+		//業者名取得
+		String gyousyaName = vOrder.getGyousyaName();
 		//支店情報取得
-		MEigyousyoEntity eigyousyo = mEigyousyoDao.select(kouji.getEigyousyoCode());
+		String eigyousyoCode = vOrder.getEigyousyoCode();
+		String eigyousyoName = vOrder.getEigyousyoName();
 		//社員情報取得
-		MSyainEntity syain = mSyainDao.select(kouji.getTantouSyainCode());
+		String syainCode = vOrder.getSyainCode();
+		MSyainEntity syain = mSyainDao.select(syainCode);
 
-		String to = getMailTo(syain, eigyousyo.getEigyousyoCode());
-		String cc = getMailCc(eigyousyo.getEigyousyoCode());
+		String to = mailService.getMailTo(syain, eigyousyoCode);
+		String cc = mailService.getMailCc(eigyousyoCode);
 
 		String newFileName = "注文請書.pdf";
 		//添付ファイル
@@ -314,25 +375,29 @@ public class CloudSignService {
 			fileList.add(fileMap);
 		}
 		//メール送信
-		mailService.sendMailConfirmationAgree(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), dto.getGyousyaName(), orderNumber, fileList);
+		mailService.sendMailConfirmationAgree(to, cc, eigyousyoName, syain.getSyainName(), koujiName, gyousyaName, orderNumberList, fileList);
 	}
 
 	/** 発注請書受入却下時にメールを送信 */
-	public void sendConfirmationDismissalMail(String orderNumber, String filePath, String fileName) {
+	public void sendConfirmationDismissalMail(List<String> orderNumberList, String filePath, String fileName) {
+		String orderNumber = orderNumberList.get(0);
 
-		//発注詳細取得（SAP）
-		Map<String, Object> data = SapApi.orderDetail(orderNumber);
-		//基本情報取得
-		SapOrderDto dto = orderService.getHeader(data, orderNumber);
-		//工事情報取得
-		MKoujiEntity kouji = mKoujiDao.select(dto.getOrderInfo().getKoujiCode());
+		//発注情報取得
+		 VOrderStatusEntity vOrder = orderService.getVOrder(orderNumber);
+
+		//工事名取得
+		String koujiName = vOrder.getKoujiName();
+		//業者名取得
+		String gyousyaName = vOrder.getGyousyaName();
 		//支店情報取得
-		MEigyousyoEntity eigyousyo = mEigyousyoDao.select(kouji.getEigyousyoCode());
+		String eigyousyoCode = vOrder.getEigyousyoCode();
+		String eigyousyoName = vOrder.getEigyousyoName();
 		//社員情報取得
-		MSyainEntity syain = mSyainDao.select(kouji.getTantouSyainCode());
+		String syainCode = vOrder.getSyainCode();
+		MSyainEntity syain = mSyainDao.select(syainCode);
 
-		String to = getMailTo(syain, eigyousyo.getEigyousyoCode());
-		String cc = getMailCc(eigyousyo.getEigyousyoCode());
+		String to = mailService.getMailTo(syain, eigyousyoCode);
+		String cc = mailService.getMailCc(eigyousyoCode);
 
 		String newFileName = "注文請書.pdf";
 		//添付ファイル
@@ -344,7 +409,7 @@ public class CloudSignService {
 			fileList.add(fileMap);
 		}
 		//メール送信
-		mailService.sendMailConfirmationDismissal(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), dto.getGyousyaName(), orderNumber, fileList);
+		mailService.sendMailConfirmationDismissal(to, cc, eigyousyoName, syain.getSyainName(), koujiName, gyousyaName, orderNumberList, fileList);
 	}
 
 	/** クラウドサインのリマインド */
@@ -363,41 +428,6 @@ public class CloudSignService {
 		CloudSignApi.postDocumentId(documentId);
 	}
 
-	private String getMailTo(MSyainEntity syain, String eigyousyoCode) {
-		List<String> toList = new ArrayList<String>();
-		if (Objects.nonNull(syain) && Objects.nonNull(syain.getSyainCode())) {
-			//'990000'ユーザは工務長宛にメール
-			if (Objects.equals(syain.getSyainCode(),TEMPORARY_SYAIN_CODE) && Objects.nonNull(eigyousyoCode)) {
-				List<MSyainEntity> s3SyainList = mSyainDao.selectListBySyokusyu3(eigyousyoCode);
-				for (MSyainEntity s3Syain : s3SyainList) {
-					if (Objects.nonNull(s3Syain.getSyainMail())) {
-						toList.add(s3Syain.getSyainMail());
-					}
-				}
-			} else {
-				if (Objects.nonNull(syain.getSyainMail())) {
-					toList.add(syain.getSyainMail());
-				}
-			}
-		}
-		//to
-		String to = "";
-		if (!toList.isEmpty()) {
-			to = String.join(",", toList);
-		}
-		return to;
-	}
-
-	private String getMailCc(String eigyousyoCode) {
-		String cc = "";
-		if(!STG_FLG.equals(STG_FLG_ON) && Objects.nonNull(eigyousyoCode)) {
-			cc = "jimu-" + eigyousyoCode + "@tamahome.jp";
-		}else {
-			cc = MailService.STG_CC_MAIL;
-		}
-		return cc;
-	}
-
 	/** 請書 発注番号連携 */
 	private void sendOrderNumber(TOrderEntity order) {
 		String orderNumber = order.getOrderNumber();
@@ -407,7 +437,7 @@ public class CloudSignService {
 		MKoujiEntity kouji = mKoujiDao.select(koujiCode);
 		String sapUser = kouji.getTantouSyainCode();
 		if (Objects.isNull(sapUser)) {
-			sapUser = insertUser;
+			sapUser = TEMPORARY_SYAIN_CODE;
 		}
 		// sap 請書未受領一覧検索
 		log.info("selectUkeshoJyuryou: " + koujiCode + " " + sapUser);

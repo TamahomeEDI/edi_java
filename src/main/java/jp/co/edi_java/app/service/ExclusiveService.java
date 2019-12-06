@@ -25,14 +25,22 @@ public class ExclusiveService {
 	@Autowired
     public TExclusiveDao tExclusiveDao;
 
+	private static final String SUCCESS_KEY = "success";
+	private static final String FAIL_KEY = "fail";
+	private static final String STG_FLG_ON = "1";
 	private static String STG_FLG;
-	private static String STG_FLG_ON = "1";
-	private static String SUCCESS_KEY = "success";
-	private static String FAIL_KEY = "fail";
 	private static long LOCK_LIMIT_TIME = 600000;
 
 	private ExclusiveService(@Value("${stg.flg}") String flg) {
 		STG_FLG = flg;
+	}
+
+	public String getSuccessKey () {
+		return SUCCESS_KEY;
+	}
+
+	public String getFailKey () {
+		return FAIL_KEY;
 	}
 
 	//ロック情報の取得
@@ -44,9 +52,9 @@ public class ExclusiveService {
 		if (Objects.nonNull(form) && Objects.nonNull(form.getExclusiveObjectName())
 				&& Objects.nonNull(form.getExclusiveObjectKey()) && Objects.nonNull(form.getExclusiveSessionId())) {
 			TExclusiveEntity obj = new TExclusiveEntity();
-			obj.setExclusiveObjectName(form.getExclusiveObjectName());
 			// 行lock
 			tExclusiveDao.selectForUpdate(obj);
+			obj.setExclusiveObjectName(form.getExclusiveObjectName());
 			obj.setExclusiveObjectKey(form.getExclusiveObjectKey());
 			obj.setExclusiveUser(form.getExclusiveUser());
 			obj.setExclusiveSessionId(form.getExclusiveSessionId());
@@ -62,6 +70,7 @@ public class ExclusiveService {
 				tExclusiveDao.insert(obj);
 				lockedList.add(obj);
 			}
+			tExclusiveDao.commit();
 		}
 		result.put(SUCCESS_KEY, lockedList);
 		result.put(FAIL_KEY, lockFailedList);
@@ -73,11 +82,13 @@ public class ExclusiveService {
 		if (Objects.nonNull(form) && Objects.nonNull(form.getExclusiveObjectName())
 				&& Objects.nonNull(form.getExclusiveObjectKey()) && Objects.nonNull(form.getExclusiveSessionId())) {
 			TExclusiveEntity obj = new TExclusiveEntity();
+			// 行lock
+			tExclusiveDao.selectForUpdate(obj);
 			obj.setExclusiveObjectName(form.getExclusiveObjectName());
 			obj.setExclusiveObjectKey(form.getExclusiveObjectKey());
 			obj.setExclusiveSessionId(form.getExclusiveSessionId());
-
 			tExclusiveDao.delete(obj);
+			tExclusiveDao.commit();
 		}
 	}
 
@@ -91,8 +102,7 @@ public class ExclusiveService {
 				&& Objects.nonNull(form.getExclusiveSessionId())) {
 			if (Objects.nonNull(form.getExclusiveObjectKeyList()) && !form.getExclusiveObjectKeyList().isEmpty()) {
 				TExclusiveEntity exc = new TExclusiveEntity();
-				exc.setExclusiveObjectName(form.getExclusiveObjectName());
-				// 行lock
+				// lock
 				tExclusiveDao.selectForUpdate(exc);
 				for (String exclusiveObjectKey : form.getExclusiveObjectKeyList()) {
 					TExclusiveEntity obj = new TExclusiveEntity();
@@ -113,6 +123,7 @@ public class ExclusiveService {
 						lockedList.add(obj);
 					}
 				}
+				tExclusiveDao.commit();
 			}
 		}
 		result.put(SUCCESS_KEY, lockedList);
@@ -124,13 +135,16 @@ public class ExclusiveService {
 	public void releaseMultiLock(ExclusiveForm form) {
 		if (Objects.nonNull(form) && Objects.nonNull(form.getExclusiveObjectName())
 				&& Objects.nonNull(form.getExclusiveObjectKeyList()) && Objects.nonNull(form.getExclusiveSessionId())) {
+			TExclusiveEntity obj = new TExclusiveEntity();
+			// lock
+			tExclusiveDao.selectForUpdate(obj);
 			for (String exclusiveObjectKey : form.getExclusiveObjectKeyList()) {
-				TExclusiveEntity obj = new TExclusiveEntity();
 				obj.setExclusiveObjectName(form.getExclusiveObjectName());
 				obj.setExclusiveObjectKey(exclusiveObjectKey);
 				obj.setExclusiveSessionId(form.getExclusiveSessionId());
 				tExclusiveDao.delete(obj);
 			}
+			tExclusiveDao.commit();
 		}
 	}
 

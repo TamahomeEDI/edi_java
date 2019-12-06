@@ -1,6 +1,7 @@
 package jp.co.edi_java.app.service;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -14,6 +15,8 @@ import jp.co.edi_java.app.dto.GyousyaEigyousyoDto;
 import jp.co.edi_java.app.dto.SyainEigyousyoDto;
 import jp.co.edi_java.app.entity.MEigyousyoEntity;
 import jp.co.edi_java.app.entity.MEigyousyoGroupEntity;
+import jp.co.edi_java.app.form.EigyousyoForm;
+import jp.co.edi_java.app.util.crypto.CipherUtils;
 
 @Service
 @Scope("request")
@@ -77,4 +80,12 @@ public class EigyousyoService {
 		return mGyousyaEigyousyoDao.selectGroupList(gyousyaCode);
 	}
 
+	//支店コードのデコード
+	public String decodeEigyousyoCode(EigyousyoForm form) {
+		String ret = "";
+		if (Objects.nonNull(form) && Objects.nonNull(form.getEncryptEigyousyoCode())) {
+			ret = CipherUtils.getDecryptAES(form.getEncryptEigyousyoCode());
+		}
+		return ret;
+	}
 }
