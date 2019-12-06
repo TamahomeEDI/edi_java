@@ -31,6 +31,12 @@ LEFT OUTER JOIN M_GYOUSYA GYO ON ESR.GYOUSYA_CODE = GYO.GYOUSYA_CODE
 LEFT OUTER JOIN M_GYOUSYA_EIGYOUSYO MGE ON EIG.EIGYOUSYO_CODE = MGE.EIGYOUSYO_CODE AND GYO.GYOUSYA_CODE = MGE.GYOUSYA_CODE
 WHERE
 	ESR.DELETE_FLG = '0'
+/*%if (params.isAdmin != "1" && params.userId == null)*/
+and 1=2
+/*%end*/
+/*%if (params.isAdmin != "1" && params.userFlg == "1" && params.userId != null)*/
+and EIG.EIGYOUSYO_CODE in (select EIGYOUSYO_CODE from M_SYAIN_EIGYOUSYO where SYAIN_CODE = /*params.userId*/'0')
+/*%end*/
 /*%if params.eigyousyoGroupCode != null && params.eigyousyoGroupCode != ""*/
 and EIG.EIGYOUSYO_GROUP_CODE = /*params.eigyousyoGroupCode*/1
 /*%end*/

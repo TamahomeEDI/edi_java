@@ -39,4 +39,6 @@ public class TCloudSignEntity extends BaseEntity {
     @JsonFormat(pattern = "yyyy/MM/dd HH:mm:ss")
     public Timestamp executionDate;
 
+    public String groupOrderNumber;
+
 }

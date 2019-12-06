@@ -48,9 +48,15 @@ public class SearchForm extends BaseForm {
 	//発注情報検索
     public String userFlg;
 
+    public List<String> koujiStatusList;
+
+    public List<String> orderStatusList;
+
+    public List<String> processList;
+
     public String koujiStatus;
 
-    public String orderStatus;	//listから単一へ変更
+    public String orderStatus;
 
     public String process;
 
@@ -92,6 +98,12 @@ public class SearchForm extends BaseForm {
 
     public List<String> gyousyaCodeList;
 
+    public int opage;
+
+    public int olimit;
+
+    public String isAdmin;
+
 	//納品・出来高情報検索
     public String receptionStatus;
 
@@ -117,5 +129,12 @@ public class SearchForm extends BaseForm {
     public String inspectionReceiptYear;
 
 	public String inspectionReceiptMonth;
+
+	public String keyword;
+
+	//チェックリスト出力用
+	public String folderPath;
+
+	public String fileName;
 
 }

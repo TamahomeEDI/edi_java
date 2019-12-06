@@ -14,6 +14,8 @@ import jp.co.edi_java.app.dto.SapSearchOrderDto;
 import jp.co.edi_java.app.dto.SearchDeliveryDto;
 import jp.co.edi_java.app.dto.SearchEstimateDto;
 import jp.co.edi_java.app.dto.SearchWorkReportDto;
+import jp.co.edi_java.app.entity.TCloudSignEntity;
+import jp.co.edi_java.app.entity.VOrderStatusEntity;
 import jp.co.edi_java.app.form.SearchForm;
 import jp.co.edi_java.app.service.SearchService;
 import jp.co.keepalive.springbootfw.controller.BaseController;
@@ -40,14 +42,25 @@ public class SearchController extends BaseController {
 	}
 
 	/** 発注情報検索 */
+	@RequestMapping("/getVOrder")
+	public ResponseEntity getVOrder(@Validated SearchForm form) {
+		int totalCount = searchService.countVOrder(form);
+		List<VOrderStatusEntity> orderList = searchService.getVOrder(form);
+		List<TCloudSignEntity> cloudSignList = searchService.getCloudSignRemindTarget(orderList);
+		super.setResponseData("ret", orderList);
+		super.setResponseData("totalCount", totalCount);
+		super.setResponseData("cloudSignList", cloudSignList);
+		super.setResponseData("limitOver", false);
+		return super.response();
+	}
+
+	/** 発注情報検索 (旧)*/
 	@RequestMapping("/getOrder")
 	public ResponseEntity getOrder(@Validated SearchForm form) {
 		List<SapSearchOrderDto> orderList = searchService.getOrder(form);
 		super.setResponseData("ret", orderList);
 		super.setResponseData("totalCount", orderList.size());
 		super.setResponseData("limitOver", false);
-		//Map<String, Object> sap = searchService.getSap(form);
-		//super.setResponseData("sap", sap);
 		return super.response();
 	}
 

@@ -29,6 +29,9 @@ public interface TWorkReportItemDao {
 	@Update(excludeNull = true)
 	int update(TWorkReportItemEntity entity);
 
+	@Update()
+	int softdelete(TWorkReportItemEntity entity);
+
 	@Delete
 	int delete(TWorkReportItemEntity entity);
 

@@ -1,5 +1,6 @@
 package jp.co.edi_java.app.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,9 @@ import jp.co.edi_java.app.form.FileForm;
 import jp.co.edi_java.app.service.FileService;
 import jp.co.keepalive.springbootfw.controller.BaseController;
 import jp.co.keepalive.springbootfw.entity.ResponseEntity;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @Scope("request")
 @RequestMapping("file")
@@ -34,6 +37,17 @@ public class FileController extends BaseController {
 	@RequestMapping("/download")
 	public ResponseEntity download(@Validated FileForm form) {
 		super.setResponseData("ret", fileService.download(form));
+		return super.response();
+	}
+
+	/** 複数ダウンロード */
+	@RequestMapping("/multiDownload")
+	public ResponseEntity multiDownload(@Validated FileForm form) {
+		List<String> orderNumberList = form.getOrderNumberList();
+		log.info("multi download type " + form.getDownloadType());
+		for(String orderNumber : orderNumberList) {
+			log.info("multi download " + orderNumber);
+		}
 		return super.response();
 	}
 

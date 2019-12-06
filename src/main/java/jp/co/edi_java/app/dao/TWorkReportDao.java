@@ -27,10 +27,19 @@ public interface TWorkReportDao {
 	TWorkReportEntity selectByOrderNumber(String orderNumber, int workReportCount);
 
 	@Select
-    List<TWorkReportEntity> selectAll(String orderNumber, String remandFlg);
+    List<TWorkReportEntity> selectList(String orderNumber, String remandFlg);
+
+	@Select
+    List<TWorkReportEntity> selectListByMultiOrder(List<String> orderNumberList, String remandFlg);
 
 	@Select
 	List<TWorkReportEntity> selectUnconfirmList(String workReportDate);
+
+	@Select
+	List<TWorkReportEntity> checkUnconfirmList(String orderNumber);
+
+	@Select
+	List<TWorkReportEntity> selectUnconfirmListBySyain(String eigyousyoCode, String syainCode);
 
 	@Insert(excludeNull = true)
     int insert(TWorkReportEntity entity);
@@ -40,6 +49,9 @@ public interface TWorkReportDao {
 
 	@Update()
 	int updateWf(TWorkReportEntity entity);
+
+	@Update()
+	int softdelete(TWorkReportEntity entity);
 
 	@Delete
 	int delete(TWorkReportEntity entity);

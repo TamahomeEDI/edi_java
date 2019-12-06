@@ -1,0 +1,1 @@
+select * from M_CONSTANTS where CONSTANTS_KEY = /*constantsKey*/0;

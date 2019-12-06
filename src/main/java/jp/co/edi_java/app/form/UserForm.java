@@ -13,4 +13,6 @@ public class UserForm extends BaseForm {
 
 	public List<String> eigyousyoCodeList;
 
+	public String encryptSyainCode;
+
 }

@@ -81,6 +81,13 @@ public class WorkReportController extends BaseController {
 		return super.response();
 	}
 
+	/** 未受入出来高情報存在チェック */
+	@RequestMapping("/checkUnconfirmWorkReport")
+	public ResponseEntity checkUnconfirmWorkReport(@Validated WorkReportForm form) {
+		super.setResponseData("ret", workReportService.checkUnconfirmWorkReport(form.orderNumber));
+		return super.response();
+	}
+
 	/** 発注番号単位の出来高報告書一覧取得 */
 	@RequestMapping("/getList")
 	public ResponseEntity getList(@Validated WorkReportForm form) {
@@ -102,10 +109,18 @@ public class WorkReportController extends BaseController {
 		return super.response();
 	}
 
-	/** 出来高報告書削除 */
-	@RequestMapping("/delete")
-	public ResponseEntity delete(@Validated WorkReportForm form) {
-		workReportService.delete(form);
+	/** 出来高報告書取消（論理削除） */
+	@RequestMapping("/softdelete")
+	public ResponseEntity softdelete(@Validated WorkReportForm form) {
+		workReportService.softdelete(form);
+		return super.response();
+	}
+
+	/** 出来高報告書取消後メール送信 */
+	@RequestMapping("/sendmailWorkReportCancel")
+	public ResponseEntity sendmailWorkReportCancel(@Validated WorkReportForm form) {
+		workReportService.sendMailWorkReportCancel(form);
+
 		return super.response();
 	}
 
@@ -141,4 +156,14 @@ public class WorkReportController extends BaseController {
 		return super.response();
 	}
 
+	/** 出来高報告書 未受入対象 リマインドメール送信リクエスト */
+	@RequestMapping("/remindWorkReportAcceptance")
+	public ResponseEntity remindWorkReportAcceptance(@Validated WorkReportForm form) {
+		//出来高書のID一覧取得
+		List<TWorkReportEntity> remindWList = workReportService.selectRemindListBySyain(form.getEigyousyoCode(), form.getSyainCode());
+		//納品書 未受入対象 リマインドメール
+		workReportService.remindList(remindWList);
+		super.setResponseData("ret", "OK");
+		return super.response();
+	}
 }

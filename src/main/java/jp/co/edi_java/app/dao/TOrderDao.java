@@ -29,6 +29,10 @@ public interface TOrderDao {
 	@Select
 	List<TOrderEntity> selectListByOrdered();
 
+	@Select
+	List<TOrderEntity> selectListByGroupOrder(String groupOrderNumber);
+
+
 //	@Select
 //	TOrderEntity search(String orderNumber, String cancelKbn);
 

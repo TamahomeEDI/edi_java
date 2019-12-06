@@ -10,6 +10,12 @@ left outer join M_SYAIN SYA on KOU.TANTOU_SYAIN_CODE = SYA.SYAIN_CODE
 left outer join M_GYOUSYA_EIGYOUSYO MGE on EIG.EIGYOUSYO_CODE = MGE.EIGYOUSYO_CODE AND GYO.GYOUSYA_CODE = MGE.GYOUSYA_CODE
 where
 	WRP.DELETE_FLG = '0'
+/*%if (params.isAdmin != "1" && params.userId == null)*/
+and 1=2
+/*%end*/
+/*%if (params.isAdmin != "1" && params.userFlg == "1" && params.userId != null)*/
+and EIG.EIGYOUSYO_CODE in (select EIGYOUSYO_CODE from M_SYAIN_EIGYOUSYO where SYAIN_CODE = /*params.userId*/'0')
+/*%end*/
 /*%if params.eigyousyoGroupCode != null && params.eigyousyoGroupCode != ""*/
 and EIG.EIGYOUSYO_GROUP_CODE = /*params.eigyousyoGroupCode*/1
 /*%end*/

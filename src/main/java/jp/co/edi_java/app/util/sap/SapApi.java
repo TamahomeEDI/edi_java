@@ -95,10 +95,10 @@ public class SapApi {
 		if(!StringUtils.isNullString(form.getKoujiCode())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_ZWRKCD, form.getKoujiCode());
 		}
-		//※工事状況
-		if(!StringUtils.isNullString(form.getKoujiStatus())) {
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZWRKST, form.getKoujiStatus());
-		}
+//		//※工事状況
+//		if(!StringUtils.isNullString(form.getKoujiStatus())) {
+//			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZWRKST, form.getKoujiStatus());
+//		}
 		//※業者コード
 		if(!StringUtils.isNullString(form.getGyousyaCode())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZGYSCD, form.getGyousyaCode());
@@ -115,10 +115,10 @@ public class SapApi {
 		if(!StringUtils.isNullString(form.getOrderNumber())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_SEBELN, form.getOrderNumber());
 		}
-		//※進捗
-		if(!StringUtils.isNullString(form.getProcess())) {
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZPSMST, form.getProcess());
-		}
+//		//※進捗
+//		if(!StringUtils.isNullString(form.getProcess())) {
+//			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZPSMST, form.getProcess());
+//		}
 		//工務担当社員コード
 		if(!StringUtils.isNullString(form.getSyainCode())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZKMTNM, form.getSyainCode());
@@ -574,9 +574,9 @@ public class SapApi {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001  + "." + SapApiConsts.PARAMS_ID_ZWRKCD, form.getKoujiCode());
 		}
 		//※工事状況
-		if(!StringUtils.isNullString(form.getKoujiStatus())) {
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZWRKST, form.getKoujiStatus());
-		}
+//		if(!StringUtils.isNullString(form.getKoujiStatus())) {
+//			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZWRKST, form.getKoujiStatus());
+//		}
 		//※業者コード
 		if(!StringUtils.isNullString(form.getGyousyaCode())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZGYSCD, form.getGyousyaCode());
@@ -594,9 +594,9 @@ public class SapApi {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_SEBELN, form.getOrderNumber());
 		}
 		//※進捗
-		if(!StringUtils.isNullString(form.getProcess())) {
-			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZPSMST, form.getProcess());
-		}
+//		if(!StringUtils.isNullString(form.getProcess())) {
+//			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZPSMST, form.getProcess());
+//		}
 		//工務担当社員コード
 		if(!StringUtils.isNullString(form.getSyainCode())) {
 			params.addParam(SapApiConsts.PARAMS_KEY_T_I_01001 + "." + SapApiConsts.PARAMS_ID_ZKMTNM, form.getSyainCode());

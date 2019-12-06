@@ -11,4 +11,6 @@ public class EigyousyoForm extends BaseForm {
 
     public String eigyousyoGroupCode;
 
+    public String encryptEigyousyoCode;
+
 }

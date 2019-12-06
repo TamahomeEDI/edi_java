@@ -27,10 +27,19 @@ public interface TDeliveryDao {
 	TDeliveryEntity selectByOrderNumber(String orderNumber, int deliveryCount);
 
 	@Select
-    List<TDeliveryEntity> selectAll(String orderNumber, String remandFlg);
+    List<TDeliveryEntity> selectList(String orderNumber, String remandFlg);
+
+	@Select
+    List<TDeliveryEntity> selectListByMultiOrder(List<String> orderNumberList, String remandFlg);
 
 	@Select
     List<TDeliveryEntity> selectUnconfirmList(String deliveryDate);
+
+	@Select
+    List<TDeliveryEntity> checkUnconfirmList(String orderNumber);
+
+	@Select
+    List<TDeliveryEntity> selectUnconfirmListBySyain(String eigyousyoCode, String syainCode);
 
 	@Insert(excludeNull = true)
     int insert(TDeliveryEntity entity);
@@ -40,6 +49,9 @@ public interface TDeliveryDao {
 
 	@Update()
 	int updateWf(TDeliveryEntity entity);
+
+	@Update()
+	int softdelete(TDeliveryEntity entity);
 
 	@Delete
 	int delete(TDeliveryEntity entity);

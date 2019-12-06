@@ -35,6 +35,7 @@ import jp.co.edi_java.app.dto.WorkReportDto;
 import jp.co.edi_java.app.entity.MEigyousyoEntity;
 import jp.co.edi_java.app.entity.MKoujiEntity;
 import jp.co.edi_java.app.entity.MSaimokuKousyuEntity;
+import jp.co.edi_java.app.entity.TOrderItemEntity;
 import jp.co.edi_java.app.entity.TWorkReportEntity;
 import jp.co.edi_java.app.entity.TWorkReportItemEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
@@ -104,8 +105,21 @@ public class WorkReportService {
 		return tWorkReportDao.select(workReportNumber);
 	}
 
+	public String checkUnconfirmWorkReport(String orderNumber) {
+		List<TWorkReportEntity> entityList = tWorkReportDao.checkUnconfirmList(orderNumber);
+		String workReportNumber = "";
+		if (Objects.nonNull(entityList) && !entityList.isEmpty()) {
+			workReportNumber = entityList.get(0).getWorkReportNumber();
+		}
+		return workReportNumber;
+	}
+
 	public TWorkReportEntity getByOrderNumber(String orderNumber, int workReportCount) {
 		return tWorkReportDao.selectByOrderNumber(orderNumber, workReportCount);
+	}
+
+	public List<TWorkReportEntity> selectListByMultiOrder(List<String> orderNumberList, String remandFlg) {
+		return tWorkReportDao.selectListByMultiOrder(orderNumberList, remandFlg);
 	}
 
 	public List<TWorkReportItemEntity> getItemList(String workReportNumber) {
@@ -114,7 +128,7 @@ public class WorkReportService {
 
 	public List<WorkReportDto> getList(String orderNumber, String remandFlg) {
 		List<WorkReportDto> dtoList = new ArrayList<>();
-		List<TWorkReportEntity> list = tWorkReportDao.selectAll(orderNumber, remandFlg);
+		List<TWorkReportEntity> list = tWorkReportDao.selectList(orderNumber, remandFlg);
 		for (TWorkReportEntity workReport : list) {
 			WorkReportDto dto = new WorkReportDto();
 			List<TWorkReportItemEntity> itemList = getItemList(workReport.getWorkReportNumber());
@@ -132,6 +146,35 @@ public class WorkReportService {
 			return ret;
 		}
 		// 詳細
+		List<TOrderItemEntity> orderItemList = orderService.selectOrderItem(orderNumber);
+		Map<String, TOrderItemEntity> orderItemMap = new HashMap<String, TOrderItemEntity>();
+
+		for (TOrderItemEntity orderItem : orderItemList) {
+			String itemName = "";
+			if (Objects.nonNull(orderItem.getItemName())) {
+				itemName = orderItem.getItemName();
+				itemName = itemName.replaceAll("\t", " ");
+				itemName = itemName.trim();
+			}
+			String netprStr = "";
+			if (Objects.nonNull(orderItem.getOrderUnitPrice())) {
+				netprStr = orderItem.getOrderUnitPrice().toString();
+			}
+			String qtyStr = "0";
+			if (Objects.nonNull(orderItem.getOrderQuantity())) {
+				qtyStr = String.valueOf(orderItem.getOrderQuantity());
+			}
+			String unit = "";
+			if (Objects.nonNull(orderItem.getUnit())) {
+				unit = orderItem.getUnit().trim();
+			}
+			String mapkey = itemName + "_"
+					+ netprStr + "_"
+					+ qtyStr + "_"
+					+ unit;
+			orderItemMap.put(mapkey, orderItem);
+		}
+
 		Map<String, Object> data = SapApi.getWorkReportItemList(orderNumber, userId);
 		Map<String, Object> resultInfo = SapApiAnalyzer.analyzeResultInfo(data);
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
@@ -146,8 +189,45 @@ public class WorkReportService {
 			itemList.add((Map<String, Object>)obj);
 		}
 		for (Map<String, Object> itemMap : itemList) {
-			String lineNo = itemMap.get(SapApiConsts.PARAMS_ID_EBELP).toString();
+			String lineNo = "";
+			if (Objects.nonNull(itemMap.get(SapApiConsts.PARAMS_ID_EBELP))) {
+				lineNo = itemMap.get(SapApiConsts.PARAMS_ID_EBELP).toString();
+			}
 			int itemNumber = Integer.valueOf(lineNo);
+
+			String itemName = "";
+			if (Objects.nonNull(itemMap.get(SapApiConsts.PARAMS_ID_TXZ01))) {
+				itemName = itemMap.get(SapApiConsts.PARAMS_ID_TXZ01).toString();
+				itemName = itemName.replaceAll("\t", " ");
+				itemName = itemName.trim();
+			}
+			String qtyStr = "0";
+			if (Objects.nonNull(itemMap.get(SapApiConsts.PARAMS_ID_ZHTMNG))) {
+				qtyStr = itemMap.get(SapApiConsts.PARAMS_ID_ZHTMNG).toString().trim();
+			}
+			if (!qtyStr.isEmpty()) {
+				qtyStr = qtyStr.replaceAll(",", "");
+			}
+			double qtyDbl = Double.valueOf(qtyStr);
+			qtyStr = String.valueOf(qtyDbl);
+			String unit = "";
+			if (Objects.nonNull(itemMap.get(SapApiConsts.PARAMS_ID_MEINS))) {
+				unit = itemMap.get(SapApiConsts.PARAMS_ID_MEINS).toString().trim();
+			}
+			String netprStr = "";
+			if (Objects.nonNull(itemMap.get(SapApiConsts.PARAMS_ID_NETPR))) {
+				netprStr = itemMap.get(SapApiConsts.PARAMS_ID_NETPR).toString().trim();
+			}
+			BigDecimal netpr = BigDecimal.ZERO;
+			if (!netprStr.isEmpty()) {
+				netprStr = netprStr.replaceAll(",", "");
+				netpr = new BigDecimal(netprStr);
+			}
+			String mapkey = itemName + "_"
+					+ netprStr + "_"
+					+ qtyStr + "_"
+					+ unit;
+			TOrderItemEntity orderItem = orderItemMap.get(mapkey);
 
 			TWorkReportItemEntity dtl = new TWorkReportItemEntity();
 			// 明細の転記
@@ -156,18 +236,34 @@ public class WorkReportService {
 			//明細ID
 			dtl.setJcoEbelp(lineNo);
 			//品目名
-			dtl.setItemName(itemMap.get(SapApiConsts.PARAMS_ID_TXZ01).toString());
+			dtl.setItemName(itemName);
 			//発注数量
-			dtl.setOrderQuantity(Double.valueOf(itemMap.get(SapApiConsts.PARAMS_ID_ZHTMNG).toString()));
+			dtl.setOrderQuantity(qtyDbl);
 			//単位
-			dtl.setUnit(itemMap.get(SapApiConsts.PARAMS_ID_MEINS).toString());
+			dtl.setUnit(unit);
+			//単価
+			dtl.setOrderUnitPrice(netpr);
+
+			//金額
+			if (Objects.nonNull(orderItem)) {
+				dtl.setOrderAmount(orderItem.getOrderAmount());
+				dtl.setOrderAmountTax(orderItem.getOrderAmountTax());
+			} else {
+				BigDecimal qty = new BigDecimal(qtyStr);
+				BigDecimal amount = netpr.multiply(qty);
+				amount = amount.setScale(0, BigDecimal.ROUND_HALF_UP);
+				dtl.setOrderAmount(amount);
+				BigDecimal tax = amount.multiply(new BigDecimal("0.10"));
+				tax = tax.setScale(0, BigDecimal.ROUND_DOWN);
+				dtl.setOrderAmountTax(tax);
+			}
 			ret.add(dtl);
 		}
 		return ret;
 	}
 
 	//出来高書リマインド対象のリスト取得
-	public List<TWorkReportEntity> selectRemindList() {
+	public List<TWorkReportEntity> selectRemindList(boolean forceAll) {
 
 
 		//本日の日付を取得
@@ -204,14 +300,20 @@ public class WorkReportService {
 		List<TWorkReportEntity> workReportListTmp2 = new ArrayList<TWorkReportEntity>();
 		List<TWorkReportEntity> workReportList = new ArrayList<TWorkReportEntity>();
 
-		// 当日が月末日3日前から月末日までの期間かどうか
-		cal.setTime(today);
-		if (cal.compareTo(from) > 0 && cal.compareTo(to) <= 0) {
+//		// 当日が月末日3日前から月末日までの期間かどうか
+//		cal.setTime(today);
+//		if ((cal.compareTo(from) > 0 && cal.compareTo(to) <= 0) || forceAll) {
+//			workReportListTmp1 = tWorkReportDao.selectUnconfirmList(null);
+//		}
+//		// 納品日が月末日3日前から月末の期間外か
+//		cal.setTime(workReportDate);
+//		if (!(cal.compareTo(from) > 0 && cal.compareTo(to) <= 0)) {
+//			workReportListTmp2 = tWorkReportDao.selectUnconfirmList(workReportDateStr);
+//		}
+		if (forceAll) {
 			workReportListTmp1 = tWorkReportDao.selectUnconfirmList(null);
-		}
-		// 納品日が月末日3日前から月末の期間外か
-		cal.setTime(workReportDate);
-		if (!(cal.compareTo(from) > 0 && cal.compareTo(to) <= 0)) {
+		} else {
+			// 納品日の翌日のみリマインドするように変更
 			workReportListTmp2 = tWorkReportDao.selectUnconfirmList(workReportDateStr);
 		}
 		Map<String, Boolean> exists = new HashMap<String, Boolean>();
@@ -233,6 +335,15 @@ public class WorkReportService {
 		return workReportList;
 	}
 
+	//担当社員別納品書リマインド対象のリスト取得
+	public List<TWorkReportEntity> selectRemindListBySyain(String eigyousyoCode, String syainCode) {
+
+		List<TWorkReportEntity> workReportList = new ArrayList<TWorkReportEntity>();
+		workReportList = tWorkReportDao.selectUnconfirmListBySyain(eigyousyoCode,syainCode);
+
+		return workReportList;
+	}
+
 	public String regist(WorkReportForm form) {
 		//出来高報告情報登録
 		String workReportNumber = registWorkReport(form);
@@ -249,6 +360,10 @@ public class WorkReportService {
 		entity.setWorkReportNumber(workReportNumber);
 		entity.setInsertUser(form.getUserId());
 		entity.setUpdateUser(form.getUserId());
+		entity.setCompleteFlg("1");
+		if (entity.getWorkRate() < 100) {
+			entity.setCompleteFlg("0");
+		}
 		tWorkReportDao.insert(entity);
 		return workReportNumber;
 	}
@@ -278,9 +393,24 @@ public class WorkReportService {
 		return tWorkReportDao.update(entity);
 	}
 
-	public int delete(WorkReportForm form) {
+	public int softdelete(WorkReportForm form) {
 		TWorkReportEntity entity = this.get(form.workReportNumber);
-		return tWorkReportDao.delete(entity);
+		int count = 0;
+		if (Objects.nonNull(entity)) {
+			entity.setDeleteFlg("1");
+			//entity.setFileId(null);
+			entity.setUpdateUser(form.getUserId());
+			count = tWorkReportDao.softdelete(entity);
+			List<TWorkReportItemEntity> detail = this.getItemList(form.workReportNumber);
+			if (Objects.nonNull(detail)) {
+				for (TWorkReportItemEntity item : detail) {
+					item.setDeleteFlg("1");
+					item.setUpdateUser(form.getUserId());
+					tWorkReportItemDao.softdelete(item);
+				}
+			}
+		}
+		return count;
 	}
 
 	/** ジョブカン承認待ち */
@@ -817,7 +947,7 @@ public class WorkReportService {
 		}
 	}
 
-	//納品書Noのエンコード
+	//出来高報告書Noのエンコード
 	public String encodeWorkReportyNumber(WorkReportForm form) {
 		String ret = "";
 		if (Objects.nonNull(form) && Objects.nonNull(form.getWorkReportNumber())) {
@@ -826,7 +956,7 @@ public class WorkReportService {
 		return ret;
 	}
 
-	//納品書Noのエンコード
+	//出来高報告書Noのエンコード
 	public String encodeWorkReportNumber(String workReportNumber) {
 		String ret = "";
 		if (Objects.nonNull(workReportNumber)) {
@@ -835,7 +965,7 @@ public class WorkReportService {
 		return ret;
 	}
 
-	//納品書Noのデコード
+	//出来高報告書Noのデコード
 	public String decodeWorkReportNumber(WorkReportForm form) {
 		String ret = "";
 		if (Objects.nonNull(form) && Objects.nonNull(form.getEncryptWorkReportNumber())) {
@@ -844,7 +974,7 @@ public class WorkReportService {
 		return ret;
 	}
 
-	//納品書Noのデコード
+	//出来高報告書Noのデコード
 	public String decodeWorkReportNumber(String encryptNumber) {
 		String ret = "";
 		if (Objects.nonNull(encryptNumber)) {
@@ -887,12 +1017,42 @@ public class WorkReportService {
 
 		String eigyousyoCode = eigyousyo.getEigyousyoCode();
 
-		String to = getMailTo(syain, eigyousyoCode);
-		String cc = getMailCc(eigyousyoCode);
+		String to = mailService.getMailTo(syain, eigyousyoCode);
+		String cc = mailService.getMailCc(eigyousyoCode);
 		List<Map<String,String>> fileList = getAttachedFile(workReport);
 
 		//メール送信
 		mailService.sendMailWorkReport(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport, fileList, itemList, remind);
+	}
+
+	//出来高報告書取消時にメールを送信
+	public void sendMailWorkReportCancel(WorkReportForm form) {
+		String workReportNumber = form.getWorkReportNumber();
+
+		//出来高情報取得
+		TWorkReportEntity workReport = get(workReportNumber);
+		if (Objects.isNull(workReport)) {
+			log.info("workReport nothing: " + workReportNumber);
+			return;
+		}
+		//出来高明細取得
+		List<TWorkReportItemEntity> itemList = getItemList(workReportNumber);
+		//工事情報取得
+		MKoujiEntity kouji = mKoujiDao.select(workReport.getKoujiCode());
+		//支店情報取得
+		MEigyousyoEntity eigyousyo = mEigyousyoDao.select(kouji.getEigyousyoCode());
+		//社員情報取得
+		MSyainEntity syain = mSyainDao.select(kouji.getTantouSyainCode());
+		//業者情報取得
+		MGyousyaEntity gyousya = mGyousyaDao.select(workReport.getGyousyaCode());
+
+		String eigyousyoCode = eigyousyo.getEigyousyoCode();
+
+		String to = mailService.getMailTo(syain, eigyousyoCode);
+		String cc = mailService.getMailCc(eigyousyoCode);
+
+		//メール送信
+		mailService.sendMailWorkReportCancel(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport, itemList);
 	}
 
 	//出来高報告書ジョブカン申請否認時にメールを送信
@@ -920,8 +1080,8 @@ public class WorkReportService {
 
 		String eigyousyoCode = eigyousyo.getEigyousyoCode();
 
-		String to = getMailTo(syain, eigyousyoCode);
-		String cc = getMailCc(eigyousyoCode);
+		String to = mailService.getMailTo(syain, eigyousyoCode);
+		String cc = mailService.getMailCc(eigyousyoCode);
 		List<Map<String,String>> fileList = getAttachedFile(workReport);
 		//メール送信
 		mailService.sendMailWorkReportReject(to, cc, eigyousyo.getEigyousyoName(), syain.getSyainName(), kouji.getKoujiName(), gyousya.getGyousyaName(), workReport, fileList, itemList, rejectComments);
@@ -946,38 +1106,4 @@ public class WorkReportService {
 		return fileList;
 	}
 
-	private String getMailTo(MSyainEntity syain, String eigyousyoCode) {
-		List<String> toList = new ArrayList<String>();
-		if (Objects.nonNull(syain) && Objects.nonNull(syain.getSyainCode())) {
-			//'990000'ユーザは工務長宛にメール
-			if (Objects.equals(syain.getSyainCode(),TEMPORARY_SYAIN_CODE) && Objects.nonNull(eigyousyoCode)) {
-				List<MSyainEntity> s3SyainList = mSyainDao.selectListBySyokusyu3(eigyousyoCode);
-				for (MSyainEntity s3Syain : s3SyainList) {
-					if (Objects.nonNull(s3Syain.getSyainMail())) {
-						toList.add(s3Syain.getSyainMail());
-					}
-				}
-			} else {
-				if (Objects.nonNull(syain.getSyainMail())) {
-					toList.add(syain.getSyainMail());
-				}
-			}
-		}
-		//to
-		String to = "";
-		if (!toList.isEmpty()) {
-			to = String.join(",", toList);
-		}
-		return to;
-	}
-
-	private String getMailCc(String eigyousyoCode) {
-		String cc = "";
-		if(!STG_FLG.equals(STG_FLG_ON) && Objects.nonNull(eigyousyoCode)) {
-			cc = "jimu-" + eigyousyoCode + "@tamahome.jp";
-		}else {
-			cc = MailService.STG_CC_MAIL;
-		}
-		return cc;
-	}
 }

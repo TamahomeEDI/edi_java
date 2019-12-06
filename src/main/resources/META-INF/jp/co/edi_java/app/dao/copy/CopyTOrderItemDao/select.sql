@@ -1,0 +1,1 @@
+select * from COPY_T_ORDER_ITEM where ORDER_NUMBER = /*orderNumber*/0;

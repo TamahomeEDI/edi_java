@@ -17,6 +17,13 @@ import jp.co.edi_java.app.util.file.FileApi;
 public class FileService {
 
 	@Autowired
+    public OrderService orderService;
+	@Autowired
+    public DeliveryService deliveryService;
+	@Autowired
+    public WorkReportService workReportService;
+
+	@Autowired
     public MKarekiDao mKarekiDao;
 
 	public Map<String, Object> upload(FileForm form) {
@@ -47,4 +54,42 @@ public class FileService {
 		return FileApi.delete(form.getKoujiCode(), form.getToshoCode(), form.getFileCode(), form.getFileNo(), form.getFileId());
 	}
 
+//	/** zipで一括ダウンロード*/
+//	public String multiDownload(FileForm form) {
+//		UUID uuid = UUID.randomUUID();
+//        String sessionId = uuid.toString();
+//		String fileName = "";
+//		// 1: 請書、2: 納品出来高報告書
+//		String downloadType = form.getDownloadType();
+//		String folderPath = "";
+//		List<String> orderNumberList = form.getOrderNumberList();
+//		if (Objects.nonNull(downloadType)) {
+//			if (Objects.equals(downloadType, "1")) {
+//				// 請書ダウンロード
+//				List<TOrderEntity> orderList = orderService.selectInfo(orderNumberList);
+//				for (TOrderEntity order : orderList) {
+//					String fileId = order.getFileIdOrder();
+//					FileApi.getFile(order.getKoujiCode(), form.getToshoCode(), form.getFileCode(), form.getFileNo(), form.getFileId(), form.getFileType(), form.getFileName());
+//				}
+//			} else if (Objects.equals(downloadType, "2")) {
+//				// 納品書、出来高報告書ダウンロード
+//				List<TDeliveryEntity> deliveryList = deliveryService.selectListByMultiOrder(orderNumberList, "0");
+//				List<TWorkReportEntity> workReportList = workReportService.selectListByMultiOrder(orderNumberList, "0");
+//				for (TDeliveryEntity delivery : deliveryList) {
+//					String fileId = delivery.getFileId();
+//				}
+//				for (TWorkReportEntity workReport : workReportList) {
+//					String fileId = workReport.getFileId();
+//				}
+//
+//			}
+//		}
+//		// downloadType=1 TOrder load by ordernumber
+//		// downloadType=2 TDelivery,TWorkReport load by ordernumber
+//		// 1つのフォルダにダウンロードし、zipコマンドで固める
+//		// zipコマンドはRuntimeで実行する
+//
+//		//FileApi.getFile(form.getKoujiCode(), form.getToshoCode(), form.getFileCode(), form.getFileNo(), form.getFileId(), form.getFileType(), form.getFileName());
+//		return fileName;
+//	}
 }

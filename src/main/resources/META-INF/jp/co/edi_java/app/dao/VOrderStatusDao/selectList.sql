@@ -1,0 +1,1 @@
+select * from V_ORDER_STATUS where ORDER_NUMBER in /*orderNumberList*/(0);

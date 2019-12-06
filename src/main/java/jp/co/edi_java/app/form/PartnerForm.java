@@ -16,6 +16,8 @@ public class PartnerForm extends BaseForm {
 
     public String gyousyaKana;
 
+    public String eigyousyoGroupCode;
+
 	public String eigyousyoCode;
 
 	public String token;

@@ -1,11 +1,16 @@
 package jp.co.edi_java.app.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jp.co.edi_java.app.entity.TOrderItemEntity;
+import jp.co.edi_java.app.entity.VOrderStatusEntity;
 import jp.co.edi_java.app.form.OrderForm;
 import jp.co.edi_java.app.service.OrderService;
 import jp.co.edi_java.app.util.cloudsign.CloudSignApi;
@@ -28,9 +33,44 @@ public class OrderController extends BaseController {
 	}
 
 	/** 発注情報取得 */
+	@RequestMapping("/getVOrder")
+	public ResponseEntity getVOrder(@Validated OrderForm form) {
+		String orderNumber = form.getOrderNumber();
+		VOrderStatusEntity vOrder = orderService.getVOrder(orderNumber);
+		List<Map<String, Object>> fileList = orderService.getFileIdList(orderNumber);
+		List<TOrderItemEntity> itemList = orderService.selectOrderItem(orderNumber);
+		super.setResponseData("ret", vOrder);
+		super.setResponseData("itemList", itemList);
+		super.setResponseData("fileList", fileList);
+
+		return super.response();
+	}
+
+	/** 発注情報取得 */
+	@RequestMapping("/getMultiVOrder")
+	public ResponseEntity getMultiVOrder(@Validated OrderForm form) {
+		super.setResponseData("ret", orderService.getMultiVOrder(form.getOrderNumberList()));
+		return super.response();
+	}
+
+	/** 発注情報取得 */
+	@RequestMapping("/getVOrderForMultiOrder")
+	public ResponseEntity getVOrderForMultiOrder(@Validated OrderForm form) {
+		super.setResponseData("ret", orderService.getVOrderForMultiOrder(form.getOrderNumberList()));
+		return super.response();
+	}
+
+	/** 発注情報取得 */
 	@RequestMapping("/multiget")
 	public ResponseEntity multiget(@Validated OrderForm form) {
 		super.setResponseData("ret", orderService.multiGet(form.getOrderNumberList()));
+		return super.response();
+	}
+
+	/** 発注情報取得 */
+	@RequestMapping("/getSummary")
+	public ResponseEntity getSummary(@Validated OrderForm form) {
+		super.setResponseData("ret", orderService.getSummary(form));
 		return super.response();
 	}
 
@@ -49,6 +89,16 @@ public class OrderController extends BaseController {
 		orderService.conectCloudSign(form, CloudSignApi.FORM_TYPE_ORDER);
 		//発注日連携
 		orderService.sendOrderDate(form);
+		super.setResponseData("ret", "OK");
+		return super.response();
+	}
+
+	/** 請書発行 aggregation order */
+	@RequestMapping("/multiConfirmation")
+	public ResponseEntity conectCloudSign(@Validated OrderForm form) {
+		orderService.multiConfirmationInfo(form);
+		orderService.conectCloudSign(form, CloudSignApi.FORM_TYPE_ORDER);
+		orderService.multiSendOrderDate(form);
 		super.setResponseData("ret", "OK");
 		return super.response();
 	}

@@ -1,5 +1,6 @@
 package jp.co.edi_java.app.entity;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 import org.seasar.doma.Entity;
@@ -59,5 +60,12 @@ public class TDeliveryEntity extends BaseEntity {
     public Timestamp remandDate;
 
     public String fileId;
+
+    // 発注金額
+    public BigDecimal orderAmount;
+    // 消費税額
+    public BigDecimal orderAmountTax;
+
+    public String completeFlg;
 
 }

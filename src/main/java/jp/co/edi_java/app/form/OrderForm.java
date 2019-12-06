@@ -2,6 +2,7 @@ package jp.co.edi_java.app.form;
 
 import java.util.List;
 
+import jp.co.edi_java.app.entity.TOrderItemEntity;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -43,5 +44,15 @@ public class OrderForm extends BaseForm {
     // 2019/7/3 一括発注
     public List<String> orderNumberList;
 
+    // 検索改善対応
+    public String gyousyaCode;
+
+    public List<TOrderItemEntity> itemList;
+
+    public String orderAmount;
+
+    public String orderAmountTax;
+
+    public String groupOrderNumber;
 
 }

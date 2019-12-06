@@ -1,8 +1,8 @@
 cd /opt/ediapp/
 
 java -jar -server \
--Xms256m \
--Xmx256m \
+-Xms1024m \
+-Xmx1024m \
 -Dfile.encoding=UTF-8 \
 -Djdk.tls.client.protocols=TLSv1.2 \
 -Dhttps.protocols=TLSv1.2 \

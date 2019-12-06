@@ -1,0 +1,1 @@
+delete from COPY_T_ORDER;
