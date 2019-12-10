@@ -6,11 +6,13 @@ select * from V_ORDER_STATUS os
 where
 os.ORDER_NUMBER = oi.ORDER_NUMBER
 and os.DELETE_FLG = '0'
+and os.GYOUSYA_CODE in (select GYOUSYA_CODE from T_GYOUSYA_ACCOUNT where AUTH_FLG = '1' and DELETE_FLG = '0')
 /*%if (params.isAdmin != "1" && params.userId == null)*/
 and 1=2
 /*%end*/
 /*%if (params.isAdmin != "1" && params.userFlg == "1" && params.userId != null)*/
 and os.EIGYOUSYO_CODE in (select EIGYOUSYO_CODE from M_SYAIN_EIGYOUSYO where SYAIN_CODE = /*params.userId*/'0')
+and os.GYOUSYA_CODE in (select GYOUSYA_CODE from M_GYOUSYA_EIGYOUSYO where eigyousyo_code in (select EIGYOUSYO_CODE from M_SYAIN_EIGYOUSYO where SYAIN_CODE = /*params.userId*/'0'))
 /*%end*/
 /*%if (params.isAdmin != "1" && params.userFlg != "1" && params.userId != null)*/
 and os.GYOUSYA_CODE = /*params.userId*/'0'

@@ -1036,13 +1036,15 @@ public class JtmService {
 		countMap.put("totalDtlCount", totalDtlCount);
 
 		double forCount = Math.ceil((double)totalCount / chkCount);
-		for (int i = 0; i < forCount; i++) {
-			int from = (i * chkCount) + 1;
-			int to = (i + 1) * chkCount;
+//		for (int i = 0; i < forCount; i++) {
+//			int from = (i * chkCount) + 1;
+//			int to = (i + 1) * chkCount;
 			// 差分取得（1日4000件程度）
 			// 全件取得（発注日が20190801以降 （20191114までで120000件））
-			orderList = vOrderDao.selectByDate(prevDate,from,to);
-			itemList = vOrderItemDao.selectByDate(prevDate,from,to);
+			//orderList = vOrderDao.selectByDate(prevDate,from,to);
+			//itemList = vOrderItemDao.selectByDate(prevDate,from,to);
+			orderList = vOrderDao.selectByDate(prevDate);
+			itemList = vOrderItemDao.selectByDate(prevDate);
 			Map<String,List<VOrderItemEntity>> vOrderItemInMap = new HashMap<String,List<VOrderItemEntity>>();
 			List<String> orderNumberList = new ArrayList<String>();
 			// 明細のキャッシュ
@@ -1068,7 +1070,7 @@ public class JtmService {
 			upsertOrderAux(orderList,vOrderItemInMap,ignoreMap,countMap);
 			// release multi lock
 			exclusiveService.releaseMultiLock(exform);
-		}
+//		}
 
 		// 前回Lockされていて更新できなかったものを取得
 		MConstantsEntity mConstants2 = mConstantsDao.select(CommonConsts.V_ORDER_LOCK_FAIL_ORDER_NUMBERS);
@@ -1086,27 +1088,27 @@ public class JtmService {
 				countMap.put("totalCount", (int)countMap.get("totalCount") + orderList.size());
 				countMap.put("totalDtlCount", (int)countMap.get("totalDtlCount") + itemList.size());
 
-				Map<String,List<VOrderItemEntity>> vOrderItemInMap = new HashMap<String,List<VOrderItemEntity>>();
+				Map<String,List<VOrderItemEntity>> vOrderItemInMap2 = new HashMap<String,List<VOrderItemEntity>>();
 				for (VOrderItemEntity vOrderItem : itemList) {
 					String orderNumber = vOrderItem.getDenpyouNo();
-					if (! vOrderItemInMap.containsKey(orderNumber)) {
-						vOrderItemInMap.put(orderNumber, new ArrayList<VOrderItemEntity>());
+					if (! vOrderItemInMap2.containsKey(orderNumber)) {
+						vOrderItemInMap2.put(orderNumber, new ArrayList<VOrderItemEntity>());
 					}
-					vOrderItemInMap.get(orderNumber).add(vOrderItem);
+					vOrderItemInMap2.get(orderNumber).add(vOrderItem);
 				}
 
 				// multi lock
 				exform.setExclusiveObjectKeyList(additionalOrderNumberList);
-				Map<String,List<TExclusiveEntity>> lockResult = exclusiveService.getMultiLock(exform);
+				Map<String,List<TExclusiveEntity>> lockResult2 = exclusiveService.getMultiLock(exform);
 				// ロックに失敗したリストからマップ生成、失敗したものは取り込みせず次回取り込みを行う。
-				Map<String, String> ignoreMap = new HashMap<String, String>();
-				for (TExclusiveEntity exEntity : lockResult.get(exclusiveService.getFailKey())) {
-					ignoreMap.put(exEntity.getExclusiveObjectKey(), exEntity.getExclusiveObjectKey());
+				Map<String, String> ignoreMap2 = new HashMap<String, String>();
+				for (TExclusiveEntity exEntity : lockResult2.get(exclusiveService.getFailKey())) {
+					ignoreMap2.put(exEntity.getExclusiveObjectKey(), exEntity.getExclusiveObjectKey());
 					lockFailOrderNumbers.add(exEntity.getExclusiveObjectKey());
 				}
 
 				// 発注情報の更新
-				upsertOrderAux(orderList,vOrderItemInMap,ignoreMap,countMap);
+				upsertOrderAux(orderList,vOrderItemInMap2,ignoreMap2,countMap);
 
 				// release multi lock
 				exclusiveService.releaseMultiLock(exform);

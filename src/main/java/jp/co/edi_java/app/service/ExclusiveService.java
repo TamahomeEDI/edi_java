@@ -70,7 +70,7 @@ public class ExclusiveService {
 				tExclusiveDao.insert(obj);
 				lockedList.add(obj);
 			}
-			tExclusiveDao.commit();
+			//tExclusiveDao.commit();
 		}
 		result.put(SUCCESS_KEY, lockedList);
 		result.put(FAIL_KEY, lockFailedList);
@@ -88,7 +88,7 @@ public class ExclusiveService {
 			obj.setExclusiveObjectKey(form.getExclusiveObjectKey());
 			obj.setExclusiveSessionId(form.getExclusiveSessionId());
 			tExclusiveDao.delete(obj);
-			tExclusiveDao.commit();
+			//tExclusiveDao.commit();
 		}
 	}
 
@@ -123,7 +123,7 @@ public class ExclusiveService {
 						lockedList.add(obj);
 					}
 				}
-				tExclusiveDao.commit();
+				//tExclusiveDao.commit();
 			}
 		}
 		result.put(SUCCESS_KEY, lockedList);
@@ -144,7 +144,7 @@ public class ExclusiveService {
 				obj.setExclusiveSessionId(form.getExclusiveSessionId());
 				tExclusiveDao.delete(obj);
 			}
-			tExclusiveDao.commit();
+			//tExclusiveDao.commit();
 		}
 	}
 

@@ -26,7 +26,8 @@ public interface VOrderDao {
 	List<VOrderEntity> selectAll();
 
 	@Select
-	List<VOrderEntity> selectByDate(Date prevDate, int from, int to);
+	List<VOrderEntity> selectByDate(Date prevDate);
+	//List<VOrderEntity> selectByDate(Date prevDate, int from, int to);
 
 	@Select
 	List<VOrderEntity> selectListByOrderNumber(List<String> orderNumberList);
