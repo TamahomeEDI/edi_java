@@ -23,7 +23,4 @@ public interface VOrderStatusDao {
 	@Select
 	List<VOrderStatusEntity> selectList(List<String> orderNumberList);
 
-	@Select
-	List<VOrderStatusEntity> countByStatus(String eigyousyoCode, String gyousyaCode);
-
 }

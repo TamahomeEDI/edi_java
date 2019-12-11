@@ -3,6 +3,7 @@ package jp.co.edi_java.app.dao;
 import org.seasar.doma.Dao;
 import org.seasar.doma.Delete;
 import org.seasar.doma.Insert;
+import org.seasar.doma.Update;
 import org.seasar.doma.boot.ConfigAutowireable;
 import org.seasar.doma.jdbc.Config;
 
@@ -19,5 +20,11 @@ public interface TOrderKeywordDao {
 
 	@Delete(sqlFile = true, ignoreVersion = true)
 	int delete(String orderNumber);
+
+	@Delete(sqlFile = true, ignoreVersion = true)
+	int dropindex();
+
+	@Update(sqlFile = true, ignoreVersion = true)
+	int addindex();
 
 }
