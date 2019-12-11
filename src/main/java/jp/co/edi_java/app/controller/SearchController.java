@@ -107,6 +107,13 @@ public class SearchController extends BaseController {
 		return super.response();
 	}
 
+	/** 発注情報サマリ取得 */
+	@RequestMapping("/getSummary")
+	public ResponseEntity getSummary(@Validated SearchForm form) {
+		super.setResponseData("ret", searchService.getSummary(form));
+		return super.response();
+	}
+
 	/** 検収明細情報検索 */
 	@RequestMapping("/getInspectionReceipt")
 	public ResponseEntity getInspectionReceipt(@Validated SearchForm form) {

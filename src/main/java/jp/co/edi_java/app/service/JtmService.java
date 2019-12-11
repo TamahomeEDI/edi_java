@@ -1129,7 +1129,9 @@ public class JtmService {
 		//連携日を記録（JTM側で時間を持っていないため日で記録）
 		mConstants.setConstantsValue(sdf.format(today));
 		mConstantsDao.update(mConstants);
-
+		//Index最適化
+		tOrderKeywordDao.dropindex();
+		tOrderKeywordDao.addindex();
 		return countMap;
 	}
 

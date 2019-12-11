@@ -27,7 +27,6 @@ import jp.co.edi_java.app.dao.gyousya.TGyousyaAccountDao;
 import jp.co.edi_java.app.dao.gyousya.TGyousyaMailaddressDao;
 import jp.co.edi_java.app.dao.jtm.DHattyuuKanriDao;
 import jp.co.edi_java.app.dao.syain.MSyainDao;
-import jp.co.edi_java.app.dto.OrderSummaryDto;
 import jp.co.edi_java.app.dto.SapOrderDetailDto;
 import jp.co.edi_java.app.dto.SapOrderDto;
 import jp.co.edi_java.app.dto.SearchVOrderDto;
@@ -407,26 +406,6 @@ public class OrderService {
 			dto.setDeliveryAmount(Integer.valueOf(map.get(SapApiConsts.PARAMS_ID_ZUKEKN).toString()));
 			dto.setRemainQuantity(map.get(SapApiConsts.PARAMS_ID_ZZANMG).toString());
 			dto.setRemainAmount(Integer.valueOf(map.get(SapApiConsts.PARAMS_ID_ZZANKN).toString()));
-			itemList.add(dto);
-		}
-		return itemList;
-	}
-
-	/** TOP画面用に発注情報のステータスサマリを取得する。 ※ JTMから発注情報を取得する前提 */
-	@SuppressWarnings("unchecked")
-	public List<OrderSummaryDto> getSummary(OrderForm form) {
-		ArrayList<OrderSummaryDto> itemList = new ArrayList<OrderSummaryDto>();
-
-		List<VOrderStatusEntity> vOrderList = vOrderStatusDao.countByStatus(form.getEigyousyoCode(),form.getGyousyaCode());
-		if (Objects.isNull(vOrderList) || vOrderList.isEmpty()) {
-			return itemList;
-		}
-		for (VOrderStatusEntity entity : vOrderList) {
-			OrderSummaryDto dto = new OrderSummaryDto();
-			dto.setEigyousyoCode(form.getEigyousyoCode());
-			dto.setGyousyaCode(form.getGyousyaCode());
-			dto.setOrderStatus(entity.getOrderStatus());
-			dto.setOrderCount(entity.getCount());
 			itemList.add(dto);
 		}
 		return itemList;

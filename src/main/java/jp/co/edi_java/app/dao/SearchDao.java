@@ -44,6 +44,9 @@ public interface SearchDao {
 	int countKoujiInfo(String koujiCode, String koujiName, String eigyousyoCode, String kanseiKubun);
 
 	@Select
+	List<VOrderStatusEntity> countByStatus(SearchForm params);
+
+	@Select
 	SearchOrderInfoDto selectOrderInfo(String orderNumber, SearchForm params, String orderDate);
 
 	@Select

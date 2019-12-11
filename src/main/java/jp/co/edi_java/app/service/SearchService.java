@@ -19,6 +19,7 @@ import jp.co.edi_java.app.dao.TOrderDao;
 import jp.co.edi_java.app.dao.TWorkReportDao;
 import jp.co.edi_java.app.dao.gyousya.MGyousyaDao;
 import jp.co.edi_java.app.dto.GyousyaDto;
+import jp.co.edi_java.app.dto.OrderSummaryDto;
 import jp.co.edi_java.app.dto.SapSearchOrderDto;
 import jp.co.edi_java.app.dto.SearchDeliveryDto;
 import jp.co.edi_java.app.dto.SearchEstimateDto;
@@ -106,6 +107,26 @@ public class SearchService {
 	public List<VOrderStatusEntity> getVOrder(SearchForm form) {
 		int offset = (form.getOpage() - 1) * form.getOlimit();
 		return searchDao.selectVOrder(form, form.getOlimit(), offset);
+	}
+
+	/** TOP画面用に発注情報のステータスサマリを取得する。 ※ JTMから発注情報を取得する前提 */
+	@SuppressWarnings("unchecked")
+	public List<OrderSummaryDto> getSummary(SearchForm form) {
+		ArrayList<OrderSummaryDto> itemList = new ArrayList<OrderSummaryDto>();
+
+		List<VOrderStatusEntity> vOrderList = searchDao.countByStatus(form);
+		if (Objects.isNull(vOrderList) || vOrderList.isEmpty()) {
+			return itemList;
+		}
+		for (VOrderStatusEntity entity : vOrderList) {
+			OrderSummaryDto dto = new OrderSummaryDto();
+			dto.setEigyousyoCode(form.getEigyousyoCode());
+			dto.setGyousyaCode(form.getGyousyaCode());
+			dto.setOrderStatus(entity.getOrderStatus());
+			dto.setOrderCount(entity.getCount());
+			itemList.add(dto);
+		}
+		return itemList;
 	}
 
 	public List<TCloudSignEntity> getCloudSignRemindTarget(List<VOrderStatusEntity> vOrderList) {
