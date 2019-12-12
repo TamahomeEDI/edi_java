@@ -1012,7 +1012,9 @@ public class JtmService {
 		MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.V_ORDER_LAST_GET_TIME);
 		Date prevDate = null;
 		if (Objects.nonNull(mConstants)) {
-			prevDate = java.sql.Date.valueOf(mConstants.getConstantsValue());
+			if (Objects.nonNull(mConstants.getConstantsValue())) {
+				prevDate = java.sql.Date.valueOf(mConstants.getConstantsValue());
+			}
 		} else {
 			mConstants = new MConstantsEntity();
 			mConstants.setConstantsKey(CommonConsts.V_ORDER_LAST_GET_TIME);

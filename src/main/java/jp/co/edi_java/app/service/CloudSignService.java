@@ -166,6 +166,7 @@ public class CloudSignService {
 	public Map<String, Object> chkFileList(List<TCloudSignEntity> fileList, String formType) {
 		int agreeCount = 0;
 		int dismissalCount = 0;
+		Map<String, Object> count = new HashMap<>();
 
 		//排他制御用
 		ExclusiveForm exform = new ExclusiveForm();
@@ -174,18 +175,55 @@ public class CloudSignService {
         String sessionId = uuid.toString();
         exform.setExclusiveSessionId(sessionId);
 
-		for (TCloudSignEntity tCloudSignEntity : fileList) {
-			//発注情報の取得
-			List<String> orderNumberList = new ArrayList<String>();
+        // 更新対象の発注番号収集
+        List<String> targetList = new ArrayList<String>();
+        Map<String,String> existsTargetMap = new HashMap<String,String>();
+        for (TCloudSignEntity tCloudSignEntity : fileList) {
 			List<TOrderEntity> groupOrderList = new ArrayList<TOrderEntity>();
-
 			String orderNumber = tCloudSignEntity.getOrderNumber();
 			String groupOrderNumber = tCloudSignEntity.getGroupOrderNumber();
 
 			//まとめ発注の発注書
 			if (Objects.nonNull(groupOrderNumber)) {
 				groupOrderList = tOrderDao.selectListByGroupOrder(groupOrderNumber);
-				if (Objects.nonNull(groupOrderList)) {
+				if (Objects.nonNull(groupOrderList) && !groupOrderList.isEmpty()) {
+					for (TOrderEntity groupOrder : groupOrderList) {
+						if (!existsTargetMap.containsKey(groupOrder.getOrderNumber())) {
+							existsTargetMap.put(groupOrder.getOrderNumber(),groupOrder.getOrderNumber());
+							targetList.add(groupOrder.getOrderNumber());
+						}
+					}
+				}
+			} else {
+				if (!existsTargetMap.containsKey(orderNumber)) {
+					existsTargetMap.put(orderNumber, orderNumber);
+					targetList.add(orderNumber);
+				}
+			}
+        }
+
+        //発注情報のロック
+		exform.setExclusiveObjectKeyList(targetList);
+		Map<String,List<TExclusiveEntity>> lockResult = exclusiveService.getMultiLock(exform);
+		List<TExclusiveEntity> failList = lockResult.get(exclusiveService.getFailKey());
+		//まとめてロック取得できない場合は次回更新として終了する
+		if (Objects.nonNull(failList) && !failList.isEmpty()) {
+			exclusiveService.releaseMultiLock(exform);
+			count.put("agreeCount", agreeCount);
+			count.put("dismissalCount", dismissalCount);
+			return count;
+		}
+
+		for (TCloudSignEntity tCloudSignEntity : fileList) {
+			List<String> orderNumberList = new ArrayList<String>();
+			List<TOrderEntity> groupOrderList = new ArrayList<TOrderEntity>();
+			String orderNumber = tCloudSignEntity.getOrderNumber();
+			String groupOrderNumber = tCloudSignEntity.getGroupOrderNumber();
+
+			//まとめ発注の発注書
+			if (Objects.nonNull(groupOrderNumber)) {
+				groupOrderList = tOrderDao.selectListByGroupOrder(groupOrderNumber);
+				if (Objects.nonNull(groupOrderList) && !groupOrderList.isEmpty()) {
 					for (TOrderEntity groupOrder : groupOrderList) {
 						orderNumberList.add(groupOrder.getOrderNumber());
 					}
@@ -193,22 +231,7 @@ public class CloudSignService {
 			} else {
 				orderNumberList.add(orderNumber);
 			}
-
-			//対象が見つからない
-			if (Objects.isNull(orderNumberList) || orderNumberList.isEmpty()) {
-				continue;
-			}
-
-			//発注情報のロック
-			exform.setExclusiveObjectKeyList(orderNumberList);
-			Map<String,List<TExclusiveEntity>> lockResult = exclusiveService.getMultiLock(exform);
-			List<TExclusiveEntity> failList = lockResult.get(exclusiveService.getFailKey());
-			//まとめてロック取得できない場合は次回更新
-			if (Objects.nonNull(failList) && !failList.isEmpty()) {
-				exclusiveService.releaseMultiLock(exform);
-				continue;
-			}
-
+			//発注情報の取得
 			TOrderEntity order = tOrderDao.select(orderNumber);
 
 			//連携書類情報の取得
@@ -216,7 +239,6 @@ public class CloudSignService {
 			Map<String, Object> ret = CloudSignApi.getDocumentId(documentId);
 			if (Objects.isNull(ret) || Objects.isNull(ret.get("status"))) {
 				log.info("can not get documentId from cloudsign : " + orderNumber + " " + documentId);
-				exclusiveService.releaseMultiLock(exform);
 				continue;
 			}
 			//ステータス 1…保留、2…同意、3…却下
@@ -274,11 +296,11 @@ public class CloudSignService {
 
 				dismissalCount++;
 			}
-			exclusiveService.releaseMultiLock(exform);
 			//確認中の場合はなにもしない
 			log.info("status is confirming : " + orderNumber);
 		}
-		Map<String, Object> count = new HashMap<>();
+		//ロックのリリース
+		exclusiveService.releaseMultiLock(exform);
 		count.put("agreeCount", agreeCount);
 		count.put("dismissalCount", dismissalCount);
 		return count;
