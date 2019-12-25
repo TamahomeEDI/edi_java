@@ -575,6 +575,46 @@ public class DeliveryService {
 			}
 		}
 	}
+
+	private String calcAcceptanceDate(String acceptanceDate) {
+		Calendar cal = Calendar.getInstance();
+		String resultDate = "";
+		// 納品日
+		Date actTmp = parseDateStringToDate(acceptanceDate, "yyyy/MM/dd", Locale.ENGLISH);
+		cal.setTime(actTmp);
+		Date actDate = cal.getTime();
+		log.info("acceptanceDate: " + acceptanceDate + " ,actdate: " + actDate.toString());
+		// 本日の日付を取得
+		Date nowDate = new Date();
+		cal.setTime(nowDate);
+		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		// 当日
+		Date today = cal.getTime();
+		// 月初日
+		int startDay = cal.getActualMinimum(Calendar.DATE);
+		// 月末日
+		int endDay = cal.getActualMaximum(Calendar.DATE);
+		//当月1日を取得
+		cal.set(Calendar.DATE, startDay);
+		Date from = cal.getTime();
+		// 月末日の翌日を取得
+		cal.set(Calendar.DATE, endDay+1);
+		Date to = cal.getTime();
+
+		// 受入日の算出
+		resultDate = formatDateToString(nowDate, "yyyyMMdd", "JST");
+		log.info("compareToFrom: " + String.valueOf(actDate.compareTo(from)));
+		log.info("compareToTo: " + String.valueOf(actDate.compareTo(to)));
+		if (actDate.compareTo(from) > 0 && actDate.compareTo(to) <= 0) {
+			resultDate = formatDateToString(actDate, "yyyyMMdd", "JST");
+		}
+		log.info("today: " + today.toString() + " acceptanceDate: " + resultDate.toString() + " from: " + from.toString() + " to: " + to.toString());
+		return resultDate;
+	}
+
+
 	/** SAP連携 */
 	private void approveSap(TDeliveryEntity delivery, DeliveryForm form) {
 		String deliveryNumber = delivery.getDeliveryNumber();
@@ -589,7 +629,7 @@ public class DeliveryService {
 		//SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 		//String acceptanceDate = sdf.format(delivery.getStaffReceiptDate());
 		String deliveryDate = delivery.getDeliveryDate();
-		String acceptanceDate = deliveryDate.replaceAll("/", "");
+		String acceptanceDate = calcAcceptanceDate(deliveryDate);
 
 		String approverCode = form.getApproverCode();
 		String approveDate = form.getApproveDate();
@@ -613,9 +653,10 @@ public class DeliveryService {
 		if (Objects.isNull(targetObj)) {
 			// 未申請レコードの存在チェック
 			targetObj = getDeliverySapRecord(orderNumber, acceptanceDate, eigyousyoCode, userCode, "");
+			boolean createSapRecordFlg = false;
 			if (Objects.isNull(targetObj)) {
 				// ■■■■■■■■■■■■■ 受入入力レコードの作成
-				createDeliverySapRecord(eigyousyoCode, orderNumber, acceptanceDate, null, null, null, itemList, userCode);
+				createSapRecordFlg = createDeliverySapRecord(eigyousyoCode, orderNumber, acceptanceDate, null, null, null, itemList, userCode);
 			} else {
 				//シーケンス番号
 				String wfSeqNo = targetObj.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString();
@@ -637,7 +678,11 @@ public class DeliveryService {
 				}
 				log.info("after date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime);
 				// ■■■■■■■■■■■■■ 受入入力レコードの上書き
-				createDeliverySapRecord(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateTime, itemList, userCode);
+				createSapRecordFlg = createDeliverySapRecord(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateTime, itemList, userCode);
+			}
+			// ■■■■■■■■■■■■■ レコードを作成していない場合
+			if (!createSapRecordFlg) {
+				return;
 			}
 			// ■■■■■■■■■■■■■ 作成したレコードの取得
 			// 作成済レコードの存在チェック
@@ -692,9 +737,9 @@ public class DeliveryService {
 		}
 	}
 
-	private void createDeliverySapRecord(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateTime, List<TDeliveryItemEntity> itemList, String userCode) {
+	private boolean createDeliverySapRecord(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateTime, List<TDeliveryItemEntity> itemList, String userCode) {
+		boolean createSapRecordFlg = true;
 		// ■■■■■■■■■■■■■ 受入確認モジュールでレコード作成
-
 		// EDIの明細データを取得できない
 		if (Objects.isNull(itemList) || itemList.isEmpty()) {
 			throw new CoreRuntimeException("EDI delivery detail data is empty");
@@ -822,7 +867,17 @@ public class DeliveryService {
 			log.info("REMAIN QTY: " + remainQty.toString());
 			log.info("TEST QTY: " + testQty.toString());
 			if (remainQty.compareTo(testQty) != 0) {
-				throw new CoreRuntimeException("Probably completed with SAP (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo);
+				if (remainQty.compareTo(BigDecimal.ZERO) != 0) {
+					// 分納ケースで一致していない場合はエラーにして確認後ステータス更新を行う
+					throw new CoreRuntimeException("Probably completed with SAP (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo + " , remain quantity(SAP) : " + remainQty.toString() + " , delivery quantity(EDI) : " + zmenge.toString() + " , delivery remain quantity(EDI) : " + menge.toString());
+				} else if (menge.compareTo(BigDecimal.ZERO) != 0) {
+					// 完納しているのにEDI側で残が残っている場合はエラーにして確認後ステータス更新を行う
+					throw new CoreRuntimeException("Probably completed with SAP (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo + " , remain quantity(SAP) : " + remainQty.toString() + " , delivery quantity(EDI) : " + zmenge.toString() + " , delivery remain quantity(EDI) : " + menge.toString());
+				} else {
+					// 当該発注についてレコード作成しない
+					log.info("Probably completed with SAP (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo + " , remain quantity(SAP) : " + remainQty.toString() + " , delivery quantity(EDI) : " + zmenge.toString() + " , delivery remain quantity(EDI) : " + menge.toString());
+					createSapRecordFlg = false;
+				}
 			}
 
 			// 品目コード
@@ -854,6 +909,10 @@ public class DeliveryService {
 
 			sapDetail.add(params);
 		}
+		if (!createSapRecordFlg) {
+			// 申請レコードを作成せず、エラーにせず終了
+			return createSapRecordFlg;
+		}
 
 		if (Objects.nonNull(wfSeqNo) && Objects.nonNull(lastUpdateDate) && Objects.nonNull(lastUpdateTime)) {
 			// ■■■■■■■■■■■■■ 受入入力レコードの上書き
@@ -866,6 +925,7 @@ public class DeliveryService {
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
 		}
+		return createSapRecordFlg;
 	}
 
 	private Map<String, Object> getDeliverySapRecord(String orderNumber, String acceptanceDate, String eigyousyoCode, String userCode, String wfStatus) {

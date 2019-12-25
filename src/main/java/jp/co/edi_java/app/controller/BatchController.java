@@ -268,10 +268,26 @@ public class BatchController extends BaseController {
 	public ResponseEntity getOrderAll() {
 		try {
 			long start = System.currentTimeMillis();
-			//バックアップ処理
-			jtmService.backupOrder();
 
 			Map<String, Object> countMap = jtmService.upsertOrderAll();
+
+			long end = System.currentTimeMillis();
+			super.setResponseData("ret",countMap);
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/** 発注情報取得 */
+	@RequestMapping("/getOrderBackUp")
+	public ResponseEntity getOrderBackUp() {
+		try {
+			long start = System.currentTimeMillis();
+			//バックアップ処理
+			Map<String, Object> countMap = jtmService.backupOrder();
 
 			long end = System.currentTimeMillis();
 			super.setResponseData("ret",countMap);

@@ -265,7 +265,6 @@ public class WorkReportService {
 	//出来高書リマインド対象のリスト取得
 	public List<TWorkReportEntity> selectRemindList(boolean forceAll) {
 
-
 		//本日の日付を取得
 		Date nowDate = new Date();
 		Calendar cal = Calendar.getInstance();
@@ -556,6 +555,44 @@ public class WorkReportService {
 		}
 	}
 
+	private String calcAcceptanceDate(String acceptanceDate) {
+		Calendar cal = Calendar.getInstance();
+		String resultDate = "";
+		// 納品日
+		Date actTmp = parseDateStringToDate(acceptanceDate, "yyyy/MM/dd", Locale.ENGLISH);
+		cal.setTime(actTmp);
+		Date actDate = cal.getTime();
+		log.info("acceptanceDate: " + acceptanceDate + " ,actdate: " + actDate.toString());
+		// 本日の日付を取得
+		Date nowDate = new Date();
+		cal.setTime(nowDate);
+		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		// 当日
+		Date today = cal.getTime();
+		// 月初日
+		int startDay = cal.getActualMinimum(Calendar.DATE);
+		// 月末日
+		int endDay = cal.getActualMaximum(Calendar.DATE);
+		//当月1日を取得
+		cal.set(Calendar.DATE, startDay);
+		Date from = cal.getTime();
+		// 月末日の翌日を取得
+		cal.set(Calendar.DATE, endDay+1);
+		Date to = cal.getTime();
+
+		// 受入日の算出
+		resultDate = formatDateToString(nowDate, "yyyyMMdd", "JST");
+		log.info("compareToFrom: " + String.valueOf(actDate.compareTo(from)));
+		log.info("compareToTo: " + String.valueOf(actDate.compareTo(to)));
+		if (actDate.compareTo(from) > 0 && actDate.compareTo(to) <= 0) {
+			resultDate = formatDateToString(actDate, "yyyyMMdd", "JST");
+		}
+		log.info("today: " + today.toString() + " acceptanceDate: " + resultDate.toString() + " from: " + from.toString() + " to: " + to.toString());
+		return resultDate;
+	}
+
 	/** SAP連携 */
 	private void approveSap(TWorkReportEntity workReport, WorkReportForm form) {
 		String workReportNumber = workReport.getWorkReportNumber();
@@ -570,7 +607,7 @@ public class WorkReportService {
 		//String acceptanceDate = sdf.format(workReport.getStaffReceiptDate());
 
 		String workReportDate = workReport.getWorkReportDate();
-		String acceptanceDate = workReportDate.replaceAll("/", "");
+		String acceptanceDate = calcAcceptanceDate(workReportDate);
 
 		String approverCode = form.getApproverCode();
 		String approveDate = form.getApproveDate();
@@ -593,9 +630,10 @@ public class WorkReportService {
 		if (Objects.isNull(targetObj)) {
 			// 未申請レコードの存在チェック
 			targetObj = getWorkReportSapRecord(orderNumber, acceptanceDate, eigyousyoCode, userCode, "");
+			boolean createSapRecordFlg = false;
 			if (Objects.isNull(targetObj)) {
 				// ■■■■■■■■■■■■■ 受入入力レコードの作成
-				createWorkReportSapRecord(eigyousyoCode, orderNumber, acceptanceDate, null, null, null, workRate, userCode);
+				createSapRecordFlg = createWorkReportSapRecord(eigyousyoCode, orderNumber, acceptanceDate, null, null, null, workRate, userCode);
 			} else {
 				//シーケンス番号
 				String wfSeqNo = targetObj.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString();
@@ -617,7 +655,11 @@ public class WorkReportService {
 				}
 				log.info("after date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime);
 				// ■■■■■■■■■■■■■ 受入入力レコードの上書き
-				createWorkReportSapRecord(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateTime, workRate, userCode);
+				createSapRecordFlg = createWorkReportSapRecord(eigyousyoCode, orderNumber, acceptanceDate, wfSeqNo, lastUpdateDate, lastUpdateTime, workRate, userCode);
+			}
+			// ■■■■■■■■■■■■■ レコードを作成していない場合
+			if (!createSapRecordFlg) {
+				return;
 			}
 			// ■■■■■■■■■■■■■ 作成したレコードの取得
 			// 作成済レコードの存在チェック
@@ -673,7 +715,8 @@ public class WorkReportService {
 	}
 
 
-	private void createWorkReportSapRecord(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateTime, String workRate, String userCode) {
+	private boolean createWorkReportSapRecord(String eigyousyoCode, String orderNumber, String acceptanceDate, String wfSeqNo, String lastUpdateDate, String lastUpdateTime, String workRate, String userCode) {
+		boolean createSapRecordFlg = true;
 		// ■■■■■■■■■■■■■ 受入確認モジュールでレコード作成
 
 		// 詳細
@@ -698,11 +741,17 @@ public class WorkReportService {
 			if (Objects.nonNull(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSEQNO)) && Objects.equals(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSEQNO).toString(), SUM_SEQNO_CODE)) {
 				if (Objects.nonNull(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSATEIRT)) && Objects.equals(sapTE04003.get(SapApiConsts.PARAMS_ID_ZSATEIRT).toString(), LIMIT_WORK_RATE)) {
 					if (Objects.nonNull(workRate) && Objects.equals(workRate, LIMIT_WORK_RATE)) {
-						throw new CoreRuntimeException("Probably completed with SAP (WorkReport): " + orderNumber);
+						log.info("Probably completed with SAP (WorkReport): " + orderNumber);
+						createSapRecordFlg = false;
+						//throw new CoreRuntimeException("Probably completed with SAP (WorkReport): " + orderNumber);
 					}
 				}
 				break;
 			}
+		}
+		// ■■■■■■■■■■■■■ レコードを作成しない場合
+		if (!createSapRecordFlg) {
+			return createSapRecordFlg;
 		}
 
 		Object tE04004 = result.get(SapApiConsts.PARAMS_KEY_T_E_04004);
@@ -842,6 +891,7 @@ public class WorkReportService {
 		if(SapApiAnalyzer.chkResultInfo(resultInfo)) {
 			throw new CoreRuntimeException(resultInfo.get(SapApiConsts.PARAMS_ID_ZMESSAGE).toString());
 		}
+		return createSapRecordFlg;
 	}
 
 	private Map<String, Object> getWorkReportSapRecord (String orderNumber, String acceptanceDate, String eigyousyoCode, String userCode, String wfStatus) {
