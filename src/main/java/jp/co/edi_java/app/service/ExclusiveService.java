@@ -53,7 +53,7 @@ public class ExclusiveService {
 				&& Objects.nonNull(form.getExclusiveObjectKey()) && Objects.nonNull(form.getExclusiveSessionId())) {
 			TExclusiveEntity obj = new TExclusiveEntity();
 			// 行lock
-			tExclusiveDao.selectForUpdate(obj);
+			tExclusiveDao.lockTableWriteOn();
 			obj.setExclusiveObjectName(form.getExclusiveObjectName());
 			obj.setExclusiveObjectKey(form.getExclusiveObjectKey());
 			obj.setExclusiveUser(form.getExclusiveUser());
@@ -71,6 +71,7 @@ public class ExclusiveService {
 				lockedList.add(obj);
 			}
 			tExclusiveDao.commit();
+			tExclusiveDao.unlockTable();
 		}
 		result.put(SUCCESS_KEY, lockedList);
 		result.put(FAIL_KEY, lockFailedList);
@@ -83,12 +84,13 @@ public class ExclusiveService {
 				&& Objects.nonNull(form.getExclusiveObjectKey()) && Objects.nonNull(form.getExclusiveSessionId())) {
 			TExclusiveEntity obj = new TExclusiveEntity();
 			// 行lock
-			tExclusiveDao.selectForUpdate(obj);
+			tExclusiveDao.lockTableWriteOn();
 			obj.setExclusiveObjectName(form.getExclusiveObjectName());
 			obj.setExclusiveObjectKey(form.getExclusiveObjectKey());
 			obj.setExclusiveSessionId(form.getExclusiveSessionId());
 			tExclusiveDao.delete(obj);
 			tExclusiveDao.commit();
+			tExclusiveDao.unlockTable();
 		}
 	}
 
@@ -103,7 +105,7 @@ public class ExclusiveService {
 			if (Objects.nonNull(form.getExclusiveObjectKeyList()) && !form.getExclusiveObjectKeyList().isEmpty()) {
 				TExclusiveEntity exc = new TExclusiveEntity();
 				// lock
-				tExclusiveDao.selectForUpdate(exc);
+				tExclusiveDao.lockTableWriteOn();
 				for (String exclusiveObjectKey : form.getExclusiveObjectKeyList()) {
 					TExclusiveEntity obj = new TExclusiveEntity();
 					obj.setExclusiveObjectName(form.getExclusiveObjectName());
@@ -124,6 +126,7 @@ public class ExclusiveService {
 					}
 				}
 				tExclusiveDao.commit();
+				tExclusiveDao.unlockTable();
 			}
 		}
 		result.put(SUCCESS_KEY, lockedList);
@@ -137,7 +140,7 @@ public class ExclusiveService {
 				&& Objects.nonNull(form.getExclusiveObjectKeyList()) && Objects.nonNull(form.getExclusiveSessionId())) {
 			TExclusiveEntity obj = new TExclusiveEntity();
 			// lock
-			tExclusiveDao.selectForUpdate(obj);
+			tExclusiveDao.lockTableWriteOn();
 			for (String exclusiveObjectKey : form.getExclusiveObjectKeyList()) {
 				obj.setExclusiveObjectName(form.getExclusiveObjectName());
 				obj.setExclusiveObjectKey(exclusiveObjectKey);
@@ -145,6 +148,7 @@ public class ExclusiveService {
 				tExclusiveDao.delete(obj);
 			}
 			tExclusiveDao.commit();
+			tExclusiveDao.unlockTable();
 		}
 	}
 

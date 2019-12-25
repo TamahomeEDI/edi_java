@@ -29,7 +29,9 @@ import org.xml.sax.InputSource;
 
 import jp.co.keepalive.springbootfw.exception.CoreRuntimeException;
 import jp.co.keepalive.springbootfw.util.file.FileUtil;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class HttpsUtil {
 
 	public static final String MIMETYPE_PDF = "application/pdf";
@@ -166,6 +168,10 @@ public class HttpsUtil {
             }
 
             os.writeBytes(closingContents);
+
+            log.info("POST FILE CONNECTION: " + conn.toString());
+            log.info("POST FILE CONTENTS: " + contentsBuilder.toString());
+            log.info("POST FILE CLOSING_CONTENTS: " + closingContents.toString());
 
             // 接続が確立したとき
             if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {

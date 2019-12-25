@@ -1,1 +1,1 @@
-insert into COPY_T_ORDER select * from T_ORDER;
+insert into COPY_T_ORDER select * from T_ORDER order by ORDER_NUMBER;

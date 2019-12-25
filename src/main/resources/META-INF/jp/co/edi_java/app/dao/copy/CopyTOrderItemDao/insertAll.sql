@@ -1,1 +1,1 @@
-insert into COPY_T_ORDER_ITEM select * from T_ORDER_ITEM;
+insert into COPY_T_ORDER_ITEM select * from T_ORDER_ITEM order by ORDER_NUMBER,ITEM_NUMBER;

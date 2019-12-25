@@ -24,7 +24,7 @@ public class TOrderItemEntity extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.TABLE)
     @TableGenerator(pkColumnValue = "ID")
     // サロゲートID
-    public int id;
+    public long id;
     // 発注番号
     public String orderNumber;
     // 明細No (EDI上の連番)

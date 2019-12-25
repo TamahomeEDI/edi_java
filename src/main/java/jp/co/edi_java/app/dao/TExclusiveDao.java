@@ -20,6 +20,7 @@ public interface TExclusiveDao {
         return Config.get(this);
     }
 
+
 	@Select
 	List<TExclusiveEntity> selectLock(TExclusiveEntity entity);
 
@@ -37,4 +38,10 @@ public interface TExclusiveDao {
 
 	@Update(sqlFile = true, ignoreVersion = true)
 	int commit();
+
+	@Update(sqlFile = true, ignoreVersion = true)
+	int lockTableWriteOn();
+
+	@Update(sqlFile = true, ignoreVersion = true)
+	int unlockTable();
 }

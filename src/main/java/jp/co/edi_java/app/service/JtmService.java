@@ -988,13 +988,23 @@ public class JtmService {
 		return countMap;
 	}
 
-	public void backupOrder() {
+	public Map<String, Object> backupOrder() {
+		Map<String, Object> countMap = new HashMap<>();
+		countMap.put("insertCount", 0);
+		countMap.put("deleteCount", 0);
+		countMap.put("insertDtlCount", 0);
+		countMap.put("deleteDtlCount", 0);
 		//コピーテーブルの削除
-		copyTOrderDao.deleteAll();
-		copyTOrderItemDao.deleteAll();
+		int delCount = copyTOrderDao.deleteAll();
+		int delDtlCount = copyTOrderItemDao.deleteAll();
 		//トランザクションテーブルからコピーテーブルへコピー
-		copyTOrderDao.insertAll();
-		copyTOrderItemDao.insertAll();
+		int insCount = copyTOrderDao.insertAll();
+		int insDtlCount = copyTOrderItemDao.insertAll();
+		countMap.put("insertCount", insCount);
+		countMap.put("deleteCount", delCount);
+		countMap.put("insertDtlCount", insDtlCount);
+		countMap.put("deleteDtlCount", delDtlCount);
+		return countMap;
 	}
 
 	/** 発注情報取得 */
