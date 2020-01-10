@@ -1,6 +1,5 @@
 package jp.co.edi_java.app.controller;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -467,10 +466,26 @@ public class BatchController extends BaseController {
 		try {
 			long start = System.currentTimeMillis();
 
-			//発注請書のID一覧取得
-			List<String> orderNumberList = new ArrayList<String>();
-			orderNumberList.add("4505576864");
-			orderNumberList.add("4505577036");
+			String[] array = {
+					"4505465855","4505571869","4505578957","4505579851","4505582720",
+					"4505584263","4505585980","4505586514","4505590506","4505595911",
+					"4505595921","4505596159","4505606257","4505607453","4505607492",
+					"4505608852","4505609562","4505610478","4505610856","4505615220",
+					"4505617227","4505619396","4505629425","4505630650","4505652552",
+					"4505652555","4505657401","4505657523","4505657654","4505658686",
+					"4505659516","4505661416","4505661419","4505665988","4505674109",
+					"4505674268","4505676575","4505678976","4505679920","4505680319",
+					"4505680630","4505688010","4505688113","4505693155","4505696781",
+					"4505697792","4505704570","4505707023","4505711285","4505714263",
+					"4505718852","4505722264","4505722268","4505725165","4505727226",
+					"4505730462","4505731752","4505750201","4505752530","4505755437",
+					"4505758080","4505759088","4505761426","4505772678","4505775322",
+					"4505778766","4505789155"};
+			List<String> orderNumberList = Arrays.asList(array);
+//			//発注請書のID一覧取得
+//			List<String> orderNumberList = new ArrayList<String>();
+//			orderNumberList.add("4505576864");
+//			orderNumberList.add("4505577036");
 
 			List<TCloudSignEntity> confirmationFileList = tCloudSignDao.selectNewestList(orderNumberList, CloudSignApi.FORM_TYPE_ORDER);
 			//リストを確認

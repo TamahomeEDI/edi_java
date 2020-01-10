@@ -34,6 +34,9 @@ public class OrderForm extends BaseForm {
     public String gyousyaName;
 
     public String filePath;
+
+    public String filePathJson;
+
     // 2019/6/24 クラウドサインメール件名変更対応で支店名追加(業者コード→支店名)
     public String eigyousyoName;
 
