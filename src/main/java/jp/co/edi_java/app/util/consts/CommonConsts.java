@@ -85,4 +85,6 @@ public class CommonConsts {
 	//検収明細書
 	public static String FILE_NO_INSPECTION_RECEIPT = "01";
 
+	public static String OUTPUT_FILE_DIR = "/home/web/edi_php/tmp/downloadFile/";
+
 }

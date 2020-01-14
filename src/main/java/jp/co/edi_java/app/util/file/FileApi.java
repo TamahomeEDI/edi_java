@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,13 +72,30 @@ public class FileApi {
 	}
 
 	//ダウンロード
+	public static String getFile(String koujiCode, String toshoCode, String fileCode, String fileNo, String fileId, String fileType, String fileName, String folderPath) {
+		createDirectories(folderPath);
+		return getFileAux(koujiCode, toshoCode, fileCode, fileNo, fileId, fileType, fileName, folderPath);
+	}
+
+	//ダウンロード
 	public static String getFile(String koujiCode, String toshoCode, String fileCode, String fileNo, String fileId, String fileType, String fileName) {
+		return getFileAux(koujiCode, toshoCode, fileCode, fileNo, fileId, fileType, fileName, OUTPUT_FILE_DIR);
+	}
+
+	//ダウンロード
+	public static String getFileAux(String koujiCode, String toshoCode, String fileCode, String fileNo, String fileId, String fileType, String fileName, String folderPath) {
 		HttpRequestHeaders headers = createCommonHeader();
 		String outputFilePath = "";
-		if(!StringUtils.isNullString(fileName)) {
-			outputFilePath = OUTPUT_FILE_DIR + fileName;
-		}else {
-			outputFilePath = OUTPUT_FILE_DIR + fileId + "." + fileType;
+		if (Objects.isNull(folderPath)) {
+			folderPath = OUTPUT_FILE_DIR;
+		}
+		if (!Objects.equals(folderPath.substring(folderPath.length()-1),"/")) {
+			folderPath = folderPath + "/";
+		}
+		if (!StringUtils.isNullString(fileName)) {
+			outputFilePath = folderPath + fileName;
+		} else {
+			outputFilePath = folderPath + fileId + "." + fileType;
 		}
 		String url = BASE_URL + koujiCode + "/" + toshoCode + "/" + fileCode + "/" + fileNo + "/" + fileId;
 		try {
@@ -121,6 +139,9 @@ public class FileApi {
 
 	/** ディレクトリの作成 */
 	public static void createDirectories(String folderPath) {
+		if (Objects.isNull(folderPath)) {
+			return;
+		}
 		try {
 			Path path = Paths.get(folderPath);
 			if (! Files.exists(path)) {
