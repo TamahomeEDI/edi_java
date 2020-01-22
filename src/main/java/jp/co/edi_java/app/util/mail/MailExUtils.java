@@ -19,7 +19,6 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimeUtility;
 
 import jp.co.keepalive.springbootfw.exception.CoreRuntimeException;
 import lombok.extern.slf4j.Slf4j;
@@ -219,6 +218,8 @@ public class MailExUtils {
                 mp.addBodyPart(mbp2);
         	}
         	if (Objects.nonNull(fileList)) {
+        		System.setProperty("mail.mime.encodefilename", "true");
+        		System.setProperty("mail.mime.charset", "UTF-8");
         		for(Map<String,String> fileMap : fileList) {
         			String filePath = fileMap.get("filePath");
         			String fileName = fileMap.get("fileName");
@@ -231,7 +232,8 @@ public class MailExUtils {
         					if (Objects.isNull(fileName)) {
         						fileName = fds.getName();
         					}
-        					mbp.setFileName(MimeUtility.encodeWord(fileName));
+        					//mbp.setFileName(MimeUtility.encodeWord(fileName));
+        					mbp.setFileName(fileName);
         					mp.addBodyPart(mbp);
         				}
         			}

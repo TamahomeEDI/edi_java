@@ -1,5 +1,6 @@
 package jp.co.edi_java.app.service;
 
+import java.io.File;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -50,6 +51,7 @@ import jp.co.edi_java.app.util.sap.SapApiAnalyzer;
 import jp.co.edi_java.app.util.sap.SapApiConsts;
 import jp.co.keepalive.springbootfw.exception.CoreRuntimeException;
 import jp.co.keepalive.springbootfw.util.consts.ResponseCode;
+import jp.co.keepalive.springbootfw.util.dxo.JsonUtils;
 import jp.co.keepalive.springbootfw.util.lang.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -500,12 +502,14 @@ public class OrderService {
 
 	/** 発注日をSAPとJTMへ連携 */
 	public void multiSendOrderDate(OrderForm form) {
-		if (Objects.nonNull(form.getOrderNumberList())) {
+		if (Objects.nonNull(form.getOrderNumberList()) && !form.getOrderNumberList().isEmpty()) {
 			OrderForm orderForm = new OrderForm();
 			for (String orderNumber : form.getOrderNumberList()) {
-				orderForm.setOrderNumber(orderNumber);
-				orderForm.setUserId(form.getUserId());
-				sendOrderDate(orderForm);
+				if (Objects.nonNull(orderNumber) && !orderNumber.isEmpty()) {
+					orderForm.setOrderNumber(orderNumber);
+					orderForm.setUserId(form.getUserId());
+					sendOrderDate(orderForm);
+				}
 			}
 		}
 	}
@@ -552,30 +556,41 @@ public class OrderService {
 
 	public void conectCloudSign(OrderForm form, String formType) {
 		String orderNumber = form.getOrderNumber();
-		String groupOrderNumber = (Objects.nonNull(form.getGroupOrderNumber())) ?  form.getGroupOrderNumber() : null;
+		String groupOrderNumber = null;
 		String title = "";
-		String fileName = "";
-		String eigyousyoCode = (Objects.nonNull(form.getEigyousyoCode())) ?  form.getEigyousyoCode() : "";
-		String eigyousyoName = (Objects.nonNull(form.getEigyousyoName())) ?  form.getEigyousyoName() : "";
-		String gyousyaCode = (Objects.nonNull(form.getGyousyaCode())) ?  form.getGyousyaCode() : "";
-		String gyousyaName = (Objects.nonNull(form.getGyousyaName())) ?  form.getGyousyaName() : "";
-		String saimokuKousyuName = (Objects.nonNull(form.getSaimokuKousyuName())) ?  form.getSaimokuKousyuName() : "";
-		String koujiCode = (Objects.nonNull(form.getKoujiCode())) ?  form.getKoujiCode() : "";
-		String koujiName = (Objects.nonNull(form.getKoujiName())) ?  form.getKoujiName() : "";
-		// メールタイトル、ファイル名の生成
-		if(formType.equals(CloudSignApi.FORM_TYPE_ORDER)) {
-			title = CloudSignApi.PREFIX_TITLE_CONFIRMATION;
-			fileName = CloudSignApi.PREFIX_FILE_CONFIRMATION;
-		}else {
-			title = CloudSignApi.PREFIX_TITLE_CANCEL;
-			fileName = CloudSignApi.PREFIX_FILE_CANCEL;
-		}
-		// 2019/12/09 リリース対象外
-		//title = title + eigyousyoName + "_" + koujiName;
-		//fileName = fileName + gyousyaCode + "_" + koujiCode + "_" + eigyousyoCode;
-		title = title + eigyousyoName + "_" + saimokuKousyuName + "_" + koujiName + "_" + orderNumber;
-		fileName = fileName + gyousyaCode + "_" + orderNumber;
+		String fileBaseName = "";
+		String eigyousyoCode = (Objects.nonNull(form.getEigyousyoCode())) ? form.getEigyousyoCode() : "";
+		String eigyousyoName = (Objects.nonNull(form.getEigyousyoName())) ? form.getEigyousyoName() : "";
+		String gyousyaCode = (Objects.nonNull(form.getGyousyaCode())) ? form.getGyousyaCode() : "";
+		String gyousyaName = (Objects.nonNull(form.getGyousyaName())) ? form.getGyousyaName() : "";
+		String saimokuKousyuName = (Objects.nonNull(form.getSaimokuKousyuName())) ? form.getSaimokuKousyuName() : "";
+		String koujiCode = (Objects.nonNull(form.getKoujiCode())) ? form.getKoujiCode() : "";
+		String koujiName = (Objects.nonNull(form.getKoujiName())) ? form.getKoujiName() : "";
 
+		Map<String,Object> filePathMap = new HashMap<String,Object>();
+		if (Objects.nonNull(form.getFilePathJson()) && !form.getFilePathJson().isEmpty()) {
+			filePathMap = JsonUtils.decode(form.getFilePathJson());
+		}
+
+		List<String> orderNumberList = (Objects.nonNull(form.getOrderNumberList())) ? form.getOrderNumberList() : new ArrayList<String>();
+
+		// 複数の発注書添付の際はまとめ発注としてグループIDをセットする
+		if (Objects.nonNull(orderNumberList) && orderNumberList.size() > 1) {
+			groupOrderNumber = (Objects.nonNull(form.getGroupOrderNumber())) ? form.getGroupOrderNumber() : null;
+		}
+		// メールタイトル、ファイル名の生成
+		if (formType.equals(CloudSignApi.FORM_TYPE_ORDER)) {
+			title = CloudSignApi.PREFIX_TITLE_CONFIRMATION;
+			fileBaseName = CloudSignApi.PREFIX_FILE_CONFIRMATION;
+		} else {
+			title = CloudSignApi.PREFIX_TITLE_CANCEL;
+			fileBaseName = CloudSignApi.PREFIX_FILE_CANCEL;
+		}
+		title = title + eigyousyoName + "_" + koujiName;
+		fileBaseName = fileBaseName + gyousyaCode;
+		//title = title + eigyousyoName + "_" + saimokuKousyuName + "_" + koujiName + "_" + orderNumber;
+
+		// 下書きの作成
 		Map<String, Object> documentRet = CloudSignApi.postDocuments(title, "", "", null, false);
 		String documentId = documentRet.get("id").toString();
 
@@ -598,7 +613,35 @@ public class OrderService {
 
 		CloudSignApi.postParticipants(documentId, mailaddress, gyousyaName);
 
-		CloudSignApi.postFile(documentId, form.getFilePath(), fileName + ".pdf");
+		// 複数ファイル添付
+		String errorFile = "";
+		String fileName = "";
+		if (Objects.nonNull(form.getFilePath()) && !form.getFilePath().isEmpty()) {
+			// 単体発注
+			fileName = fileBaseName + "_" + orderNumber + ".pdf";
+			CloudSignApi.postFile(documentId, form.getFilePath(), fileName);
+		} else {
+			for (String num : orderNumberList) {
+				if (!filePathMap.containsKey(num) || Objects.isNull(filePathMap.get(num))) {
+					errorFile = num;
+					break;
+				}
+				String filePath = filePathMap.get(num).toString();
+				File file = new File(filePath);
+				if (file.exists()) {
+					//ファイルが存在する場合はクラウドサインへ送付
+					fileName = fileBaseName + "_" + num + ".pdf";
+					CloudSignApi.postFile(documentId, filePath, fileName);
+				} else {
+					errorFile = num + " " + filePath;
+					break;
+				}
+			}
+		}
+		// 発注番号に対応するファイルパスが存在しない場合エラー
+		if (errorFile != "") {
+			throw new CoreRuntimeException("not exists filePath: " + errorFile);
+		}
 
 		CloudSignApi.postDocumentId(documentId);
 

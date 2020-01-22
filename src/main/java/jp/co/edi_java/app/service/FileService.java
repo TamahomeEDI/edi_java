@@ -1,7 +1,11 @@
 package jp.co.edi_java.app.service;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -9,8 +13,13 @@ import org.springframework.stereotype.Service;
 
 import jp.co.edi_java.app.dao.MKarekiDao;
 import jp.co.edi_java.app.entity.MKarekiEntity;
+import jp.co.edi_java.app.entity.TDeliveryEntity;
+import jp.co.edi_java.app.entity.TOrderEntity;
+import jp.co.edi_java.app.entity.TWorkReportEntity;
 import jp.co.edi_java.app.form.FileForm;
+import jp.co.edi_java.app.util.consts.CommonConsts;
 import jp.co.edi_java.app.util.file.FileApi;
+import jp.co.keepalive.springbootfw.exception.CoreRuntimeException;
 
 @Service
 @Scope("request")
@@ -54,42 +63,96 @@ public class FileService {
 		return FileApi.delete(form.getKoujiCode(), form.getToshoCode(), form.getFileCode(), form.getFileNo(), form.getFileId());
 	}
 
-//	/** zipで一括ダウンロード*/
-//	public String multiDownload(FileForm form) {
-//		UUID uuid = UUID.randomUUID();
-//        String sessionId = uuid.toString();
-//		String fileName = "";
-//		// 1: 請書、2: 納品出来高報告書
-//		String downloadType = form.getDownloadType();
-//		String folderPath = "";
-//		List<String> orderNumberList = form.getOrderNumberList();
-//		if (Objects.nonNull(downloadType)) {
-//			if (Objects.equals(downloadType, "1")) {
-//				// 請書ダウンロード
-//				List<TOrderEntity> orderList = orderService.selectInfo(orderNumberList);
-//				for (TOrderEntity order : orderList) {
-//					String fileId = order.getFileIdOrder();
-//					FileApi.getFile(order.getKoujiCode(), form.getToshoCode(), form.getFileCode(), form.getFileNo(), form.getFileId(), form.getFileType(), form.getFileName());
-//				}
-//			} else if (Objects.equals(downloadType, "2")) {
-//				// 納品書、出来高報告書ダウンロード
-//				List<TDeliveryEntity> deliveryList = deliveryService.selectListByMultiOrder(orderNumberList, "0");
-//				List<TWorkReportEntity> workReportList = workReportService.selectListByMultiOrder(orderNumberList, "0");
-//				for (TDeliveryEntity delivery : deliveryList) {
-//					String fileId = delivery.getFileId();
-//				}
-//				for (TWorkReportEntity workReport : workReportList) {
-//					String fileId = workReport.getFileId();
-//				}
-//
-//			}
-//		}
-//		// downloadType=1 TOrder load by ordernumber
-//		// downloadType=2 TDelivery,TWorkReport load by ordernumber
-//		// 1つのフォルダにダウンロードし、zipコマンドで固める
-//		// zipコマンドはRuntimeで実行する
-//
-//		//FileApi.getFile(form.getKoujiCode(), form.getToshoCode(), form.getFileCode(), form.getFileNo(), form.getFileId(), form.getFileType(), form.getFileName());
-//		return fileName;
-//	}
+	/** zipで一括ダウンロード */
+	public String multiDownload(FileForm form) {
+		String folderPath = form.getFolderPath();
+		if (Objects.isNull(folderPath)) {
+			UUID uuid = UUID.randomUUID();
+			folderPath = CommonConsts.OUTPUT_FILE_DIR + uuid;
+		}
+		String zipFolder = "doc";
+		String zipFileName = "doc.zip";
+		String subFolderPath = "";
+		String zipFilePath = "";
+		if (Objects.equals(folderPath.substring(folderPath.length()-1),"/")) {
+			subFolderPath = folderPath + zipFolder;
+			zipFilePath = folderPath + zipFileName;
+		} else {
+			subFolderPath = folderPath + "/" + zipFolder;
+			zipFilePath = folderPath + "/" + zipFileName;
+		}
+		// 1: 請書、2: 納品出来高報告書
+		String downloadType = form.getDownloadType();
+		List<String> orderNumberList = form.getOrderNumberList();
+		boolean created = false;
+		if (Objects.nonNull(downloadType)) {
+			if (Objects.equals(downloadType, "1")) {
+				// 請書ダウンロード
+				List<TOrderEntity> orderList = orderService.selectInfo(orderNumberList);
+				for (TOrderEntity order : orderList) {
+					String fileId = order.getFileIdOrder();
+					if (Objects.nonNull(fileId)) {
+						String fileName = order.getKoujiCode() + "_" + order.getGyousyaCode() + "_" + order.getOrderNumber() + ".pdf";
+						FileApi.getFile(order.getKoujiCode(), CommonConsts.FILE_TOSHO_CODE, CommonConsts.FILE_TYPE_DELIVERY, CommonConsts.FILE_NO_CONFIRMATION, fileId, "pdf", fileName, subFolderPath);
+						created = true;
+					}
+				}
+			} else if (Objects.equals(downloadType, "2")) {
+				// 納品書、出来高報告書ダウンロード
+				List<TDeliveryEntity> deliveryList = deliveryService.selectListByMultiOrder(orderNumberList, null); // 差戻し含む
+				List<TWorkReportEntity> workReportList = workReportService.selectListByMultiOrder(orderNumberList, null); // 差戻し含む
+				for (TDeliveryEntity delivery : deliveryList) {
+					String fileId = delivery.getFileId();
+					if (Objects.nonNull(fileId)) {
+						String fileName = delivery.getKoujiCode() + "_" + delivery.getGyousyaCode() + "_" + delivery.getOrderNumber() + "_" + delivery.getDeliveryNumber();
+						if (Objects.equals(delivery.getRemandFlg(), "0")) {
+							fileName = fileName + ".pdf";
+						} else {
+							fileName = fileName + "_ng.pdf";
+						}
+						FileApi.getFile(delivery.getKoujiCode(), CommonConsts.FILE_TOSHO_CODE, CommonConsts.FILE_TYPE_DELIVERY, CommonConsts.FILE_NO_DELIVERY, fileId, "pdf", fileName, subFolderPath);
+						created = true;
+					}
+				}
+				for (TWorkReportEntity workReport : workReportList) {
+					String fileId = workReport.getFileId();
+					if (Objects.nonNull(fileId)) {
+						String fileName = workReport.getKoujiCode() + "_" + workReport.getGyousyaCode() + "_" + workReport.getOrderNumber() + "_" + workReport.getWorkReportNumber();
+						if (Objects.equals(workReport.getRemandFlg(), "0")) {
+							fileName = fileName + ".pdf";
+						} else {
+							fileName = fileName + "_ng.pdf";
+						}
+						FileApi.getFile(workReport.getKoujiCode(), CommonConsts.FILE_TOSHO_CODE, CommonConsts.FILE_TYPE_DELIVERY, CommonConsts.FILE_NO_WORK_REPORT, fileId, "pdf", fileName, subFolderPath);
+						created = true;
+					}
+				}
+			}
+		}
+
+		// Zipファイル化
+		File curdir = new File(folderPath);
+		if (created && curdir.exists()) {
+			String[] zipCommand = {"zip", "-r", zipFileName, zipFolder};
+			Runtime runtime = Runtime.getRuntime();
+			// zipコマンド
+			processDone(zipCommand, runtime, curdir);
+		}
+		return zipFilePath;
+	}
+
+	/** 外部プロセスの実行 */
+	private void processDone(String[] Command, Runtime runtime, File dir) {
+		Process p = null;
+        try {
+            p = runtime.exec(Command,null,dir);
+        } catch (IOException e) {
+        	throw new CoreRuntimeException(e.getMessage());
+        }
+        try {
+            p.waitFor(); // プロセスが正常終了するまで待機
+        } catch (InterruptedException e) {
+        	throw new CoreRuntimeException(e.getMessage());
+        }
+	}
 }

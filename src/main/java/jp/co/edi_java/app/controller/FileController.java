@@ -1,6 +1,5 @@
 package jp.co.edi_java.app.controller;
 
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,11 +42,17 @@ public class FileController extends BaseController {
 	/** 複数ダウンロード */
 	@RequestMapping("/multiDownload")
 	public ResponseEntity multiDownload(@Validated FileForm form) {
-		List<String> orderNumberList = form.getOrderNumberList();
-		log.info("multi download type " + form.getDownloadType());
-		for(String orderNumber : orderNumberList) {
-			log.info("multi download " + orderNumber);
-		}
+//		List<String> orderNumberList = form.getOrderNumberList();
+//		String downloadType = form.getDownloadType();
+//		String filePath = "";
+//		if (Objects.nonNull(downloadType)) {
+//			if (Objects.equals(downloadType, "1")) {
+//				filePath = fileService.multiDownloadOrder(form);
+//			} else if (Objects.equals(downloadType, "2")) {
+//				filePath = fileService.multiDownloadDelivery(form);
+//			}
+//		}
+		super.setResponseData("ret", fileService.multiDownload(form));
 		return super.response();
 	}
 
