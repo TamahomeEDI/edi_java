@@ -48,6 +48,13 @@ public class EigyousyoController extends BaseController {
 		return super.response();
 	}
 
+	/** 社員本店工務資材部情報リスト取得 */
+	@RequestMapping("/getListByUserHeadOfficeKoumu")
+	public ResponseEntity getListByUserHeadOfficeKoumu(@Validated EigyousyoForm form) {
+		super.setResponseData("ret", eigyousyoService.getListByUserHeadOfficeKoumu(form.syainCode));
+		return super.response();
+	}
+
 	/** 業者支店情報リスト取得 */
 	@RequestMapping("/getListByPartner")
 	public ResponseEntity getListByPartner(@Validated EigyousyoForm form) {
