@@ -25,14 +25,14 @@ public class OrderController extends BaseController {
 	@Autowired
 	public OrderService orderService;
 
-	/** 発注情報取得 */
+	/** 発注情報取得 T_ORDER 1件の取得*/
 	@RequestMapping("/get")
 	public ResponseEntity get(@Validated OrderForm form) {
 		super.setResponseData("ret", orderService.get(form.getOrderNumber()));
 		return super.response();
 	}
 
-	/** 発注情報取得 */
+	/** 発注情報取得 V_ORDER_STATUS 1件の取得 */
 	@RequestMapping("/getVOrder")
 	public ResponseEntity getVOrder(@Validated OrderForm form) {
 		String orderNumber = form.getOrderNumber();
@@ -46,21 +46,21 @@ public class OrderController extends BaseController {
 		return super.response();
 	}
 
-	/** 発注情報取得 */
+	/** 発注情報取得 V_ORDER_STATUS 複数件の取得*/
 	@RequestMapping("/getMultiVOrder")
 	public ResponseEntity getMultiVOrder(@Validated OrderForm form) {
 		super.setResponseData("ret", orderService.getMultiVOrder(form.getOrderNumberList()));
 		return super.response();
 	}
 
-	/** 発注情報取得 */
+	/** 一括発注用 発注情報取得 V_ORDER_STATUS 複数件の取得*/
 	@RequestMapping("/getVOrderForMultiOrder")
 	public ResponseEntity getVOrderForMultiOrder(@Validated OrderForm form) {
 		super.setResponseData("ret", orderService.getVOrderForMultiOrder(form.getOrderNumberList()));
 		return super.response();
 	}
 
-	/** 発注情報取得 */
+	/** 発注情報取得 T_ORDER 複数件の取得 */
 	@RequestMapping("/multiget")
 	public ResponseEntity multiget(@Validated OrderForm form) {
 		super.setResponseData("ret", orderService.multiGet(form.getOrderNumberList()));

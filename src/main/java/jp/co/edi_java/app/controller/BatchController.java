@@ -3,29 +3,36 @@ package jp.co.edi_java.app.controller;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jp.co.edi_java.app.dao.MConstantsDao;
 import jp.co.edi_java.app.dao.TCloudSignDao;
+import jp.co.edi_java.app.entity.MConstantsEntity;
 import jp.co.edi_java.app.entity.TCloudSignEntity;
 import jp.co.edi_java.app.entity.TDeliveryEntity;
 import jp.co.edi_java.app.entity.TWorkReportEntity;
 import jp.co.edi_java.app.service.CloudSignService;
 import jp.co.edi_java.app.service.DeliveryService;
+import jp.co.edi_java.app.service.GoogleDriveService;
 import jp.co.edi_java.app.service.JtmService;
 import jp.co.edi_java.app.service.MailService;
 import jp.co.edi_java.app.service.OrderService;
 import jp.co.edi_java.app.service.WorkReportService;
 import jp.co.edi_java.app.util.cloudsign.CloudSignApi;
+import jp.co.edi_java.app.util.consts.CommonConsts;
 import jp.co.edi_java.app.util.mail.MailContents;
 import jp.co.edi_java.app.util.mail.MailExUtils;
 import jp.co.keepalive.springbootfw.controller.BaseController;
 import jp.co.keepalive.springbootfw.entity.ResponseEntity;
 import jp.co.keepalive.springbootfw.util.logging.SystemLoggingUtil;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @Scope("request")
 @RequestMapping("batch")
@@ -36,6 +43,9 @@ public class BatchController extends BaseController {
 
 	@Autowired
 	public CloudSignService cloudSignService;
+
+	@Autowired
+	public GoogleDriveService googleDriveService;
 
 	@Autowired
     public TCloudSignDao tCloudSignDao;
@@ -52,6 +62,10 @@ public class BatchController extends BaseController {
 	@Autowired
 	public MailService mailService;
 
+	//定数マスタ
+	@Autowired
+	public MConstantsDao mConstantsDao;
+
 	private String adminEmail = "t-iida@tamahome.jp, to-suzuki@tamahome.jp, shinji-yamaguchi@tamahome.jp";
 	//private String adminEmail = "shinji-yamaguchi@tamahome.jp";
 
@@ -62,7 +76,7 @@ public class BatchController extends BaseController {
 			long start = System.currentTimeMillis();
 			//バックアップ処理
 //			jtmService.backupEigyousyo();
-			jtmService.truncateEigyousyo();;
+			jtmService.truncateEigyousyo();
 
 			//Insert処理
 //			Map<String, Object> countMap = jtmService.insertEigyousyoAll();
@@ -424,6 +438,49 @@ public class BatchController extends BaseController {
 			long end = System.currentTimeMillis();
 			super.setResponseData("countDelivery",countD);
 			super.setResponseData("countWorkReport",countW);
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+	/**
+	 *
+	 * GoogleDrive
+	 *
+	 */
+	@RequestMapping("/archiveReportFiles")
+	public ResponseEntity archiveReportFiles() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 格納フォルダの作成
+			googleDriveService.initializeGoogleDrive(yearMonth);
+			// 請書のアーカイブ
+			googleDriveService.createArchiveOrder(yearMonth);
+//			// 納品書のアーカイブ
+//			googleDriveService.createArchiveDelivery();
+//			// 出来高報告書のアーカイブ
+//			googleDriveService.createArchiveWorkReport();
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
 			super.setResponseData("time",(end - start)  + "ms");
 		} catch (Exception e) {
 			String msg = SystemLoggingUtil.getStackTraceString(e);

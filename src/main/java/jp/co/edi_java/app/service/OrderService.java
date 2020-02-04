@@ -124,17 +124,17 @@ public class OrderService {
 		return orderInfoList;
 	}
 
-	/** V_ORDER_STATUSの情報を取得する。※ JTMから発注情報を取得する前提 */
+	/** V_ORDER_STATUSの情報を取得する。※ 元になるT_OrderのデータはJTMから取得する前提 */
 	public VOrderStatusEntity getVOrder(String orderNumber) {
 		return vOrderStatusDao.select(orderNumber);
 	}
 
-	/** V_ORDER_STATUSの情報を複数取得する。一括発注で利用する。※ JTMから発注情報を取得する前提 */
+	/** V_ORDER_STATUSの情報を複数取得する。一括発注で利用する。※ 元になるT_OrderのデータはJTMから取得する前提 */
 	public List<VOrderStatusEntity> getMultiVOrder(List<String> orderNumberList) {
 		return vOrderStatusDao.selectList(orderNumberList);
 	}
 
-	/** T_ORDER_ITEMの情報を複数取得する。※ JTMから発注情報を取得する前提 */
+	/** T_ORDER_ITEMの情報を複数取得する。※ 元になるT_OrderのデータはJTMから取得する前提 */
 	public List<TOrderItemEntity> selectOrderItem(String orderNumber) {
 		return tOrderItemDao.selectAll(orderNumber);
 	}

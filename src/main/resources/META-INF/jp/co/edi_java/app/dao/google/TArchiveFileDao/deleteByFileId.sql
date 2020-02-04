@@ -1,0 +1,1 @@
+delete from T_ARCHIVE_FILE where FILE_ID = /*fileId*/'2020';

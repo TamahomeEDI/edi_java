@@ -22,6 +22,8 @@ public class CommonConsts {
 	public static String V_ORDER_LAST_GET_TIME = "V_ORDER_LAST_GET_TIME";
 	// 定数マスタ用キー 排他制御により更新できなかった発注番号
 	public static String V_ORDER_LOCK_FAIL_ORDER_NUMBERS = "V_ORDER_LOCK_FAIL_ORDER_NUMBERS";
+	// 定数マスタ用キー アーカイブ対象年月
+	public static String T_ARCHIVE_FILES_YEAR_MONTH = "T_ARCHIVE_FILES_YEAR_MONTH";
 
 	/*EDI登録図書コード*/
 	public static String FILE_TOSHO_CODE = "09";

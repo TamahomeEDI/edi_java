@@ -1,0 +1,1 @@
+select * from T_ARCHIVE_FOLDER where DELETE_FLG = '0' and FOLDER_ID = /*folderId*/'google';

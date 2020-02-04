@@ -1,0 +1,1 @@
+select * from T_GOOGLE_DRIVE where DELETE_FLG = '0';
