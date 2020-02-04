@@ -53,6 +53,11 @@ dependencies {
 	compile('org.springframework.boot:spring-boot-starter-aop')
 	compile('org.springframework.boot:spring-boot-starter-data-rest')
 
+	// google drive api
+	compile 'com.google.api-client:google-api-client:1.23.0'
+    compile 'com.google.oauth-client:google-oauth-client-jetty:1.23.0'
+    compile 'com.google.apis:google-api-services-drive:v3-rev90-1.23.0'
+
 	compile group: 'org.springframework', name: 'spring-aop', version: '5.0.7.RELEASE'
 	compile group: 'commons-beanutils', name: 'commons-beanutils', version: '1.9.3'
 	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
