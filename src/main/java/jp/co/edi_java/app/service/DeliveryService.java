@@ -786,96 +786,112 @@ public class DeliveryService {
 			BigDecimal netpr = BigDecimal.ZERO;
 			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_NETPR))) {
 				netprStr = sapMap.get(SapApiConsts.PARAMS_ID_NETPR).toString().trim();
-				log.info("NETPR: " + netprStr);
+				log.info("SAP NETPR: " + netprStr);
 				if (!netprStr.isEmpty()) {
 					netprStr = netprStr.replaceAll(",", "");
 					netpr = new BigDecimal(netprStr);
 				}
 			}
 
-			// 発注金額
-			BigDecimal zhtkgk = BigDecimal.ZERO;
-			// 納入金額
-			BigDecimal sumpr = BigDecimal.ZERO;
-			// 納入済金額
-			BigDecimal paid = BigDecimal.ZERO;
-			// 納入受入残金額
-			BigDecimal zukzkn = BigDecimal.ZERO;
-
 			// 発注数量
 			String zhtmngStr = "0";
 			BigDecimal zhtmng = BigDecimal.ZERO;
 			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_ZHTMNG))) {
 				zhtmngStr = sapMap.get(SapApiConsts.PARAMS_ID_ZHTMNG).toString().trim();
-				log.info("ZHTMNG: " + zhtmngStr);
+				log.info("SAP ZHTMNG: " + zhtmngStr);
 				if (!zhtmngStr.isEmpty()) {
 					zhtmngStr = zhtmngStr.replaceAll(",", "");
 					zhtmng = new BigDecimal(zhtmngStr);
 				}
 			}
-			// 発注残数量（SAP上の発注残）
-			String remainQtyStr = "0";
+			// 発注残数量 (SAP上の発注残)
+			String mengeStr = "0";
 			BigDecimal paidQty = BigDecimal.ZERO;
-			BigDecimal remainQty = BigDecimal.ZERO;
+			BigDecimal menge = BigDecimal.ZERO;
 			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_MENGE))) {
-				remainQtyStr = sapMap.get(SapApiConsts.PARAMS_ID_MENGE).toString().trim();
-				log.info("SAP MENGE: " + remainQtyStr);
-				if (!remainQtyStr.isEmpty()) {
-					remainQtyStr = remainQtyStr.replaceAll(",", "");
-					remainQty = new BigDecimal(remainQtyStr);
+				mengeStr = sapMap.get(SapApiConsts.PARAMS_ID_MENGE).toString().trim();
+				log.info("SAP MENGE: " + mengeStr);
+				if (!mengeStr.isEmpty()) {
+					mengeStr = mengeStr.replaceAll(",", "");
+					menge = new BigDecimal(mengeStr);
 				}
 			}
+
+			// 納入受入残金額 (SAP上の受入残)
+			String zukzknStr = "0";
+			BigDecimal zukzkn = BigDecimal.ZERO;
+			if (Objects.nonNull(sapMap.get(SapApiConsts.PARAMS_ID_ZUKZKN))) {
+				zukzknStr = sapMap.get(SapApiConsts.PARAMS_ID_ZUKZKN).toString().trim();
+				log.info("SAP ZUKZKN: " + zukzknStr);
+				if (!zukzknStr.isEmpty()) {
+					zukzknStr = zukzknStr.replaceAll(",", "");
+					zukzkn = new BigDecimal(zukzknStr);
+				}
+			}
+
 			// 納入済数量 = 発注数量 - 発注残数量
-			paidQty = zhtmng.subtract(remainQty);
+			paidQty = zhtmng.subtract(menge);
 
 			// 発注残数量 (EDIで入力した発注残数量)
-			BigDecimal menge = BigDecimal.ZERO;
+			BigDecimal ediMenge = BigDecimal.ZERO;
 			if (Objects.nonNull(itm.getDeliveryRemainingQuantity())) {
-				menge = new BigDecimal(String.valueOf(itm.getDeliveryRemainingQuantity()));
-				log.info("EDI MENGE: " + menge.toString());
+				ediMenge = new BigDecimal(String.valueOf(itm.getDeliveryRemainingQuantity()));
+				log.info("EDI MENGE: " + ediMenge.toString());
 			}
 			// 納入数量 (EDIで入力した納入数量)
-			BigDecimal zmenge = BigDecimal.ZERO;
+			BigDecimal ediZmenge = BigDecimal.ZERO;
 			if (Objects.nonNull(itm.getDeliveryQuantity())) {
-				zmenge = new BigDecimal(String.valueOf(itm.getDeliveryQuantity()));
-				log.info("EDI ZMENGE: " + zmenge.toString());
+				ediZmenge = new BigDecimal(String.valueOf(itm.getDeliveryQuantity()));
+				log.info("EDI ZMENGE: " + ediZmenge.toString());
 			}
+
+			// 発注金額
+			BigDecimal ediZhtkgk = BigDecimal.ZERO;
+			// 納入金額
+			BigDecimal ediSumpr = BigDecimal.ZERO;
+			// 納入済金額
+			BigDecimal ediPaid = BigDecimal.ZERO;
+			// 納入受入残金額
+			BigDecimal ediZukzkn = BigDecimal.ZERO;
+
 			// 金額の再計算 単価 * 発注数量
-			zhtkgk = netpr.multiply(zhtmng); // 発注金額の算出（JCOで取得できないため）
-			sumpr = netpr.multiply(zmenge); // 納入金額の算出
-			paid = netpr.multiply(paidQty); // 納入済金額の算出
-			zhtkgk = zhtkgk.setScale(0, BigDecimal.ROUND_HALF_UP);
-			sumpr = sumpr.setScale(0, BigDecimal.ROUND_HALF_UP);
-			paid = paid.setScale(0, BigDecimal.ROUND_HALF_UP);
-			if (menge.compareTo(BigDecimal.ZERO) == 0) {
-				zukzkn = BigDecimal.ZERO;
-			} else if (paid.compareTo(BigDecimal.ZERO) == 1) {
+			ediZhtkgk = netpr.multiply(zhtmng); // 発注金額の算出（JCOで取得できないため）
+			ediSumpr = netpr.multiply(ediZmenge); // 納入金額の算出
+			ediPaid = netpr.multiply(paidQty); // 納入済金額の算出
+
+			ediZhtkgk = ediZhtkgk.setScale(0, BigDecimal.ROUND_HALF_UP);
+			ediSumpr = ediSumpr.setScale(0, BigDecimal.ROUND_HALF_UP);
+			ediPaid = ediPaid.setScale(0, BigDecimal.ROUND_HALF_UP);
+
+			if (ediMenge.compareTo(BigDecimal.ZERO) == 0) {
+				ediZukzkn = BigDecimal.ZERO;
+			} else if (ediPaid.compareTo(BigDecimal.ZERO) == 1) {
 				// 納入受入残金額 = 発注金額 - 納入金額 - 納入済金額
-				zukzkn = zhtkgk.subtract(sumpr).subtract(paid);
+				ediZukzkn = ediZhtkgk.subtract(ediSumpr).subtract(ediPaid);
 			} else {
 				// 納入受入残金額 = 発注金額 - 納入金額
-				zukzkn = zhtkgk.subtract(sumpr);
+				ediZukzkn = ediZhtkgk.subtract(ediSumpr);
 			}
-			log.info("ZHTKGK: " + zhtkgk.toString());
-			log.info("SUMPR: " + sumpr.toString());
-			log.info("PAID: " + paid.toString());
-			log.info("ZUKZKN: " + zukzkn.toString());
+			log.info("EDI ZHTKGK: " + ediZhtkgk.toString());
+			log.info("EDI SUMPR: " + ediSumpr.toString());
+			log.info("EDI PAID: " + ediPaid.toString());
+			log.info("EDI ZUKZKN: " + ediZukzkn.toString());
 
 			// EDI側の納入数量+発注残数量とJCO側の発注残数量が一致しない場合は手動で申請決済済と判断
 			BigDecimal testQty = BigDecimal.ZERO;
-			testQty = zmenge.add(menge);
-			log.info("REMAIN QTY: " + remainQty.toString());
+			testQty = ediZmenge.add(ediMenge);
+			log.info("SAP QTY: " + menge.toString());
 			log.info("TEST QTY: " + testQty.toString());
-			if (remainQty.compareTo(testQty) != 0) {
-				if (remainQty.compareTo(BigDecimal.ZERO) != 0) {
+			if (menge.compareTo(testQty) != 0) {
+				if (menge.compareTo(BigDecimal.ZERO) != 0) {
 					// 分納ケースで一致していない場合はエラーにして確認後ステータス更新を行う
-					throw new CoreRuntimeException("Probably completed with SAP (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo + " , remain quantity(SAP) : " + remainQty.toString() + " , delivery quantity(EDI) : " + zmenge.toString() + " , delivery remain quantity(EDI) : " + menge.toString());
-				} else if (menge.compareTo(BigDecimal.ZERO) != 0) {
+					throw new CoreRuntimeException("Mismatch quantity (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo + " , remain quantity(SAP) : " + menge.toString() + " , delivery quantity(EDI) : " + ediZmenge.toString() + " , delivery remain quantity(EDI) : " + ediMenge.toString());
+				} else if (ediMenge.compareTo(BigDecimal.ZERO) != 0) {
 					// 完納しているのにEDI側で残が残っている場合はエラーにして確認後ステータス更新を行う
-					throw new CoreRuntimeException("Probably completed with SAP (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo + " , remain quantity(SAP) : " + remainQty.toString() + " , delivery quantity(EDI) : " + zmenge.toString() + " , delivery remain quantity(EDI) : " + menge.toString());
+					throw new CoreRuntimeException("Mismatch quantity (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo + " , remain quantity(SAP) : " + menge.toString() + " , delivery quantity(EDI) : " + ediZmenge.toString() + " , delivery remain quantity(EDI) : " + ediMenge.toString());
 				} else {
 					// 当該発注についてレコード作成しない
-					log.info("Probably completed with SAP (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo + " , remain quantity(SAP) : " + remainQty.toString() + " , delivery quantity(EDI) : " + zmenge.toString() + " , delivery remain quantity(EDI) : " + menge.toString());
+					log.info("Probably completed with SAP (Delivery): " + orderNumber + " , JCO_EBELP : " + lineNo + " , remain quantity(SAP) : " + menge.toString() + " , delivery quantity(EDI) : " + ediZmenge.toString() + " , delivery remain quantity(EDI) : " + ediMenge.toString());
 					createSapRecordFlg = false;
 				}
 			}
@@ -887,15 +903,15 @@ public class DeliveryService {
 			// 仕様名
 			params.put(SapApiConsts.PARAMS_ID_ZMHNAM, sapMap.get(SapApiConsts.PARAMS_ID_ZMHNAM).toString());
 			// 発注残数量
-			params.put(SapApiConsts.PARAMS_ID_MENGE, menge.toString());
+			params.put(SapApiConsts.PARAMS_ID_MENGE, menge.toString()); // SAPの発注残を渡す 今回納入数量は差し引かない
 			// 納入数量
-			params.put(SapApiConsts.PARAMS_ID_ZMENGE, zmenge.toString());
+			params.put(SapApiConsts.PARAMS_ID_ZMENGE, ediZmenge.toString()); // 今回納入数量を渡す
 			// 発注単位
 			params.put(SapApiConsts.PARAMS_ID_MEINS, sapMap.get(SapApiConsts.PARAMS_ID_MEINS).toString());
 			// 単価
 			params.put(SapApiConsts.PARAMS_ID_NETPR, netpr.toString());
 			// 納入金額
-			params.put(SapApiConsts.PARAMS_ID_SUMPR, sumpr.toString());
+			params.put(SapApiConsts.PARAMS_ID_SUMPR, ediSumpr.toString()); // 今回納入金額を渡す
 			// 購買伝票の明細番号
 			params.put(SapApiConsts.PARAMS_ID_EBELP, lineNo);
 			// 発注数量
@@ -905,7 +921,7 @@ public class DeliveryService {
 			// 発注金額
 			params.put(SapApiConsts.PARAMS_ID_ZHTKGK, "");
 			// 納入受入残金額
-			params.put(SapApiConsts.PARAMS_ID_ZUKZKN, zukzkn.toString());
+			params.put(SapApiConsts.PARAMS_ID_ZUKZKN, zukzkn.toString()); // SAPの受入残を渡す 今回納入金額は差し引かない
 
 			sapDetail.add(params);
 		}
