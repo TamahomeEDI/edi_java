@@ -16,6 +16,7 @@ import jp.co.edi_java.app.entity.MConstantsEntity;
 import jp.co.edi_java.app.entity.TCloudSignEntity;
 import jp.co.edi_java.app.entity.TDeliveryEntity;
 import jp.co.edi_java.app.entity.TWorkReportEntity;
+import jp.co.edi_java.app.service.BillingCheckListService;
 import jp.co.edi_java.app.service.CloudSignService;
 import jp.co.edi_java.app.service.DeliveryService;
 import jp.co.edi_java.app.service.GoogleDriveService;
@@ -61,6 +62,9 @@ public class BatchController extends BaseController {
 
 	@Autowired
 	public MailService mailService;
+
+	@Autowired
+	public BillingCheckListService billingCheckListService;
 
 	//定数マスタ
 	@Autowired
@@ -447,7 +451,7 @@ public class BatchController extends BaseController {
 	}
 	/**
 	 *
-	 * GoogleDrive
+	 * GoogleDrive report archive all
 	 *
 	 */
 	@RequestMapping("/archiveReportFiles")
@@ -475,6 +479,153 @@ public class BatchController extends BaseController {
 //			googleDriveService.createArchiveDelivery();
 //			// 出来高報告書のアーカイブ
 //			googleDriveService.createArchiveWorkReport();
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+	/**
+	 *
+	 * GoogleDrive initialize only
+	 *
+	 */
+	@RequestMapping("/initializeGoogleDrive")
+	public ResponseEntity initializeGoogleDrive() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 格納フォルダの作成
+			googleDriveService.initializeGoogleDrive(yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+	/**
+	 *
+	 * GoogleDrive archive order only
+	 *
+	 */
+	@RequestMapping("/createArchiveOrder")
+	public ResponseEntity createArchiveOrder() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 請書のアーカイブ
+			googleDriveService.createArchiveOrder(yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+	/**
+	 *
+	 * Local server create billing list
+	 *
+	 */
+	@RequestMapping("/createBillingCheckList")
+	public ResponseEntity createBillingCheckList() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			billingCheckListService.createCheckListBatch(yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+	/**
+	 *
+	 * GoogleDrive archive billing list only
+	 *
+	 */
+	@RequestMapping("/createArchiveBillingCheckList")
+	public ResponseEntity createArchiveBillingCheckList() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// クラウドサイン課金チェックリストのアーカイブ
+			googleDriveService.createArchiveBillingCheckList(yearMonth);
 
 			mConstants.setConstantsValue(null);
 			mConstantsDao.update(mConstants);

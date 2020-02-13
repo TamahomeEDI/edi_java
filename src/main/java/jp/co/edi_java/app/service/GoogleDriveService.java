@@ -1,19 +1,12 @@
 package jp.co.edi_java.app.service;
 
 import java.io.File;
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TimeZone;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,22 +17,24 @@ import org.springframework.stereotype.Service;
 import com.google.api.services.drive.Drive;
 
 import jp.co.edi_java.app.dao.MConstantsDao;
+import jp.co.edi_java.app.dao.TBillingCheckListDao;
 import jp.co.edi_java.app.dao.TOrderDao;
 import jp.co.edi_java.app.dao.google.TArchiveFileDao;
 import jp.co.edi_java.app.dao.google.TArchiveFolderDao;
 import jp.co.edi_java.app.dao.google.TGoogleDriveDao;
 import jp.co.edi_java.app.dao.gyousya.TGyousyaAccountDao;
 import jp.co.edi_java.app.dto.GoogleDriveDto;
+import jp.co.edi_java.app.entity.TBillingCheckListEntity;
 import jp.co.edi_java.app.entity.TOrderEntity;
 import jp.co.edi_java.app.entity.google.TArchiveFileEntity;
 import jp.co.edi_java.app.entity.google.TArchiveFolderEntity;
 import jp.co.edi_java.app.entity.google.TGoogleDriveEntity;
 import jp.co.edi_java.app.entity.gyousya.TGyousyaAccountEntity;
 import jp.co.edi_java.app.form.GoogleDriveForm;
+import jp.co.edi_java.app.util.common.CommonUtils;
 import jp.co.edi_java.app.util.consts.CommonConsts;
 import jp.co.edi_java.app.util.file.FileApi;
 import jp.co.edi_java.app.util.google.GoogleDriveApi;
-import jp.co.keepalive.springbootfw.exception.CoreRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -57,6 +52,8 @@ public class GoogleDriveService {
     public TArchiveFileDao tArchiveFileDao;
 	@Autowired
 	public TOrderDao tOrderDao;
+	@Autowired
+	public TBillingCheckListDao tBillingCheckListDao;
 	//定数マスタ
 	@Autowired
 	public MConstantsDao mConstantsDao;
@@ -69,14 +66,14 @@ public class GoogleDriveService {
 	private static String ARCHIVE_FOLDER_NAME = "archive_reports";
 	private static String ARCHIVE_FOLDER_PATH = ROOT_FOLDER_PATH + "/" + ARCHIVE_FOLDER_NAME;
 
-	private static String[] DOCUMENT_TYPES = {"order", "delivery", "workReport"};
+	private static String[] DOCUMENT_TYPES = {"order", "delivery", "workReport", "billingCheckList"};
 	private static Map<String, String> REPORT_TYPE_MAP = new HashMap<String, String>();
 	static {
 		REPORT_TYPE_MAP.put("order", "10");
 		REPORT_TYPE_MAP.put("delivery", "20");
 		REPORT_TYPE_MAP.put("workReport", "30");
+		REPORT_TYPE_MAP.put("billingCheckList", "40");
 	}
-
 
 	private GoogleDriveService( @Value("${googledrive.root.folder}") String rootFolder) {
 		ROOT_FOLDER_PATH = rootFolder;
@@ -117,10 +114,10 @@ public class GoogleDriveService {
     	if (Objects.nonNull(form) && Objects.nonNull(form.getPrevMonthCount())) {
     		prevCount = form.getPrevMonthCount();
     	}
-    	String prevMonth = getPastMonth(prevCount);
-    	String thisMonth = getPastMonth(0);
-		String fromYearMonth = prevMonth.substring(0, 4) + prevMonth.substring(4, 6);
-		String toYearMonth = thisMonth.substring(0, 4) + thisMonth.substring(4, 6);
+    	String prevMonth = CommonUtils.getPastMonthFirst(prevCount, "yyyyMM", "JST");
+    	String thisMonth = CommonUtils.getPastMonthFirst(0, "yyyyMM", "JST");
+		String fromYearMonth = prevMonth;
+		String toYearMonth = thisMonth;
 		String gyousyaCode = form.getGyousyaCode();
 		List<String> documentTypes = Arrays.asList(DOCUMENT_TYPES);
 
@@ -215,6 +212,7 @@ public class GoogleDriveService {
     	}
     }
 
+
     /**
      * Archive File insert or update
      */
@@ -292,7 +290,7 @@ public class GoogleDriveService {
     public void initializeGoogleDrive(String useMonth) {
 		String year = "";
 		String month = "";
-		String lastMonth = getLastMonth();
+		String lastMonth = CommonUtils.getLastMonthFirst("yyyyMM", "JST");
 		if (Objects.nonNull(useMonth)) {
 			lastMonth = useMonth;
 		}
@@ -400,6 +398,9 @@ public class GoogleDriveService {
         	// fileId save
     		googleDrive.setFileId(fileProp.get("id"));
     		upsertGoogleDrive(googleDrive);
+    	} else {
+    		// 登録済データを返す
+    		googleDrive = tGoogleDriveDao.selectByFilePath(filePath);
     	}
     	return googleDrive;
     }
@@ -408,15 +409,15 @@ public class GoogleDriveService {
      * Google Drive 請書アップロード
      */
     public void createArchiveOrder(String useMonth) {
-		String from = getArchiveDateFrom(null);
-		String to = getArchiveDateTo(null);
+		String from = CommonUtils.getArchiveDateFromByLastMonth(null);
+		String to = CommonUtils.getArchiveDateToByLastMonth(null);
 		String year = "";
 		String month = "";
-		String lastMonth = getLastMonth();
+		String lastMonth = CommonUtils.getLastMonthFirst("yyyyMM", "JST");
 		if (Objects.nonNull(useMonth)) {
 			lastMonth = useMonth;
-			from = getArchiveDateFrom(lastMonth);
-			to = getArchiveDateTo(lastMonth);
+			from = CommonUtils.getArchiveDateFromByLastMonth(lastMonth);
+			to = CommonUtils.getArchiveDateToByLastMonth(lastMonth);
 		}
 		year = lastMonth.substring(0, 4);
 		month = lastMonth.substring(4, 6);
@@ -425,6 +426,7 @@ public class GoogleDriveService {
 		condition.setReportYear(year);
 		condition.setReportMonth(month);
 		condition.setReportType(REPORT_TYPE_MAP.get("order"));
+		condition.setIgnoreArchiveFinished("1");
 		List<TArchiveFolderEntity> archiveFolderList = selectArchiveFolder(condition);
 		// 請書ダウンロード and ZIP化してGoogle Driveへアップロード
 		for (TArchiveFolderEntity folder : archiveFolderList) {
@@ -478,7 +480,7 @@ public class GoogleDriveService {
 			String[] zipCommand = {"zip", "-r", zipFileName, zipFolder};
 			Runtime runtime = Runtime.getRuntime();
 			// zipコマンド
-			processDone(zipCommand, runtime, curdir);
+			CommonUtils.processDone(zipCommand, runtime, curdir);
 		}
 		File zipfile = new File(zipFilePath);
 		if (!zipfile.exists()) {
@@ -487,145 +489,62 @@ public class GoogleDriveService {
     	return zipFilePath;
     }
 
-	private String getPastMonth(int prevcount) {
-		Calendar cal = Calendar.getInstance();
-		String resultDate = null;
-
-		// 本日の日付を取得
-		Date nowDate = new Date();
-		cal.setTime(nowDate);
-		cal.set(Calendar.HOUR, 0);
-		cal.set(Calendar.MINUTE, 0);
-		cal.set(Calendar.SECOND, 0);
-
-		// 月初日
-		int startDay = cal.getActualMinimum(Calendar.DATE);
-		cal.set(Calendar.DATE, startDay);
-		// 指定月数前の月を取得
-		cal.add(Calendar.MONTH, -prevcount);
-		Date pastMonth = cal.getTime();
-
-		// 対象年月の算出
-		resultDate = formatDateToString(pastMonth, "yyyyMMdd", "JST");
-		log.info("getPastMonth: " + resultDate);
-		return resultDate;
-	}
-
-	private String getLastMonth() {
-		Calendar cal = Calendar.getInstance();
-		String resultDate = null;
-
-		// 本日の日付を取得
-		Date nowDate = new Date();
-		cal.setTime(nowDate);
-		cal.set(Calendar.HOUR, 0);
-		cal.set(Calendar.MINUTE, 0);
-		cal.set(Calendar.SECOND, 0);
-
-		// 月初日
-		int startDay = cal.getActualMinimum(Calendar.DATE);
-		cal.set(Calendar.DATE, startDay);
-		// 先月を取得
-		cal.add(Calendar.MONTH, -1);
-		Date lastMonth = cal.getTime();
-
-		// アーカイブ対象年月の算出
-		resultDate = formatDateToString(lastMonth, "yyyyMMdd", "JST");
-		log.info("getLastMonth: " + resultDate);
-		return resultDate;
-	}
-
-	private String getArchiveDateFrom(String useMonth) {
-		Calendar cal = Calendar.getInstance();
-		String resultDate = null;
-
-		// 本日の日付を取得
-		Date nowDate = new Date();
-		cal.setTime(nowDate);
+    /**
+     * Google Drive クラウドサイン課金チェックリストアップロード
+     */
+    public void createArchiveBillingCheckList(String useMonth) {
+		String from = CommonUtils.getArchiveDateFromByLastMonth(null);
+		String to = CommonUtils.getArchiveDateToByLastMonth(null);
+		String year = "";
+		String month = "";
+		String lastMonth = CommonUtils.getLastMonthFirst("yyyyMM", "JST");
 		if (Objects.nonNull(useMonth)) {
-			nowDate = parseDateStringToDate(useMonth, "yyyyMM", Locale.JAPAN);
-			cal.setTime(nowDate);
-			// 指定月は前月のため現在月に修正
-			cal.add(Calendar.MONTH, 1);
+			lastMonth = useMonth;
+			from = CommonUtils.getArchiveDateFromByLastMonth(lastMonth);
+			to = CommonUtils.getArchiveDateToByLastMonth(lastMonth);
 		}
-
-		// 月初日
-		int startDay = cal.getActualMinimum(Calendar.DATE);
-		// 先月を取得
-		cal.set(Calendar.DATE, startDay);
-		cal.add(Calendar.MONTH, -1);
-		// 先月2日を取得
-		cal.add(Calendar.DATE, 1);
-		cal.set(Calendar.HOUR, 0);
-		cal.set(Calendar.MINUTE, 0);
-		cal.set(Calendar.SECOND, 0);
-		Date lastMonth = cal.getTime();
-
-		// アーカイブ対象年月の算出
-		resultDate = formatDateToString(lastMonth, "yyyy-MM-dd HH:mm:ss", "JST");
-		log.info("getArchiveDateFrom: " + resultDate);
-		return resultDate;
-	}
-
-	private String getArchiveDateTo(String useMonth) {
-		Calendar cal = Calendar.getInstance();
-		String resultDate = null;
-
-		// 本日の日付を取得
-		Date nowDate = new Date();
-		cal.setTime(nowDate);
-		if (Objects.nonNull(useMonth)) {
-			nowDate = parseDateStringToDate(useMonth, "yyyyMM", Locale.JAPAN);
-			cal.setTime(nowDate);
-			// 指定月は前月のため現在月に修正
-			cal.add(Calendar.MONTH, 1);
+		year = lastMonth.substring(0, 4);
+		month = lastMonth.substring(4, 6);
+		// アーカイブ対象業者
+		TArchiveFolderEntity condition = new TArchiveFolderEntity();
+		condition.setReportYear(year);
+		condition.setReportMonth(month);
+		condition.setReportType(REPORT_TYPE_MAP.get("billingCheckList"));
+		condition.setIgnoreArchiveFinished("1");
+		List<TArchiveFolderEntity> archiveFolderList = selectArchiveFolder(condition);
+		// アーカイブ対象チェックリスト
+		TBillingCheckListEntity billingCond = new TBillingCheckListEntity();
+		billingCond.setReportYear(year);
+		billingCond.setReportMonth(month);
+		billingCond.setCompleteFlg("0");
+		List<TBillingCheckListEntity> billingList = tBillingCheckListDao.selectList(billingCond);
+		// 業者別チェックリストマップ生成
+		Map<String, List<TBillingCheckListEntity>> billingMap = new HashMap<String, List<TBillingCheckListEntity>>();
+		for (TBillingCheckListEntity entity : billingList) {
+			if (! billingMap.containsKey(entity.getGyousyaCode())) {
+				billingMap.put(entity.getGyousyaCode(), new ArrayList<TBillingCheckListEntity>());
+			}
+			billingMap.get(entity.getGyousyaCode()).add(entity);
 		}
+		// ZIP済チェックリストをGoogle Driveへアップロード
+		for (TArchiveFolderEntity folder : archiveFolderList) {
+			List<TBillingCheckListEntity> checkList = (billingMap.containsKey(folder.getGyousyaCode())) ? billingMap.get(folder.getGyousyaCode()) : null;
+			if (Objects.nonNull(checkList)) {
+				TBillingCheckListEntity billing = checkList.get(0);
+				String localFilePath = billing.getFilePath();
 
-		// 月初日
-		int startDay = cal.getActualMinimum(Calendar.DATE);
-		// 当月1日を取得
-		cal.set(Calendar.DATE, startDay);
-		cal.set(Calendar.HOUR, 23);
-		cal.set(Calendar.MINUTE, 59);
-		cal.set(Calendar.SECOND, 59);
-		Date thisMonth = cal.getTime();
-
-		// アーカイブ対象年月の算出
-		resultDate = formatDateToString(thisMonth, "yyyy-MM-dd HH:mm:ss", "JST");
-		log.info("getArchiveDateTo: " + resultDate);
-		return resultDate;
-	}
-
-	private Date parseDateStringToDate(String date, String format, Locale loc) {
-		Date ret = null;
-		try {
-			SimpleDateFormat sdf = new SimpleDateFormat(format, loc);
-			ret = sdf.parse(date);
-		} catch (ParseException e) {
-			log.info(e.getMessage());
+				if (Objects.nonNull(localFilePath)) {
+					String fileName = "checklist_" + folder.getGyousyaCode() + "_" + year + month + ".zip";
+					TGoogleDriveEntity driveResult = uploadFileGoogleDrive(fileName, folder.getFolderPath() + "/" + fileName, folder.getFolderPath(), folder.getFolderId(), localFilePath, "application/zip");
+					TArchiveFileEntity archiveFile = new TArchiveFileEntity();
+					archiveFile.setFileId(driveResult.getFileId());
+					archiveFile.setFileName(driveResult.getFileName());
+					archiveFile.setFilePath(driveResult.getFilePath());
+					archiveFile.setParentFolderId(driveResult.getParentFileId());
+					upsertArchiveFile(archiveFile);
+				}
+			}
 		}
-		return ret;
-	}
-
-	private String formatDateToString(Date date, String format, String timezone) {
-		SimpleDateFormat sdf = new SimpleDateFormat(format);
-		sdf.setTimeZone(TimeZone.getTimeZone(timezone));
-		return sdf.format(date);
-	}
-
-	/** 外部プロセスの実行 */
-	private void processDone(String[] Command, Runtime runtime, File dir) {
-		Process p = null;
-        try {
-            p = runtime.exec(Command,null,dir);
-        } catch (IOException e) {
-        	throw new CoreRuntimeException(e.getMessage());
-        }
-        try {
-            p.waitFor(); // プロセスが正常終了するまで待機
-        } catch (InterruptedException e) {
-        	throw new CoreRuntimeException(e.getMessage());
-        }
-	}
+    }
 
 }

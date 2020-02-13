@@ -89,4 +89,6 @@ public class CommonConsts {
 
 	public static String OUTPUT_FILE_DIR = "/home/web/edi_php/tmp/downloadFile/";
 
+	public static String OUTPUT_BILLING_CHECK_LIST_DIR = "/home/web/edi_php/tmp/billing/";
+
 }

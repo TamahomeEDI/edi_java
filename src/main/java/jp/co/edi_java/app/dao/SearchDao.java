@@ -12,6 +12,7 @@ import jp.co.edi_java.app.dto.SearchEstimateDto;
 import jp.co.edi_java.app.dto.SearchKoujiInfoDto;
 import jp.co.edi_java.app.dto.SearchOrderInfoDto;
 import jp.co.edi_java.app.dto.SearchWorkReportDto;
+import jp.co.edi_java.app.entity.TCloudSignEntity;
 import jp.co.edi_java.app.entity.TOrderItemEntity;
 import jp.co.edi_java.app.entity.TestEntity;
 import jp.co.edi_java.app.entity.VOrderStatusEntity;
@@ -75,12 +76,22 @@ public interface SearchDao {
 	@Select
 	List<SearchKoujiInfoDto> getKoujiInfoList(List<String> koujiCodeList, String koujiName, String eigyousyoCode, String kanseiKubun);
 
-	// チェックリスト出力用
+	// 発注情報チェックリスト出力用
 	@Select
 	List<VOrderStatusEntity> selectVOrderNonLimit(SearchForm params);
 	@Select
 	List<TOrderItemEntity> selectOrderItemByVOrder(SearchForm params);
 	@Select
 	int countOrderItemByVOrder(SearchForm params);
+
+	// クラウドサイン課金チェックリスト出力用
+	@Select
+	int countOrderItemForBilling(SearchForm params);
+	@Select
+	List<TCloudSignEntity> selectCloudSignListForBilling(SearchForm params);
+	@Select
+	List<VOrderStatusEntity> selectVOrderListForBilling(SearchForm params);
+	@Select
+	List<TOrderItemEntity> selectOrderItemListForBilling(SearchForm params);
 
 }
