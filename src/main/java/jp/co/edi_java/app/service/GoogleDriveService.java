@@ -530,6 +530,7 @@ public class GoogleDriveService {
 		for (TArchiveFolderEntity folder : archiveFolderList) {
 			List<TBillingCheckListEntity> checkList = (billingMap.containsKey(folder.getGyousyaCode())) ? billingMap.get(folder.getGyousyaCode()) : null;
 			if (Objects.nonNull(checkList)) {
+				// zipファイル1つになっている前程
 				TBillingCheckListEntity billing = checkList.get(0);
 				String localFilePath = billing.getFilePath();
 
@@ -542,6 +543,9 @@ public class GoogleDriveService {
 					archiveFile.setFilePath(driveResult.getFilePath());
 					archiveFile.setParentFolderId(driveResult.getParentFileId());
 					upsertArchiveFile(archiveFile);
+					// 処理済にする
+					billing.setCompleteFlg("1");
+					tBillingCheckListDao.update(billing);
 				}
 			}
 		}

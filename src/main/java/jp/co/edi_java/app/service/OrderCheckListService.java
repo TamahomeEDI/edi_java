@@ -1,8 +1,12 @@
 package jp.co.edi_java.app.service;
 
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,8 +104,148 @@ public class OrderCheckListService {
 		// チェクリスト出力フォルダの作成
 		FileApi.createDirectories(folderPath);
 		String fileFullPath = folderPath + fileName;
-		createCheckListAux(vOrderList, orderItemMap, fileFullPath);
+		//createCheckListAux(vOrderList, orderItemMap, fileFullPath);
+		createCheckListCsv(vOrderList, orderItemMap, fileFullPath);
+	}
 
+	/**
+	 * 受注明細のチェックリストをCSVで出力する
+	 * @param cloudSignList
+	 * @param folderPath
+	 * @param fileName
+	 */
+	@SuppressWarnings("unchecked")
+	private void createCheckListCsv(List<VOrderStatusEntity> vOrderList, Map<String, List<TOrderItemEntity>> orderItemMap, String fileFullPath) {
+
+		File csvfile = new File(fileFullPath);
+		String strFDQ = "\"";
+		String strEDQC = "\",";
+		String strEDQ = "\"";
+		String conma = ",";
+
+		// title
+		String [] titleArray = {
+				"施工支店名","工事コード","工事名","担当者名",
+				"着工予定日","竣工予定日","引渡予定日",
+				"建築地郵便番号","建築地",
+				"発注番号","発注種別","細目工種","発注日","発注金額合計（税抜）",
+				"品名","単価","数量","単位","発注金額（税抜）"
+		};
+		List<String> titles = new ArrayList<String>(Arrays.asList(titleArray));
+
+		try (PrintWriter pw = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvfile),"MS932")))) {
+
+			// title
+		    pw.println(strFDQ + String.join(strEDQC + strFDQ, titles) + strEDQ);
+
+			// body
+		    if (Objects.nonNull(vOrderList) && !vOrderList.isEmpty()) {
+		    	for (VOrderStatusEntity order : vOrderList) {
+		    		List<TOrderItemEntity> orderItemList = orderItemMap.get(order.getOrderNumber());
+		    		if (Objects.isNull(orderItemList) || orderItemList.isEmpty()) {
+		    			String line = "";
+		    			line = createHeaderCsvColumn(order, line);
+		    			//品名
+		    			line += strFDQ + strEDQC;
+		    			//単価
+		    			line += strFDQ + strEDQC;
+		    			//数量
+		    			line += strFDQ + strEDQC;
+		    			//単位
+		    			line += strFDQ + strEDQC;
+		    			//発注金額（税抜）
+		    			pw.println(line);
+		    		} else {
+		    			for (TOrderItemEntity item : orderItemList) {
+		    				// 発注数量が0以下のものは出力しない
+		    				if (item.getOrderQuantity() <= 0) {
+		    					continue;
+		    				}
+		    				String line = "";
+		    				line = createHeaderCsvColumn(order, line);
+		    				line = createDetailCsvColumn(item, line);
+		    				pw.println(line);
+		    			}
+		    		}
+		    	}
+		    }
+		} catch (IOException e) {
+			throw new CoreRuntimeException(e.getMessage());
+		}
+	}
+
+	private String createHeaderCsvColumn(VOrderStatusEntity order, String line) {
+		String strFDQ = "\"";
+		String strEDQC = "\",";
+		String strEDQ = "\"";
+		String conma = ",";
+		// 親項目のみ出力
+		// yosanFlg: 1:本体発注, 2:S発注, 3:A発注, 4:B発注, 5:C発注
+		// c発注のみ「追加」と出力する
+		String yosanType = "";
+		if (Objects.nonNull(order.getYosanFlg()) && order.getYosanFlg() == 5) {
+			yosanType = "追加";
+		}
+		//施工支店名
+		line += strFDQ + order.getEigyousyoName() + strEDQC;
+		//工事コード
+		line += strFDQ + order.getKoujiCode() + strEDQC;
+		//工事名
+		line += strFDQ + order.getKoujiName() + strEDQC;
+		//担当者名
+		line += strFDQ + order.getSyainName() + strEDQC;
+		//着工予定日
+		line += strFDQ + dateStringFormat(order.getTyakkouDateY()) + strEDQC;
+		//竣工予定日
+		line += strFDQ + dateStringFormat(order.getSyunkouDateY()) + strEDQC;
+		//引渡予定日
+		line += strFDQ + dateStringFormat(order.getHikiwatasiDateY()) + strEDQC;
+		//建築地郵便番号
+		line += strFDQ + zipcodeStringFormat(order.getKentikutiYuubin()) + strEDQC;
+		//建築地
+		line += strFDQ + order.getKentikutiJyuusyo() + strEDQC;
+		//発注番号
+		line += strFDQ + order.getOrderNumber() + strEDQC;
+		//発注種別
+		line += strFDQ + yosanType + strEDQC;
+		//細目工種
+		line += strFDQ + order.getSaimokuKousyuName() + strEDQC;
+		//発注日
+		line += strFDQ + dateStringFormat(order.getOrderDate()) + strEDQC;
+		//発注金額合計（税抜）
+		String orderAmount = "";
+		if (Objects.nonNull(order.getOrderAmount())) {
+			orderAmount = order.getOrderAmount().toString();
+		}
+		line += orderAmount + conma;
+		return line;
+	}
+
+	private String createDetailCsvColumn(TOrderItemEntity item, String line) {
+		String strFDQ = "\"";
+		String strEDQC = "\",";
+		String strEDQ = "\"";
+		String conma = ",";
+
+		//品名
+		line += strFDQ + item.getItemName() + strEDQC;
+		//単価
+		String unitPrice = "";
+		if (Objects.nonNull(item.getOrderUnitPrice())) {
+			unitPrice = item.getOrderUnitPrice().toString();
+		}
+		line += unitPrice + conma;
+		//数量
+		line += item.getOrderQuantity() + conma;
+		//単位
+		line += strFDQ + item.getUnit() + strEDQC;
+		//発注金額（税抜）
+		String itemOrderAmount = "";
+		if (Objects.nonNull(item.getOrderAmount())) {
+			itemOrderAmount = item.getOrderAmount().toString();
+		}
+		line += itemOrderAmount;
+		return line;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -109,7 +253,7 @@ public class OrderCheckListService {
 		Workbook book = null;
 		FileOutputStream fout = null;
 		try {
-			book = new SXSSFWorkbook();
+			book = new SXSSFWorkbook(10);
 
             Font font = book.createFont();
             font.setFontName("ＭＳ Pゴシック");
@@ -462,6 +606,21 @@ public class OrderCheckListService {
 			String MM = date.substring(4, 6);
 			String dd = date.substring(6, 8);
 			ret = yyyy + '年' + MM + '月' + dd + '日';
+		}
+		return ret;
+	}
+
+	private String zipcodeStringFormat(String zipcode) {
+		String ret = "";
+		if (Objects.isNull(zipcode) || zipcode.isEmpty()) {
+			return ret;
+		}
+        Pattern pattern = java.util.regex.Pattern.compile("^[0-9]*$");
+	    Matcher matcher = pattern.matcher(zipcode);
+		if (zipcode.length() == 7 && matcher.matches()) {
+			String head = zipcode.substring(0, 3);
+			String detail = zipcode.substring(3, 7);
+			ret = '〒' + head + '-' + detail;
 		}
 		return ret;
 	}

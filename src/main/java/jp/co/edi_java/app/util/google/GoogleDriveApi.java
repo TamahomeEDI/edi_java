@@ -134,23 +134,20 @@ public class GoogleDriveApi {
     	if (Objects.isNull(service) || Objects.isNull(fileId) || Objects.isNull(folderPath) || Objects.isNull(fileName)) {
     		throw new CoreRuntimeException("google drive service or fileId or filePath(Name) is null. can not download file from google drive.");
     	} else {
-    		try {
-    			java.io.File localFolderPath = new java.io.File(folderPath);
-    			if (!localFolderPath.exists()) {
-    				localFolderPath.mkdirs();
-    			}
-
-    			String filePath = "";
-    			if (Objects.equals(folderPath.substring(folderPath.length()-1),"/")) {
-    				filePath = folderPath + fileName;
-    			} else {
-    				filePath = folderPath + "/" + fileName;
-    			}
-    			java.io.File localFile = new java.io.File(filePath);
-    			OutputStream filestream = new FileOutputStream(localFile);
+    		java.io.File localFolderPath = new java.io.File(folderPath);
+			if (!localFolderPath.exists()) {
+				localFolderPath.mkdirs();
+			}
+			String filePath = "";
+			if (Objects.equals(folderPath.substring(folderPath.length()-1),"/")) {
+				filePath = folderPath + fileName;
+			} else {
+				filePath = folderPath + "/" + fileName;
+			}
+			java.io.File localFile = new java.io.File(filePath);
+    		try (OutputStream filestream = new FileOutputStream(localFile)) {
     			service.files().get(fileId).executeMediaAndDownloadTo(filestream);
     			filestream.flush();
-    			filestream.close();
     			ret = filePath;
     			log.info("download fileId: " + fileId );
     			log.info("download path: " + filePath );

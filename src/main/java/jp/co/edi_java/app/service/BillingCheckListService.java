@@ -1,9 +1,12 @@
 package jp.co.edi_java.app.service;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -135,11 +138,6 @@ public class BillingCheckListService {
 	@SuppressWarnings("unchecked")
 	public Map<String,String> createCheckList(SearchForm form) {
 		Map<String,String> ret = new HashMap<String, String>();
-		String baseFolderPath = CommonConsts.OUTPUT_BILLING_CHECK_LIST_DIR;
-		UUID uuid = UUID.randomUUID();
-		String folderPath = baseFolderPath + uuid + "/";
-		String fileName = form.getGyousyaCode() + "_checklist_cloudsign_order.xlsx";
-		String zipFileName = form.getGyousyaCode() + "_checklist_cloudsign_order.zip";
 
 		// クラウドサインレコードがそのまま集計単位
 		List<TCloudSignEntity> cloudSignList = searchDao.selectCloudSignListForBilling(form);
@@ -241,15 +239,33 @@ public class BillingCheckListService {
 			// グループキーにエンティティ紐付け
 			dtoList.add(dto);
 		}
+
+		String baseFolderPath = CommonConsts.OUTPUT_BILLING_CHECK_LIST_DIR;
+		UUID uuid = UUID.randomUUID();
+		String folderPath = baseFolderPath + uuid + "/";
+		String zipFolder = "doc";
+		String zipFileName = "doc.zip";
+		String subFolderPath = folderPath + zipFolder + "/";
+
 		// チェクリスト出力フォルダの作成
-		FileApi.createDirectories(folderPath);
-		String fileFullPath = folderPath + fileName;
-		createCheckListAux(dtoList, folderPath, fileName, fileFullPath);
+		FileApi.createDirectories(subFolderPath);
+
+		// エクセル出力が遅いので取りやめ
+		//String fileName = form.getGyousyaCode() + "_checklist_cloudsign_order.xlsx";
+		//String zipFileName = form.getGyousyaCode() + "_checklist_cloudsign_order.zip";
+		//String fileFullPath = folderPath + fileName;
+		//createCheckListAux(dtoList, folderPath, fileName, fileFullPath);
+
+		String headerFileName = form.getGyousyaCode() + "_checklist_cloudsign_order_header.csv";
+		String detailFileName = form.getGyousyaCode() + "_checklist_cloudsign_order_detail.csv";
+
+		createCheckListHeaderCsv(dtoList, subFolderPath, headerFileName);
+		createCheckListDetailCsv(dtoList, subFolderPath, detailFileName);
 
 		// Zipファイル化
 		File curdir = new File(folderPath);
 		if (curdir.exists()) {
-			String[] zipCommand = {"zip", "-r", zipFileName, fileName};
+			String[] zipCommand = {"zip", "-r", zipFileName, zipFolder};
 			Runtime runtime = Runtime.getRuntime();
 			// zipコマンド
 			CommonUtils.processDone(zipCommand, runtime, curdir);
@@ -263,12 +279,209 @@ public class BillingCheckListService {
     	return ret;
 	}
 
+	/**
+	 *
+	 * @param cloudSignList
+	 * @param folderPath
+	 * @param fileName
+	 * @param fileFullPath
+	 */
+	@SuppressWarnings("unchecked")
+	private void createCheckListHeaderCsv(List<BillingCheckListDto> cloudSignList, String folderPath, String fileName) {
+		String filePath = folderPath + fileName;
+		File csvfile = new File(filePath);
+		String strFDQ = "\"";
+		String strEDQC = "\",";
+		String strEDQ = "\"";
+		String conma = ",";
+
+		// title
+		String [] titleArray = {
+			"発注グループ","請求有無","支店名","発注日","請求年月"
+		};
+	    List<String> titles = new ArrayList<String>(Arrays.asList(titleArray));
+
+		try (PrintWriter pw = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvfile),"MS932")))) {
+
+			// title
+			pw.println(strFDQ + String.join(strEDQC + strFDQ, titles) + strEDQ);
+
+			// body
+		    if (Objects.nonNull(cloudSignList) && !cloudSignList.isEmpty()) {
+	        	for (BillingCheckListDto dto : cloudSignList) {
+	        		String line = strFDQ + dto.getSummaryKey() + strEDQC +
+	        				strFDQ + dto.getChargeFlg() + strEDQC +
+	        				strFDQ + dto.getEigyousyoName() + strEDQC +
+	        				strFDQ + dto.getApplyDate() + strEDQC +
+	        				strFDQ + dto.getBillingDate() + strEDQ;
+	        		pw.println(line);
+	        	}
+		    }
+		} catch (IOException e) {
+			throw new CoreRuntimeException(e.getMessage());
+		}
+	}
+
+	/**
+	 *
+	 * @param cloudSignList
+	 * @param folderPath
+	 * @param fileName
+	 */
+	@SuppressWarnings("unchecked")
+	private void createCheckListDetailCsv(List<BillingCheckListDto> cloudSignList, String folderPath, String fileName) {
+		String filePath = folderPath + fileName;
+		File csvfile = new File(filePath);
+		String strFDQ = "\"";
+		String strEDQC = "\",";
+		String strEDQ = "\"";
+		String conma = ",";
+
+		// title
+		String [] titleArray = {
+				"発注グループ",
+				"施工支店名","工事コード","工事名","担当者名",
+				"着工予定日","竣工予定日","引渡予定日",
+				"建築地郵便番号","建築地",
+				"発注番号","発注種別","細目工種","発注日","発注金額合計（税抜）",
+				"品名","単価","数量","単位","発注金額（税抜）"
+		};
+		List<String> titles = new ArrayList<String>(Arrays.asList(titleArray));
+
+		try (PrintWriter pw = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvfile),"MS932")))) {
+
+			// title
+		    pw.println(strFDQ + String.join(strEDQC + strFDQ, titles) + strEDQ);
+
+			// body
+		    if (Objects.nonNull(cloudSignList) && !cloudSignList.isEmpty()) {
+	        	for (BillingCheckListDto dto : cloudSignList) {
+	        		List<VOrderStatusEntity> vOrderList = dto.getOrderList();
+					Map<String,List<TOrderItemEntity>> itemMap = dto.getItemListMap();
+					for (VOrderStatusEntity order : vOrderList) {
+						List<TOrderItemEntity> orderItemList = itemMap.get(order.getOrderNumber());
+						if (Objects.isNull(orderItemList) || orderItemList.isEmpty()) {
+							String line = "";
+							line = createHeaderCsvColumn(dto, order, line);
+							//品名
+			        		line += strFDQ + strEDQC;
+							//単価
+			        		line += strFDQ + strEDQC;
+							//数量
+			        		line += strFDQ + strEDQC;
+							//単位
+			        		line += strFDQ + strEDQC;
+							//発注金額（税抜）
+			        		pw.println(line);
+						} else {
+							for (TOrderItemEntity item : orderItemList) {
+								// 発注数量が0以下のものは出力しない
+								if (item.getOrderQuantity() <= 0) {
+									continue;
+								}
+								String line = "";
+								line = createHeaderCsvColumn(dto, order, line);
+								line = createDetailCsvColumn(item, line);
+								pw.println(line);
+							}
+						}
+					}
+	        	}
+		    }
+		} catch (IOException e) {
+			throw new CoreRuntimeException(e.getMessage());
+		}
+	}
+
+	private String createHeaderCsvColumn(BillingCheckListDto dto, VOrderStatusEntity order, String line) {
+		String strFDQ = "\"";
+		String strEDQC = "\",";
+		String strEDQ = "\"";
+		String conma = ",";
+		// 親項目のみ出力
+		// yosanFlg: 1:本体発注, 2:S発注, 3:A発注, 4:B発注, 5:C発注
+		// c発注のみ「追加」と出力する
+		String yosanType = "";
+		if (Objects.nonNull(order.getYosanFlg()) && order.getYosanFlg() == 5) {
+			yosanType = "追加";
+		}
+		//発注グループ
+		line += strFDQ + dto.getSummaryKey() + strEDQC;
+		//施工支店名
+		line += strFDQ + order.getEigyousyoName() + strEDQC;
+		//工事コード
+		line += strFDQ + order.getKoujiCode() + strEDQC;
+		//工事名
+		line += strFDQ + order.getKoujiName() + strEDQC;
+		//担当者名
+		line += strFDQ + order.getSyainName() + strEDQC;
+		//着工予定日
+		line += strFDQ + dateStringFormat(order.getTyakkouDateY()) + strEDQC;
+		//竣工予定日
+		line += strFDQ + dateStringFormat(order.getSyunkouDateY()) + strEDQC;
+		//引渡予定日
+		line += strFDQ + dateStringFormat(order.getHikiwatasiDateY()) + strEDQC;
+		//建築地郵便番号
+		line += strFDQ + zipcodeStringFormat(order.getKentikutiYuubin()) + strEDQC;
+		//建築地
+		line += strFDQ + order.getKentikutiJyuusyo() + strEDQC;
+		//発注番号
+		line += strFDQ + order.getOrderNumber() + strEDQC;
+		//発注種別
+		line += strFDQ + yosanType + strEDQC;
+		//細目工種
+		line += strFDQ + order.getSaimokuKousyuName() + strEDQC;
+		//発注日
+		line += strFDQ + dateStringFormat(order.getOrderDate()) + strEDQC;
+		//発注金額合計（税抜）
+		String orderAmount = "";
+		if (Objects.nonNull(order.getOrderAmount())) {
+			orderAmount = order.getOrderAmount().toString();
+		}
+		line += orderAmount + conma;
+		return line;
+	}
+
+	private String createDetailCsvColumn(TOrderItemEntity item, String line) {
+		String strFDQ = "\"";
+		String strEDQC = "\",";
+		String strEDQ = "\"";
+		String conma = ",";
+
+		//品名
+		line += strFDQ + item.getItemName() + strEDQC;
+		//単価
+		String unitPrice = "";
+		if (Objects.nonNull(item.getOrderUnitPrice())) {
+			unitPrice = item.getOrderUnitPrice().toString();
+		}
+		line += unitPrice + conma;
+		//数量
+		line += item.getOrderQuantity() + conma;
+		//単位
+		line += strFDQ + item.getUnit() + strEDQC;
+		//発注金額（税抜）
+		String itemOrderAmount = "";
+		if (Objects.nonNull(item.getOrderAmount())) {
+			itemOrderAmount = item.getOrderAmount().toString();
+		}
+		line += itemOrderAmount;
+		return line;
+	}
+
+	/**
+	 *
+	 * @param cloudSignList
+	 * @param folderPath
+	 * @param fileName
+	 * @param fileFullPath
+	 */
 	@SuppressWarnings("unchecked")
 	private void createCheckListAux(List<BillingCheckListDto> cloudSignList, String folderPath, String fileName, String fileFullPath) {
 		Workbook book = null;
 		FileOutputStream fout = null;
 		try {
-			book = new SXSSFWorkbook(50);
+			book = new SXSSFWorkbook(-1);
 
             Font font = book.createFont();
             font.setFontName("ＭＳ Pゴシック");
@@ -734,6 +947,21 @@ public class BillingCheckListService {
 			String yyyy = date.substring(0, 4);
 			String MM = date.substring(4, 6);
 			ret = yyyy + '年' + MM + '月';
+		}
+		return ret;
+	}
+
+	private String zipcodeStringFormat(String zipcode) {
+		String ret = "";
+		if (Objects.isNull(zipcode) || zipcode.isEmpty()) {
+			return ret;
+		}
+        Pattern pattern = java.util.regex.Pattern.compile("^[0-9]*$");
+	    Matcher matcher = pattern.matcher(zipcode);
+		if (zipcode.length() == 7 && matcher.matches()) {
+			String head = zipcode.substring(0, 3);
+			String detail = zipcode.substring(3, 7);
+			ret = '〒' + head + '-' + detail;
 		}
 		return ret;
 	}
