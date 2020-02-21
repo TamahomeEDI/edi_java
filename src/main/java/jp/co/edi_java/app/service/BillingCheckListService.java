@@ -266,9 +266,9 @@ public class BillingCheckListService {
 		File curdir = new File(folderPath);
 		if (curdir.exists()) {
 			String[] zipCommand = {"zip", "-r", zipFileName, zipFolder};
-			Runtime runtime = Runtime.getRuntime();
+			long timeOutSec = 5 * 60;
 			// zipコマンド
-			CommonUtils.processDone(zipCommand, runtime, curdir);
+			CommonUtils.processDone(zipCommand, curdir, timeOutSec);
 		}
 		File zipfile = new File(folderPath + zipFileName);
 		if (!zipfile.exists()) {

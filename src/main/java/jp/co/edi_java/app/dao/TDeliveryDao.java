@@ -41,6 +41,9 @@ public interface TDeliveryDao {
 	@Select
     List<TDeliveryEntity> selectUnconfirmListBySyain(String eigyousyoCode, String syainCode);
 
+	@Select
+    List<TDeliveryEntity> selectListForArchive(String gyousyaCode, String from, String to, String remandFlg);
+
 	@Insert(excludeNull = true)
     int insert(TDeliveryEntity entity);
 

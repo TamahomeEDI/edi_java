@@ -198,8 +198,8 @@ public class BatchController extends BaseController {
 			jtmService.backupKouji();
 
 			//Insert処理
-			Map<String, Object> countMap = jtmService.insertKoujiAll();	//指定
-//			Map<String, Object> countMap = jtmService.insertKoujiAll2();	//全件
+			Map<String, Object> countMap = jtmService.insertKoujiAll(); //指定
+//			Map<String, Object> countMap = jtmService.insertKoujiAll2(); //全件
 
 			long end = System.currentTimeMillis();
 			super.setResponseData("ret",countMap);
@@ -449,6 +449,7 @@ public class BatchController extends BaseController {
 		}
 		return super.response();
 	}
+
 	/**
 	 *
 	 * GoogleDrive report archive all
@@ -474,11 +475,11 @@ public class BatchController extends BaseController {
 			// 格納フォルダの作成
 			googleDriveService.initializeGoogleDrive(yearMonth);
 			// 請書のアーカイブ
-			googleDriveService.createArchiveOrder(yearMonth);
-//			// 納品書のアーカイブ
-//			googleDriveService.createArchiveDelivery();
-//			// 出来高報告書のアーカイブ
-//			googleDriveService.createArchiveWorkReport();
+			googleDriveService.createArchiveReport("order", yearMonth);
+			// 納品書のアーカイブ
+			googleDriveService.createArchiveReport("delivery", yearMonth);
+			// 出来高報告書のアーカイブ
+			googleDriveService.createArchiveReport("workReport", yearMonth);
 
 			mConstants.setConstantsValue(null);
 			mConstantsDao.update(mConstants);
@@ -492,6 +493,7 @@ public class BatchController extends BaseController {
 		}
 		return super.response();
 	}
+
 	/**
 	 *
 	 * GoogleDrive initialize only
@@ -529,6 +531,7 @@ public class BatchController extends BaseController {
 		}
 		return super.response();
 	}
+
 	/**
 	 *
 	 * GoogleDrive archive order only
@@ -552,7 +555,7 @@ public class BatchController extends BaseController {
 				}
 			}
 			// 請書のアーカイブ
-			googleDriveService.createArchiveOrder(yearMonth);
+			googleDriveService.createArchiveReport("order", yearMonth);
 
 			mConstants.setConstantsValue(null);
 			mConstantsDao.update(mConstants);
@@ -566,9 +569,86 @@ public class BatchController extends BaseController {
 		}
 		return super.response();
 	}
+
 	/**
 	 *
-	 * Local server create billing list
+	 * GoogleDrive archive delivery only
+	 *
+	 */
+	@RequestMapping("/createArchiveDelivery")
+	public ResponseEntity createArchiveDelivery() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 請書のアーカイブ
+			googleDriveService.createArchiveReport("delivery", yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * GoogleDrive archive work report only
+	 *
+	 */
+	@RequestMapping("/createArchiveWorkReport")
+	public ResponseEntity createArchiveWorkReport() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 請書のアーカイブ
+			googleDriveService.createArchiveReport("workReport", yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * Local server create billing check list
 	 *
 	 */
 	@RequestMapping("/createBillingCheckList")
@@ -602,6 +682,7 @@ public class BatchController extends BaseController {
 		}
 		return super.response();
 	}
+
 	/**
 	 *
 	 * GoogleDrive archive billing list only

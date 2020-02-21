@@ -2,14 +2,20 @@ package jp.co.edi_java.app.util.common;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Component;
 
 import jp.co.keepalive.springbootfw.exception.CoreRuntimeException;
@@ -350,21 +356,65 @@ public class CommonUtils {
 	 * 外部プロセスを実行する
 	 *
 	 * @param Command String[]
-	 * @param runtime Runtime
 	 * @param dir File
+	 * @param long timeOutSec
 	 */
-	public static void processDone(String[] Command, Runtime runtime, File dir) {
-		Process p = null;
+	public static void processDone(String[] Command,  File dir, long timeOutSec) {
+		boolean isFinished = false;
+		// 1回リトライ
+		for (int i = 0; i<2; i++) {
+			isFinished = processDoneAux(Command, dir, timeOutSec);
+			if (isFinished) {
+				break;
+			}
+		}
+	}
+
+	/**
+	 * 外部プロセスを実行する
+	 *
+	 * @param Command String[]
+	 * @param dir File
+	 * @param long timeOutSec
+	 */
+	public static boolean processDoneAux(String[] Command, File dir, long timeOutSec) {
+		List<String> cmdArray = Arrays.asList(Command);
+		ProcessBuilder builder = new ProcessBuilder(cmdArray);
+		// 作業ディレクトリ
+		builder.directory(dir);
+		// エラーを標準出力ストリームへ統合
+		builder.redirectErrorStream(true);
+
+		Process p;
+		boolean isFinished = false;
         try {
-            p = runtime.exec(Command,null,dir);
+            p = builder.start();
         } catch (IOException e) {
         	throw new CoreRuntimeException(e.getMessage());
         }
+
         try {
-            p.waitFor(); // プロセスが正常終了するまで待機
+        	new Thread(() -> {
+        		try (InputStream is = p.getInputStream()) {
+        			while (is.read() >= 0);
+        		} catch (IOException e) {
+        			throw new UncheckedIOException(e);
+        		}
+        	} ).start();
+
+        	isFinished = p.waitFor(timeOutSec, TimeUnit.SECONDS); // プロセスが正常終了するまで待機
+
+        	if (!isFinished) {
+        		log.info("can not finish: " + ArrayUtils.toString(cmdArray));
+        	}
         } catch (InterruptedException e) {
         	throw new CoreRuntimeException(e.getMessage());
+        } finally {
+        	if (p.isAlive()) {
+        		p.destroy();
+        	}
         }
+        return isFinished;
 	}
 
 }

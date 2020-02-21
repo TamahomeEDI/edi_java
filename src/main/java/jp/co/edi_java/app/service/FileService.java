@@ -1,7 +1,6 @@
 package jp.co.edi_java.app.service;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -17,9 +16,9 @@ import jp.co.edi_java.app.entity.TDeliveryEntity;
 import jp.co.edi_java.app.entity.TOrderEntity;
 import jp.co.edi_java.app.entity.TWorkReportEntity;
 import jp.co.edi_java.app.form.FileForm;
+import jp.co.edi_java.app.util.common.CommonUtils;
 import jp.co.edi_java.app.util.consts.CommonConsts;
 import jp.co.edi_java.app.util.file.FileApi;
-import jp.co.keepalive.springbootfw.exception.CoreRuntimeException;
 
 @Service
 @Scope("request")
@@ -134,25 +133,11 @@ public class FileService {
 		File curdir = new File(folderPath);
 		if (created && curdir.exists()) {
 			String[] zipCommand = {"zip", "-r", zipFileName, zipFolder};
-			Runtime runtime = Runtime.getRuntime();
+			long timeOutSec = 5 * 60;
 			// zipコマンド
-			processDone(zipCommand, runtime, curdir);
+			CommonUtils.processDone(zipCommand, curdir, timeOutSec);
 		}
 		return zipFilePath;
 	}
 
-	/** 外部プロセスの実行 */
-	private void processDone(String[] Command, Runtime runtime, File dir) {
-		Process p = null;
-        try {
-            p = runtime.exec(Command,null,dir);
-        } catch (IOException e) {
-        	throw new CoreRuntimeException(e.getMessage());
-        }
-        try {
-            p.waitFor(); // プロセスが正常終了するまで待機
-        } catch (InterruptedException e) {
-        	throw new CoreRuntimeException(e.getMessage());
-        }
-	}
 }

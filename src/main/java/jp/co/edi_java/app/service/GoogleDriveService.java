@@ -18,14 +18,18 @@ import com.google.api.services.drive.Drive;
 
 import jp.co.edi_java.app.dao.MConstantsDao;
 import jp.co.edi_java.app.dao.TBillingCheckListDao;
+import jp.co.edi_java.app.dao.TDeliveryDao;
 import jp.co.edi_java.app.dao.TOrderDao;
+import jp.co.edi_java.app.dao.TWorkReportDao;
 import jp.co.edi_java.app.dao.google.TArchiveFileDao;
 import jp.co.edi_java.app.dao.google.TArchiveFolderDao;
 import jp.co.edi_java.app.dao.google.TGoogleDriveDao;
 import jp.co.edi_java.app.dao.gyousya.TGyousyaAccountDao;
 import jp.co.edi_java.app.dto.GoogleDriveDto;
 import jp.co.edi_java.app.entity.TBillingCheckListEntity;
+import jp.co.edi_java.app.entity.TDeliveryEntity;
 import jp.co.edi_java.app.entity.TOrderEntity;
+import jp.co.edi_java.app.entity.TWorkReportEntity;
 import jp.co.edi_java.app.entity.google.TArchiveFileEntity;
 import jp.co.edi_java.app.entity.google.TArchiveFolderEntity;
 import jp.co.edi_java.app.entity.google.TGoogleDriveEntity;
@@ -52,6 +56,10 @@ public class GoogleDriveService {
     public TArchiveFileDao tArchiveFileDao;
 	@Autowired
 	public TOrderDao tOrderDao;
+	@Autowired
+	public TDeliveryDao tDeliveryDao;
+	@Autowired
+	public TWorkReportDao tWorkReportDao;
 	@Autowired
 	public TBillingCheckListDao tBillingCheckListDao;
 	//定数マスタ
@@ -304,10 +312,6 @@ public class GoogleDriveService {
 		List<String> documentTypes = Arrays.asList(DOCUMENT_TYPES);
 		List<TArchiveFolderEntity> fileStorPathList = new ArrayList<TArchiveFolderEntity>();
 
-		// Google Driveに存在しないファイルIDを削除
-		// TODO 存在しているファイルも削除されるので要調査
-		//syncGoogleDrive();
-
     	// root フォルダ
     	createFolderGoogleDrive(ROOT_FOLDER_PATH, ROOT_FOLDER_PATH, "root", null);
     	TGoogleDriveEntity rootDrive = tGoogleDriveDao.selectByFilePath(ROOT_FOLDER_PATH);
@@ -406,9 +410,9 @@ public class GoogleDriveService {
     }
 
     /**
-     * Google Drive 請書アップロード
+     * Google Drive 請書、納品書、出来高報告書アップロード
      */
-    public void createArchiveOrder(String useMonth) {
+    public void createArchiveReport(String reportName, String useMonth) {
 		String from = CommonUtils.getArchiveDateFromByLastMonth(null);
 		String to = CommonUtils.getArchiveDateToByLastMonth(null);
 		String year = "";
@@ -425,14 +429,14 @@ public class GoogleDriveService {
 		TArchiveFolderEntity condition = new TArchiveFolderEntity();
 		condition.setReportYear(year);
 		condition.setReportMonth(month);
-		condition.setReportType(REPORT_TYPE_MAP.get("order"));
+		condition.setReportType(REPORT_TYPE_MAP.get(reportName));
 		condition.setIgnoreArchiveFinished("1");
 		List<TArchiveFolderEntity> archiveFolderList = selectArchiveFolder(condition);
 		// 請書ダウンロード and ZIP化してGoogle Driveへアップロード
 		for (TArchiveFolderEntity folder : archiveFolderList) {
-			String localFilePath = createOrderZip(folder.getGyousyaCode(), from, to);
+			String localFilePath = createReportZip(folder.getGyousyaCode(), from, to, REPORT_TYPE_MAP.get(reportName));
 			if (Objects.nonNull(localFilePath)) {
-				String fileName = "order_" + folder.getGyousyaCode() + "_" + year + month + ".zip";
+				String fileName = reportName + "_" + folder.getGyousyaCode() + "_" + year + month + ".zip";
 				TGoogleDriveEntity driveResult = uploadFileGoogleDrive(fileName, folder.getFolderPath() + "/" + fileName, folder.getFolderPath(), folder.getFolderId(), localFilePath, "application/zip");
 				TArchiveFileEntity archiveFile = new TArchiveFileEntity();
 				archiveFile.setFileId(driveResult.getFileId());
@@ -445,9 +449,9 @@ public class GoogleDriveService {
     }
 
     /**
-     * Google Drive 請書ファイルzip化
+     * Google Drive 請書、納品書、出来高報告書ファイルzip化
      */
-    private String createOrderZip(String gyousyaCode, String from, String to) {
+    private String createReportZip(String gyousyaCode, String from, String to, String reportType) {
     	UUID uuid = UUID.randomUUID();
 		String folderPath = CommonConsts.OUTPUT_FILE_DIR + uuid;
 
@@ -462,6 +466,39 @@ public class GoogleDriveService {
 			subFolderPath = folderPath + "/" + zipFolder;
 			zipFilePath = folderPath + "/" + zipFileName;
 		}
+		boolean created = false;
+		if (Objects.equals(reportType, REPORT_TYPE_MAP.get("order"))) {
+			created = getFileOrder(gyousyaCode, from, to, subFolderPath);
+		} else if (Objects.equals(reportType, REPORT_TYPE_MAP.get("delivery"))) {
+			created = getFileDelivery(gyousyaCode, from, to, subFolderPath);
+		} else if (Objects.equals(reportType, REPORT_TYPE_MAP.get("workReport"))) {
+			created = getFileWorkReport(gyousyaCode, from, to, subFolderPath);
+		}
+
+		// Zipファイル化
+		File curdir = new File(folderPath);
+		if (created && curdir.exists()) {
+			String[] zipCommand = {"zip", "-r", zipFileName, zipFolder};
+			long timeOutSec = 5 * 60;
+			// zipコマンド
+			CommonUtils.processDone(zipCommand, curdir, timeOutSec);
+
+		}
+		File zipfile = new File(zipFilePath);
+		if (!zipfile.exists()) {
+			return null;
+		}
+    	return zipFilePath;
+    }
+    /**
+     *
+     * @param gyousyaCode
+     * @param from
+     * @param to
+     * @param subFolderPath
+     * @return
+     */
+    private boolean getFileOrder(String gyousyaCode, String from, String to, String subFolderPath) {
 		List<TOrderEntity> orderList = tOrderDao.selectListForArchive(gyousyaCode, from, to);
 		boolean created = false;
 
@@ -473,20 +510,71 @@ public class GoogleDriveService {
 				created = true;
 			}
 		}
+		return created;
+    }
+    /**
+     * 納品書のダウンロード
+     *
+     * @param gyousyaCode
+     * @param from
+     * @param to
+     * @param subFolderPath
+     * @return
+     */
+    private boolean getFileDelivery(String gyousyaCode, String from, String to, String subFolderPath) {
+		List<TDeliveryEntity> deliveryList = tDeliveryDao.selectListForArchive(gyousyaCode, from, to, CommonConsts.REMAND_FLG_OFF);
+		List<TDeliveryEntity> deliveryRemandList = tDeliveryDao.selectListForArchive(gyousyaCode, from, to, CommonConsts.REMAND_FLG_ON);
+		boolean created = false;
 
-		// Zipファイル化
-		File curdir = new File(folderPath);
-		if (created && curdir.exists()) {
-			String[] zipCommand = {"zip", "-r", zipFileName, zipFolder};
-			Runtime runtime = Runtime.getRuntime();
-			// zipコマンド
-			CommonUtils.processDone(zipCommand, runtime, curdir);
+		for (TDeliveryEntity delivery : deliveryList) {
+			String fileId = delivery.getFileId();
+			if (Objects.nonNull(fileId)) {
+				String fileName = delivery.getKoujiCode() + "_" + delivery.getGyousyaCode() + "_" + delivery.getOrderNumber() + "_" + delivery.getDeliveryNumber() + ".pdf";
+				FileApi.getFile(delivery.getKoujiCode(), CommonConsts.FILE_TOSHO_CODE, CommonConsts.FILE_TYPE_DELIVERY, CommonConsts.FILE_NO_DELIVERY, fileId, "pdf", fileName, subFolderPath);
+				created = true;
+			}
 		}
-		File zipfile = new File(zipFilePath);
-		if (!zipfile.exists()) {
-			return null;
+		for (TDeliveryEntity delivery : deliveryRemandList) {
+			String fileId = delivery.getFileId();
+			if (Objects.nonNull(fileId)) {
+				String fileName = delivery.getKoujiCode() + "_" + delivery.getGyousyaCode() + "_" + delivery.getOrderNumber() + "_" + delivery.getDeliveryNumber() + "_ng.pdf";
+				FileApi.getFile(delivery.getKoujiCode(), CommonConsts.FILE_TOSHO_CODE, CommonConsts.FILE_TYPE_DELIVERY, CommonConsts.FILE_NO_DELIVERY, fileId, "pdf", fileName, subFolderPath);
+				created = true;
+			}
 		}
-    	return zipFilePath;
+		return created;
+    }
+    /**
+     * 出来高報告書のダウンロード
+     *
+     * @param gyousyaCode
+     * @param from
+     * @param to
+     * @param subFolderPath
+     * @return
+     */
+    private boolean getFileWorkReport(String gyousyaCode, String from, String to, String subFolderPath) {
+		List<TWorkReportEntity> workReportList = tWorkReportDao.selectListForArchive(gyousyaCode, from, to, CommonConsts.REMAND_FLG_OFF);
+		List<TWorkReportEntity> workReportRemandList = tWorkReportDao.selectListForArchive(gyousyaCode, from, to, CommonConsts.REMAND_FLG_ON);
+		boolean created = false;
+
+		for (TWorkReportEntity workReport : workReportList) {
+			String fileId = workReport.getFileId();
+			if (Objects.nonNull(fileId)) {
+				String fileName = workReport.getKoujiCode() + "_" + workReport.getGyousyaCode() + "_" + workReport.getOrderNumber() + "_" + workReport.getWorkReportNumber()+ ".pdf";
+				FileApi.getFile(workReport.getKoujiCode(), CommonConsts.FILE_TOSHO_CODE, CommonConsts.FILE_TYPE_DELIVERY, CommonConsts.FILE_NO_WORK_REPORT, fileId, "pdf", fileName, subFolderPath);
+				created = true;
+			}
+		}
+		for (TWorkReportEntity workReport : workReportRemandList) {
+			String fileId = workReport.getFileId();
+			if (Objects.nonNull(fileId)) {
+				String fileName = workReport.getKoujiCode() + "_" + workReport.getGyousyaCode() + "_" + workReport.getOrderNumber() + "_" + workReport.getWorkReportNumber() + "_ng.pdf";
+				FileApi.getFile(workReport.getKoujiCode(), CommonConsts.FILE_TOSHO_CODE, CommonConsts.FILE_TYPE_DELIVERY, CommonConsts.FILE_NO_WORK_REPORT, fileId, "pdf", fileName, subFolderPath);
+				created = true;
+			}
+		}
+		return created;
     }
 
     /**
