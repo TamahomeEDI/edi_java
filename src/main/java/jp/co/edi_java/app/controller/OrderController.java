@@ -9,6 +9,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jp.co.edi_java.app.dto.SapOrderDto;
 import jp.co.edi_java.app.entity.TOrderItemEntity;
 import jp.co.edi_java.app.entity.VOrderStatusEntity;
 import jp.co.edi_java.app.form.OrderForm;
@@ -24,13 +25,6 @@ public class OrderController extends BaseController {
 
 	@Autowired
 	public OrderService orderService;
-
-	/** 発注情報取得 T_ORDER 1件の取得*/
-	@RequestMapping("/get")
-	public ResponseEntity get(@Validated OrderForm form) {
-		super.setResponseData("ret", orderService.get(form.getOrderNumber()));
-		return super.response();
-	}
 
 	/** 発注情報取得 V_ORDER_STATUS 1件の取得 */
 	@RequestMapping("/getVOrder")
@@ -60,7 +54,19 @@ public class OrderController extends BaseController {
 		return super.response();
 	}
 
-	/** 発注情報取得 T_ORDER 複数件の取得 */
+	/** 発注情報取得 T_ORDER JCOで1件の取得*/
+	@RequestMapping("/get")
+	public ResponseEntity get(@Validated OrderForm form) {
+		SapOrderDto order = orderService.get(form.getOrderNumber());
+//		if(Objects.isNull(order)) {
+//			super.setErrorCode(ResponseCode.ERROR_CODE_670);
+//			return super.response();
+//		}
+		super.setResponseData("ret", order);
+		return super.response();
+	}
+
+	/** 発注情報取得 T_ORDER JCOで複数件の取得 */
 	@RequestMapping("/multiget")
 	public ResponseEntity multiget(@Validated OrderForm form) {
 		super.setResponseData("ret", orderService.multiGet(form.getOrderNumberList()));

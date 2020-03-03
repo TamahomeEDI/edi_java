@@ -379,6 +379,7 @@ public class CommonUtils {
 	 */
 	public static boolean processDoneAux(String[] Command, File dir, long timeOutSec) {
 		List<String> cmdArray = Arrays.asList(Command);
+		log.info("process call: " + String.join(" ", cmdArray));
 		ProcessBuilder builder = new ProcessBuilder(cmdArray);
 		// 作業ディレクトリ
 		builder.directory(dir);

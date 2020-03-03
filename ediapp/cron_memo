@@ -28,10 +28,26 @@ sudo crontab -e
 
 本番環境の設定
 
-#５分毎にクラウドサインをチェック
-*/5 * * * * /opt/ediapp/bat/chkCloudSign.sh
+#毎日8時台から23時台の５分毎にクラウドサインをチェック
+*/5 8-23 * * * /opt/ediapp/bat/chkCloudSign.sh
 #10分毎にキャッシュをクリア
 */10 * * * * /opt/ediapp/bat/clean.sh
+#毎日8時台から23時台の12分毎にJTMをチェック(クラウドサインチェックとなるべく被らないように)
+*/12 8-23 * * * /opt/ediapp/bat/getOrderAll.sh
+
+#AM0時45分 テンポラリファイル削除
+45 0 * * * /opt/ediapp/bat/tmpClear.sh
+#AM1時00分 GoogleDrive initialize
+00 1 2 * * /opt/ediapp/bat/initializeGoogleDrive.sh
+#AM1時10分 受注明細CSVファイルの作成
+10 1 2 * * /opt/ediapp/bat/createBillingCheckList.sh
+#AM1時20分 受注明細CSVファイルのアップロード
+20 1 2 * * /opt/ediapp/bat/createArchiveBillingCheckList.sh
+#AM1時30分 発注書兼請書ファイルのアップロード
+30 1 2 * * /opt/ediapp/bat/createArchiveOrder.sh
+
+#AM5時30分 発注情報のコピー
+30 5 * * * /opt/ediapp/bat/getOrderBackUp.sh
 #AM6時 支店マスタ
 0 6 * * * /opt/ediapp/bat/getEigyousyoAll.sh
 #AM6時5分 地区本部マスタ
@@ -52,14 +68,10 @@ sudo crontab -e
 40 7 * * * /opt/ediapp/bat/getSyainAll.sh
 #AM7時45分 社員所属支店
 45 7 * * * /opt/ediapp/bat/getSyainEigyousyoAll.sh
-
-#本番設定20190805
 #AM7時50分 クラウドサインリマインドメール
 50 7 * * * /opt/ediapp/bat/remindCloudSign.sh
 #AM7時55分 納品書・出来高報告書確認リマインドメール
 55 7 * * * /opt/ediapp/bat/remindDeliveryAcceptance.sh
-
-#本番設定20191209予定
-3 5 * * * /opt/ediapp/bat/tmpClear.sh
+#AM7時55分 納品書・出来高報告書確認リマインドメール(未受入対象一覧)
 0 8 * * * /opt/ediapp/bat/remindDeliveryAcceptanceList.sh
-*/10 * * * * /opt/ediapp/bat/getOrderAll.sh
+

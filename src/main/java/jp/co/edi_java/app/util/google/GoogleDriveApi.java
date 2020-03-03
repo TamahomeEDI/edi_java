@@ -1,17 +1,21 @@
 package jp.co.edi_java.app.util.google;
 
-import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +26,9 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.FileContent;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -31,6 +38,7 @@ import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 
+import jp.co.edi_java.app.util.common.CommonUtils;
 import jp.co.keepalive.springbootfw.exception.CoreRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -139,22 +147,112 @@ public class GoogleDriveApi {
 				localFolderPath.mkdirs();
 			}
 			String filePath = "";
+			String cookiefileName = fileId + "_cookies.txt";
+			String cookiePath = "";
+			String confirmfileName = fileId + "_confirm.txt";
+			String confirmPath = "";
 			if (Objects.equals(folderPath.substring(folderPath.length()-1),"/")) {
 				filePath = folderPath + fileName;
+				cookiePath = folderPath + cookiefileName;
+				confirmPath = folderPath + confirmfileName;
 			} else {
 				filePath = folderPath + "/" + fileName;
+				cookiePath = folderPath + "/" + cookiefileName;
+				confirmPath = folderPath + "/" + confirmfileName;
 			}
-			java.io.File localFile = new java.io.File(filePath);
-    		try (OutputStream filestream = new FileOutputStream(localFile)) {
-    			service.files().get(fileId).executeMediaAndDownloadTo(filestream);
-    			filestream.flush();
-    			ret = filePath;
-    			log.info("download fileId: " + fileId );
-    			log.info("download path: " + filePath );
+			try {
+				GenericUrl downloadUrl = service.files().get(fileId).setAlt("media").buildHttpRequestUrl();
+				File gdfile = service.files().get(fileId).setFields("id, name, size, webContentLink").execute();
+				Long gdfileSize = gdfile.getSize();
+				String webContentLink = gdfile.getWebContentLink();
+				log.info(webContentLink);
+				log.info(gdfileSize.toString());
+
+				HttpRequest httpRequestGet = service.getRequestFactory().buildGetRequest(new GenericUrl(webContentLink));
+				//分割ダウンロードはRangeを指定しexecute to inputstream, output bytearray を繰り返し実行する
+				//httpRequestGet.getHeaders().setRange("bytes=" + 0 + "-" + (10*1024));
+				HttpResponse response = httpRequestGet.execute();
+				String authHeader = httpRequestGet.getHeaders().getAuthorization();
+				response.disconnect();
+				if (Objects.isNull(authHeader)) {
+					log.info("authorization is null");
+					return ret;
+				}
+				authHeader = "Authorization: " + authHeader;
+				log.info(authHeader);
+				String acceptHeader = "Accept: application/json";
+				// wgetコマンド 25MB以上：ウィルススキャンエラー画面が取得される想定, 25MB未満：ログイン画面が取得される想定
+				String[] wgetCommand1 = {"wget", "--header", authHeader, "--header", acceptHeader, "--quiet", "--save-cookies", cookiePath, "--keep-session-cookies", "--no-check-certificate", webContentLink , "-O", confirmfileName};
+				long timeOut2m = 2 * 60;
+				CommonUtils.processDone(wgetCommand1, localFolderPath, timeOut2m);
+
+				java.io.File confirmFile = new java.io.File(confirmPath);
+				if (confirmFile.exists() && confirmFile.length() > 0) {
+					try (InputStream is = new FileInputStream(confirmFile)) {
+						String content = IOUtils.toString(is);
+						Pattern pattern = java.util.regex.Pattern.compile("confirm=[0-9A-Za-z_-]+");
+						Matcher matcher = pattern.matcher(content);
+						String nUrl = downloadUrl.toString();
+						if (matcher.find()) {
+							// ウィルススキャンエラー画面を取得した場合
+							String confirmOpt = matcher.group();
+							log.info("confirm: " + confirmOpt);
+							nUrl += "&" + confirmOpt;
+						}
+						String[] wgetCommand2 = {"wget", "--header", authHeader, "--header", acceptHeader, "--load-cookies", cookiePath, nUrl, "-O", fileName};
+						long timeOut10m = 10 * 60;
+						// wgetコマンド ファイルダウンロード
+						CommonUtils.processDone(wgetCommand2, localFolderPath, timeOut10m);
+					} catch (FileNotFoundException e) {
+						log.info(e.getMessage());
+					}
+				}
+				java.io.File localFile = new java.io.File(filePath);
+				if (localFile.exists() && localFile.length() > 0) {
+					log.info("exists file: " + filePath);
+					log.info("download fileId: " + fileId );
+					ret = filePath;
+				}
+
+//	    		try (OutputStream filestream = new FileOutputStream(localFile)) {
+// 通常のAPI
+//    			//25MB以上のファイルはウィルススキャンに失敗するため、ダイアログ表示が邪魔をしてダウンロードエラーになる
+//    			//Rangeを指定してbyte分割しても本体のファイルが大きいとスキャンエラーになる
+//    			//service.files().get(fileId).executeMediaAndDownloadTo(filestream);
+//
+// Range追加やURLを変更するなどHttpHeaderを修正してアクセスするサンプル
+//    			GenericUrl downloadUrl = service.files().get(fileId).setAlt("media").buildHttpRequestUrl();
+//    			File gdfile = service.files().get(fileId).setFields("id, name, size, webContentLink").execute();
+//    			Long gdfileSize = gdfile.getSize();
+//    			String webContentLink = gdfile.getWebContentLink();
+//    			log.info(webContentLink);
+//    			log.info(gdfileSize.toString());
+//
+//    			HttpRequest httpRequestGet = service.getRequestFactory().buildGetRequest(new GenericUrl(webContentLink));
+//    			//分割ダウンロードはRangeを指定しexecute to inputstream, output bytearray を繰り返し実行する
+//    			//httpRequestGet.getHeaders().setRange("bytes=" + 0 + "-" + (10*1024));
+//    			HttpResponse response = httpRequestGet.execute();
+//				// 認証情報はexecute()後に取得可能
+//    			String auth = httpRequestGet.getHeaders().getAuthorization();
+//    			if (Objects.isNull(auth)) {
+//    				log.info("authorization is null");
+//    				return ret;
+//    			}
+//    			auth = "Authorization: " + auth;
+//    			log.info(auth);
+//				InputStream is = response.getContent();
+//				byte [] receivedByteArray = IOUtils.toByteArray(is);
+//				filestream.write(receivedByteArray);
+//				response.disconnect();
+
     		} catch (IOException e) {
-    			throw new CoreRuntimeException(e.getMessage());
+    			ret = null;
+    			log.info(e.getMessage());
+    			throw new UncheckedIOException(e);
+    			//throw new CoreRuntimeException(e.getMessage());
     		}
     	}
+
     	return ret;
     }
 

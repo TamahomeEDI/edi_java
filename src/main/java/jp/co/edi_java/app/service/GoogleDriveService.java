@@ -413,15 +413,29 @@ public class GoogleDriveService {
      * Google Drive 請書、納品書、出来高報告書アップロード
      */
     public void createArchiveReport(String reportName, String useMonth) {
-		String from = CommonUtils.getArchiveDateFromByLastMonth(null);
-		String to = CommonUtils.getArchiveDateToByLastMonth(null);
+		String from = "";
+		String to = "";
 		String year = "";
 		String month = "";
 		String lastMonth = CommonUtils.getLastMonthFirst("yyyyMM", "JST");
-		if (Objects.nonNull(useMonth)) {
-			lastMonth = useMonth;
-			from = CommonUtils.getArchiveDateFromByLastMonth(lastMonth);
-			to = CommonUtils.getArchiveDateToByLastMonth(lastMonth);
+		if (Objects.equals(reportName, "delivery") || Objects.equals(reportName, "workReport")) {
+			if (Objects.nonNull(useMonth)) {
+				lastMonth = useMonth;
+				from = CommonUtils.getArchiveDateFromByLastAccountingMonth(lastMonth);
+				to = CommonUtils.getArchiveDateToByLastAccountingMonth(lastMonth);
+			} else {
+				from = CommonUtils.getArchiveDateFromByLastAccountingMonth(null);
+				to = CommonUtils.getArchiveDateToByLastAccountingMonth(null);
+			}
+		} else {
+			if (Objects.nonNull(useMonth)) {
+				lastMonth = useMonth;
+				from = CommonUtils.getArchiveDateFromByLastMonth(lastMonth);
+				to = CommonUtils.getArchiveDateToByLastMonth(lastMonth);
+			} else {
+				from = CommonUtils.getArchiveDateFromByLastMonth(null);
+				to = CommonUtils.getArchiveDateToByLastMonth(null);
+			}
 		}
 		year = lastMonth.substring(0, 4);
 		month = lastMonth.substring(4, 6);

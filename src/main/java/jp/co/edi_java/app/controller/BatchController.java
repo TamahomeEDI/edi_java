@@ -747,7 +747,6 @@ public class BatchController extends BaseController {
 
 	/**
 	 * 請書のファイルIDリフレッシュ
-	 * ('4505576864','4505577036')
 	 *
 	 */
 	@RequestMapping("/refreshOrderReport")
