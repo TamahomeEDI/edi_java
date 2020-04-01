@@ -10,26 +10,26 @@ import org.seasar.doma.Update;
 import org.seasar.doma.boot.ConfigAutowireable;
 import org.seasar.doma.jdbc.Config;
 
-import jp.co.edi_java.app.entity.TBillingCheckListEntity;
+import jp.co.edi_java.app.entity.TLocalDocumentListEntity;
 
 @Dao
 @ConfigAutowireable
-public interface TBillingCheckListDao {
+public interface TLocalDocumentListDao {
 
 	default Config getInjectedConfig() {
         return Config.get(this);
     }
 
 	@Select
-	List<TBillingCheckListEntity> selectList(TBillingCheckListEntity entity);
+	List<TLocalDocumentListEntity> selectList(TLocalDocumentListEntity entity);
 
 	@Insert(excludeNull = true)
-    int insert(TBillingCheckListEntity entity);
+    int insert(TLocalDocumentListEntity entity);
 
 	@Update()
-	int update(TBillingCheckListEntity entity);
+	int update(TLocalDocumentListEntity entity);
 
 	@Delete
-	int delete(TBillingCheckListEntity entity);
+	int delete(TLocalDocumentListEntity entity);
 
 }

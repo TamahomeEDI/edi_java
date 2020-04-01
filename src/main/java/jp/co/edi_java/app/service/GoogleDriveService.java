@@ -17,8 +17,8 @@ import org.springframework.stereotype.Service;
 import com.google.api.services.drive.Drive;
 
 import jp.co.edi_java.app.dao.MConstantsDao;
-import jp.co.edi_java.app.dao.TBillingCheckListDao;
 import jp.co.edi_java.app.dao.TDeliveryDao;
+import jp.co.edi_java.app.dao.TLocalDocumentListDao;
 import jp.co.edi_java.app.dao.TOrderDao;
 import jp.co.edi_java.app.dao.TWorkReportDao;
 import jp.co.edi_java.app.dao.google.TArchiveFileDao;
@@ -26,8 +26,8 @@ import jp.co.edi_java.app.dao.google.TArchiveFolderDao;
 import jp.co.edi_java.app.dao.google.TGoogleDriveDao;
 import jp.co.edi_java.app.dao.gyousya.TGyousyaAccountDao;
 import jp.co.edi_java.app.dto.GoogleDriveDto;
-import jp.co.edi_java.app.entity.TBillingCheckListEntity;
 import jp.co.edi_java.app.entity.TDeliveryEntity;
+import jp.co.edi_java.app.entity.TLocalDocumentListEntity;
 import jp.co.edi_java.app.entity.TOrderEntity;
 import jp.co.edi_java.app.entity.TWorkReportEntity;
 import jp.co.edi_java.app.entity.google.TArchiveFileEntity;
@@ -61,7 +61,7 @@ public class GoogleDriveService {
 	@Autowired
 	public TWorkReportDao tWorkReportDao;
 	@Autowired
-	public TBillingCheckListDao tBillingCheckListDao;
+	public TLocalDocumentListDao tBillingCheckListDao;
 	//定数マスタ
 	@Autowired
 	public MConstantsDao mConstantsDao;
@@ -73,14 +73,16 @@ public class GoogleDriveService {
 	private static String ROOT_FOLDER_PATH = "EDI_prod";
 	private static String ARCHIVE_FOLDER_NAME = "archive_reports";
 	private static String ARCHIVE_FOLDER_PATH = ROOT_FOLDER_PATH + "/" + ARCHIVE_FOLDER_NAME;
-
-	private static String[] DOCUMENT_TYPES = {"order", "delivery", "workReport", "billingCheckList"};
+	// Driveの業者コード別年月フォルダ直下に配置するドキュメント種類フォルダ
+	private static String[] DOCUMENT_TYPES = {"order", "delivery", "workReport", "billingCheckList", "inspectionReceipt", "paymentDetail"};
 	private static Map<String, String> REPORT_TYPE_MAP = new HashMap<String, String>();
 	static {
-		REPORT_TYPE_MAP.put("order", "10");
-		REPORT_TYPE_MAP.put("delivery", "20");
-		REPORT_TYPE_MAP.put("workReport", "30");
-		REPORT_TYPE_MAP.put("billingCheckList", "40");
+		REPORT_TYPE_MAP.put("order", CommonConsts.DOCUMENT_TYPE_ORDER);
+		REPORT_TYPE_MAP.put("delivery", CommonConsts.DOCUMENT_TYPE_DELIVERY);
+		REPORT_TYPE_MAP.put("workReport", CommonConsts.DOCUMENT_TYPE_WORK_REPORT);
+		REPORT_TYPE_MAP.put("billingCheckList", CommonConsts.DOCUMENT_TYPE_BILLING_CHECK_LIST);
+		REPORT_TYPE_MAP.put("inspectionReceipt", CommonConsts.DOCUMENT_TYPE_INSPECTION_RECEIPT);
+		REPORT_TYPE_MAP.put("paymentDetail", CommonConsts.DOCUMENT_TYPE_PAYMENT_DETAIL);
 	}
 
 	private GoogleDriveService( @Value("${googledrive.root.folder}") String rootFolder) {
@@ -505,6 +507,7 @@ public class GoogleDriveService {
     	return zipFilePath;
     }
     /**
+     * 発注書のダウンロード
      *
      * @param gyousyaCode
      * @param from
@@ -592,9 +595,9 @@ public class GoogleDriveService {
     }
 
     /**
-     * Google Drive クラウドサイン課金チェックリストアップロード
+     * Google Drive 受注明細一覧、支払明細、検収明細等の家歴以外のファイルアップロード
      */
-    public void createArchiveBillingCheckList(String useMonth) {
+    public void createArchiveLocalDocument(String reportName, String useMonth) {
 		String from = CommonUtils.getArchiveDateFromByLastMonth(null);
 		String to = CommonUtils.getArchiveDateToByLastMonth(null);
 		String year = "";
@@ -611,33 +614,34 @@ public class GoogleDriveService {
 		TArchiveFolderEntity condition = new TArchiveFolderEntity();
 		condition.setReportYear(year);
 		condition.setReportMonth(month);
-		condition.setReportType(REPORT_TYPE_MAP.get("billingCheckList"));
+		condition.setReportType(REPORT_TYPE_MAP.get(reportName));
 		condition.setIgnoreArchiveFinished("1");
 		List<TArchiveFolderEntity> archiveFolderList = selectArchiveFolder(condition);
 		// アーカイブ対象チェックリスト
-		TBillingCheckListEntity billingCond = new TBillingCheckListEntity();
+		TLocalDocumentListEntity billingCond = new TLocalDocumentListEntity();
 		billingCond.setReportYear(year);
 		billingCond.setReportMonth(month);
+		billingCond.setDocumentType(REPORT_TYPE_MAP.get(reportName));
 		billingCond.setCompleteFlg("0");
-		List<TBillingCheckListEntity> billingList = tBillingCheckListDao.selectList(billingCond);
+		List<TLocalDocumentListEntity> billingList = tBillingCheckListDao.selectList(billingCond);
 		// 業者別チェックリストマップ生成
-		Map<String, List<TBillingCheckListEntity>> billingMap = new HashMap<String, List<TBillingCheckListEntity>>();
-		for (TBillingCheckListEntity entity : billingList) {
+		Map<String, List<TLocalDocumentListEntity>> billingMap = new HashMap<String, List<TLocalDocumentListEntity>>();
+		for (TLocalDocumentListEntity entity : billingList) {
 			if (! billingMap.containsKey(entity.getGyousyaCode())) {
-				billingMap.put(entity.getGyousyaCode(), new ArrayList<TBillingCheckListEntity>());
+				billingMap.put(entity.getGyousyaCode(), new ArrayList<TLocalDocumentListEntity>());
 			}
 			billingMap.get(entity.getGyousyaCode()).add(entity);
 		}
 		// ZIP済チェックリストをGoogle Driveへアップロード
 		for (TArchiveFolderEntity folder : archiveFolderList) {
-			List<TBillingCheckListEntity> checkList = (billingMap.containsKey(folder.getGyousyaCode())) ? billingMap.get(folder.getGyousyaCode()) : null;
+			List<TLocalDocumentListEntity> checkList = (billingMap.containsKey(folder.getGyousyaCode())) ? billingMap.get(folder.getGyousyaCode()) : null;
 			if (Objects.nonNull(checkList)) {
 				// zipファイル1つになっている前程
-				TBillingCheckListEntity billing = checkList.get(0);
+				TLocalDocumentListEntity billing = checkList.get(0);
 				String localFilePath = billing.getFilePath();
 
 				if (Objects.nonNull(localFilePath)) {
-					String fileName = "checklist_" + folder.getGyousyaCode() + "_" + year + month + ".zip";
+					String fileName = reportName + "_" + folder.getGyousyaCode() + "_" + year + month + ".zip";
 					TGoogleDriveEntity driveResult = uploadFileGoogleDrive(fileName, folder.getFolderPath() + "/" + fileName, folder.getFolderPath(), folder.getFolderId(), localFilePath, "application/zip");
 					TArchiveFileEntity archiveFile = new TArchiveFileEntity();
 					archiveFile.setFileId(driveResult.getFileId());

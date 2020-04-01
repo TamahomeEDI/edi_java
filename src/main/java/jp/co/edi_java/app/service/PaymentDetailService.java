@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @Scope("request")
-public class InspectionReceiptService {
+public class PaymentDetailService {
 
 	@Autowired
     public TGyousyaAccountDao tGyousyaAccountDao;
@@ -33,10 +33,10 @@ public class InspectionReceiptService {
     public TLocalDocumentListDao tLocalDocumentListDao;
 
     /**
-     * 検収明細書ファイルの存在チェックを行い、GoogleDriveアップロード用タスクデータを生成する
+     * 支払明細書ファイルの存在チェックを行い、GoogleDriveアップロード用タスクデータを生成する
      *
      */
-    public void createInspectionReceiptList(String useMonth) {
+    public void createPaymentDetailList(String useMonth) {
 		String from = CommonUtils.getArchiveDateFromByLastMonth(null);
 		String to = CommonUtils.getArchiveDateToByLastMonth(null);
 		String year = "";
@@ -51,7 +51,7 @@ public class InspectionReceiptService {
 		month = lastMonth.substring(4, 6);
 
 		List<TGyousyaAccountEntity> gyousyaList = tGyousyaAccountDao.selectAll();
-		Map<String, Map<String, String>> gyousyaFileMap = createInspectionReceiptMap(year + month);
+		Map<String, Map<String, String>> gyousyaFileMap = createPaymentDetailMap(year + month);
 
 		for (TGyousyaAccountEntity gyousya : gyousyaList) {
 			String gyousyaCode = gyousya.getGyousyaCode();
@@ -70,7 +70,7 @@ public class InspectionReceiptService {
 				document.setReportYear(year);
 				document.setReportMonth(month);
 				document.setReportYearMonth(year + month);
-				document.setDocumentType(CommonConsts.DOCUMENT_TYPE_INSPECTION_RECEIPT);
+				document.setDocumentType(CommonConsts.DOCUMENT_TYPE_PAYMENT_DETAIL);
 				document.setCompleteFlg("0");
 				tLocalDocumentListDao.insert(document);
 			}
@@ -78,14 +78,14 @@ public class InspectionReceiptService {
     }
 
     /**
-     * 指定フォルダ内にある検収明細書ファイルをzipファイルへ変換してファイルパスを返す
+     * 指定フォルダ内にある支払明細書ファイルをzipファイルへ変換してファイルパスを返す
      *
      * @param date
      * @return Map<String, Map<String, String>> {gyousyaCode : {filePath: "" ,fileName: ""}}
      */
-    public Map<String,Map<String, String>> createInspectionReceiptMap(String date) {
+    public Map<String,Map<String, String>> createPaymentDetailMap(String date) {
     	Map<String,Map<String, String>> ret = new HashMap<String,Map<String, String>>();
-    	String baseFolderPath = CommonConsts.OUTPUT_INSPECTION_RECEIPT_DIR;
+    	String baseFolderPath = CommonConsts.OUTPUT_PAYMENT_DETAIL_DIR;
     	int gyousyaCodeLen = 7;
 
     	File dir = new File(baseFolderPath);
@@ -124,7 +124,7 @@ public class InspectionReceiptService {
     				for (int i=0; i < fileList.size(); i++) {
     					File f = fileList.get(i);
     					String extension = f.getName().substring(f.getName().lastIndexOf("."));
-    					String fileName = key + "_inspection_" + i + "_" + date + extension;
+    					String fileName = key + "_payment_" + i + "_" + date + extension;
     					File moveTo = new File(subFolderPath + fileName);
     					f.renameTo(moveTo);
     				}

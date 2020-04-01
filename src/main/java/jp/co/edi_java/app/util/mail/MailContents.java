@@ -578,7 +578,7 @@ public class MailContents {
     }
 
     /*
-     * 納品書 受入申請否認時メール
+     * 納品書 受入申請取消時メール
      *
      */
     public static String getDeliveryCancelHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, String deliveryNumber, String deliveryDate, List<TDeliveryItemEntity> itemList) {
@@ -629,7 +629,7 @@ public class MailContents {
     }
 
     /*
-     * 出来高報告書 受入申請否認時メール
+     * 出来高報告書 受入申請取消時メール
      *
      */
     public static String getWorkReportCancelHtmlBody(String eigyousyoName, String syainName, String koujiName, String gyousyaName, String orderNumber, int workRate, String workReportNumber, String workReportDate, List<TWorkReportItemEntity> itemList) {

@@ -42,12 +42,12 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import jp.co.edi_java.app.dao.SearchDao;
-import jp.co.edi_java.app.dao.TBillingCheckListDao;
 import jp.co.edi_java.app.dao.TCloudSignDao;
+import jp.co.edi_java.app.dao.TLocalDocumentListDao;
 import jp.co.edi_java.app.dao.gyousya.TGyousyaAccountDao;
 import jp.co.edi_java.app.dto.BillingCheckListDto;
-import jp.co.edi_java.app.entity.TBillingCheckListEntity;
 import jp.co.edi_java.app.entity.TCloudSignEntity;
+import jp.co.edi_java.app.entity.TLocalDocumentListEntity;
 import jp.co.edi_java.app.entity.TOrderItemEntity;
 import jp.co.edi_java.app.entity.VOrderStatusEntity;
 import jp.co.edi_java.app.entity.gyousya.TGyousyaAccountEntity;
@@ -73,7 +73,7 @@ public class BillingCheckListService {
     public TGyousyaAccountDao tGyousyaAccountDao;
 
 	@Autowired
-    public TBillingCheckListDao tBillingCheckListDao;
+    public TLocalDocumentListDao tLocalDocumentListDao;
 
 	/**
 	 * チェックリストの出力対象件数をカウントする
@@ -85,7 +85,7 @@ public class BillingCheckListService {
 	}
 
     /**
-     * 課金チェックリストを業者毎に作成し、GoogleDriveアップロード用タスクデータを生成する
+     * 課金チェック用の受注明細一覧を業者毎に作成し、GoogleDriveアップロード用タスクデータを生成する
      *
      */
     public void createCheckListBatch(String useMonth) {
@@ -114,15 +114,16 @@ public class BillingCheckListService {
 
 			Map<String, String> filePathMap = createCheckList(searchForm);
 			if (filePathMap.containsKey("filePath") && filePathMap.containsKey("fileName")) {
-				TBillingCheckListEntity billing = new TBillingCheckListEntity();
+				TLocalDocumentListEntity billing = new TLocalDocumentListEntity();
 				billing.setGyousyaCode(gyousyaCode);
 				billing.setFileName(filePathMap.get("fileName"));
 				billing.setFilePath(filePathMap.get("filePath"));
 				billing.setReportYear(year);
 				billing.setReportMonth(month);
 				billing.setReportYearMonth(year + month);
+				billing.setDocumentType(CommonConsts.DOCUMENT_TYPE_BILLING_CHECK_LIST);
 				billing.setCompleteFlg("0");
-				tBillingCheckListDao.insert(billing);
+				tLocalDocumentListDao.insert(billing);
 			}
 		}
     }
@@ -323,7 +324,7 @@ public class BillingCheckListService {
 	}
 
 	/**
-	 *
+	 * 受注明細一覧
 	 * @param cloudSignList
 	 * @param folderPath
 	 * @param fileName
@@ -470,7 +471,7 @@ public class BillingCheckListService {
 	}
 
 	/**
-	 *
+	 * 受注一覧、受注明細一覧 Excel
 	 * @param cloudSignList
 	 * @param folderPath
 	 * @param fileName
