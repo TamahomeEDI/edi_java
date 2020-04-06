@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -99,7 +101,11 @@ public class PaymentDetailService {
     				if (Objects.nonNull(f) && f.isFile()) {
     					String fileName = f.getName();
     					String gyousyaCode = "";
-    					if (fileName.length() >= gyousyaCodeLen) {
+    					String reg = "^A[0-9]{6}";
+						Pattern p = Pattern.compile(reg);
+						Matcher m = p.matcher(fileName);
+						// ファイル名の先頭が業者コードに一致
+    					if (fileName.length() >= gyousyaCodeLen && m.find()) {
     						gyousyaCode = fileName.substring(0, gyousyaCodeLen);
     					}
     					// 業者毎にファイルをまとめる

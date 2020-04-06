@@ -146,7 +146,7 @@ public class CommonUtils {
 	}
 
 	/**
-	 * 先月月初を取得
+	 * 先月月末を取得
 	 *
 	 * @param format String
 	 * @param timezone String
@@ -157,13 +157,127 @@ public class CommonUtils {
 	}
 
 	/**
-	 * 先月の会計期間の開始日を取得
+	 * 指定月数前の1日を取得
+	 *
+	 * @param prevcount int
+	 * @return Date
+	 */
+	public static Date getPastMonthDateFrom(int prevcount) {
+		Calendar cal = Calendar.getInstance();
+		Date resultDate = null;
+
+		// 本日の日付を取得
+		Date nowDate = new Date();
+		cal.setTime(nowDate);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+
+		// 月初日
+		int startDay = cal.getActualMinimum(Calendar.DATE);
+		// 当月から指定月数前を取得
+		cal.set(Calendar.DATE, startDay);
+		cal.add(Calendar.MONTH, -prevcount);
+
+		resultDate = cal.getTime();
+		return resultDate;
+	}
+
+	/**
+	 * 指定月数前の月末日を取得
+	 *
+	 * @param prevcount int
+	 * @return Date
+	 */
+	public static Date getPastMonthDateTo(int prevcount) {
+		Calendar cal = Calendar.getInstance();
+		Date resultDate = null;
+
+		// 本日の日付を取得
+		Date nowDate = new Date();
+		cal.setTime(nowDate);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+
+		// 月初日
+		int startDay = cal.getActualMinimum(Calendar.DATE);
+		// 当月から指定月数前を取得し、その月末日を取得
+		cal.set(Calendar.DATE, startDay);
+		cal.add(Calendar.MONTH, -prevcount);
+		int endDay = cal.getActualMaximum(Calendar.DATE);
+		cal.set(Calendar.DATE, endDay);
+		cal.set(Calendar.HOUR_OF_DAY, 23);
+		cal.set(Calendar.MINUTE, 59);
+		cal.set(Calendar.SECOND, 59);
+
+		resultDate = cal.getTime();
+		return resultDate;
+	}
+
+	/**
+	 * 指定月数前の会計期間の開始日を取得
+	 *
+	 * @param prevcount int
+	 * @return Date
+	 */
+	public static Date getPastAccountingMonthDateFrom(int prevcount) {
+		Calendar cal = Calendar.getInstance();
+		Date resultDate = null;
+
+		// 本日の日付を取得
+		Date nowDate = new Date();
+		cal.setTime(nowDate);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+
+		// 月初日
+		int startDay = cal.getActualMinimum(Calendar.DATE);
+		// 当月から指定月数前を取得
+		cal.set(Calendar.DATE, startDay);
+		cal.add(Calendar.MONTH, -prevcount);
+		// 先月2日を取得
+		cal.add(Calendar.DATE, 1);
+
+		resultDate = cal.getTime();
+		return resultDate;
+	}
+
+	/**
+	 * 指定月数前の会計期間の終了日を取得
+	 *
+	 * @param prevcount int
+	 * @return Date
+	 */
+	public static Date getPastAccountingMonthDateTo(int prevcount) {
+		Calendar cal = Calendar.getInstance();
+		Date resultDate = null;
+
+		// 本日の日付を取得
+		Date nowDate = new Date();
+		cal.setTime(nowDate);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+
+		// 月初日
+		int startDay = cal.getActualMinimum(Calendar.DATE);
+		// 当月から指定月数前を取得し、その翌月1日を取得
+		cal.set(Calendar.DATE, startDay);
+		cal.add(Calendar.MONTH, -prevcount+1);
+		cal.set(Calendar.HOUR_OF_DAY, 23);
+		cal.set(Calendar.MINUTE, 59);
+		cal.set(Calendar.SECOND, 59);
+
+		resultDate = cal.getTime();
+		return resultDate;
+	}
+
+	/**
+	 * アーカイブ処理用 先月の会計期間の開始日を取得
 	 *
 	 * @param useMonth String
-	 * @param useMonthFormat String
-	 * @param useMonthLocale String
-	 * @param format String
-	 * @param timezone String
 	 * @return String
 	 */
 	public static String getArchiveDateFromByLastAccountingMonth(String useMonth) {
@@ -205,13 +319,9 @@ public class CommonUtils {
 	}
 
 	/**
-	 * 先月の会計期間の終了日を取得
+	 * アーカイブ処理用 先月の会計期間の終了日を取得
 	 *
 	 * @param useMonth String
-	 * @param useMonthFormat String
-	 * @param useMonthLocale Locale
-	 * @param format String
-	 * @param timezone String
 	 * @return String
 	 */
 	public static String getArchiveDateToByLastAccountingMonth(String useMonth) {
@@ -251,14 +361,11 @@ public class CommonUtils {
 		log.info("getArchiveDateTo: " + resultDate);
 		return resultDate;
 	}
+
 	/**
-	 * 先月の月初を取得
+	 * アーカイブ処理用 先月の月初を取得
 	 *
 	 * @param useMonth String
-	 * @param useMonthFormat String
-	 * @param useMonthLocale Locale
-	 * @param format String
-	 * @param timezone String
 	 * @return String
 	 */
 	public static String getArchiveDateFromByLastMonth(String useMonth) {
@@ -299,13 +406,9 @@ public class CommonUtils {
 	}
 
 	/**
-	 * 先月の月初を取得
+	 * アーカイブ処理用 先月の月末を取得
 	 *
 	 * @param useMonth String
-	 * @param useMonthFormat String
-	 * @param useMonthLocale Locale
-	 * @param format String
-	 * @param timezone String
 	 * @return String
 	 */
 	public static String getArchiveDateToByLastMonth(String useMonth) {

@@ -582,33 +582,49 @@ public class DeliveryService {
 		cal.setTime(actTmp);
 		Date actDate = cal.getTime();
 		log.info("acceptanceDate: " + acceptanceDate + " ,actdate: " + actDate.toString());
+
+		// 先月会計期間を取得
+		int prevcount = 1;
+		Date lastAcMonthDateFrom = CommonUtils.getPastAccountingMonthDateFrom(prevcount);
+		Date lastAcMonthDateTo = CommonUtils.getPastAccountingMonthDateTo(prevcount);
+
 		// 本日の日付を取得
 		Date nowDate = new Date();
 		cal.setTime(nowDate);
 		cal.set(Calendar.HOUR_OF_DAY, 0);
 		cal.set(Calendar.MINUTE, 0);
 		cal.set(Calendar.SECOND, 0);
+
 		// 当日
 		Date today = cal.getTime();
-		// 月初日
-		int startDay = cal.getActualMinimum(Calendar.DATE);
-		// 月末日
-		int endDay = cal.getActualMaximum(Calendar.DATE);
-		//当月1日を取得
-		cal.set(Calendar.DATE, startDay);
-		Date from = cal.getTime();
-		// 月末日の翌日を取得
-		cal.set(Calendar.DATE, endDay+1);
-		Date to = cal.getTime();
-
-		// 受入日の算出
-		resultDate = CommonUtils.formatDateToString(nowDate, "yyyyMMdd", "JST");
-		log.info("compareToFrom: " + String.valueOf(actDate.compareTo(from)));
-		log.info("compareToTo: " + String.valueOf(actDate.compareTo(to)));
-		if (actDate.compareTo(from) > 0 && actDate.compareTo(to) <= 0) {
-			resultDate = CommonUtils.formatDateToString(actDate, "yyyyMMdd", "JST");
+		log.info("today: " + today.toString() + "accounting from: " + lastAcMonthDateFrom.toString() + "accounting to: " + lastAcMonthDateTo.toString());
+		// 本日が先月の会計期間内か？（月初の締め前か？）
+		if (today.compareTo(lastAcMonthDateFrom) >= 0 && today.compareTo(lastAcMonthDateTo) <= 0) {
+			Date from = CommonUtils.getPastMonthDateFrom(prevcount);
+			Date to = CommonUtils.getPastMonthDateTo(prevcount);
+			log.info("compareToFrom: " + String.valueOf(actDate.compareTo(from)));
+			log.info("compareToTo: " + String.valueOf(actDate.compareTo(to)));
+			// 納品日が先月1日〜先月末であれば納品日をそのまま利用する,それ以外であれば処理日を利用する
+			if (actDate.compareTo(from) >= 0 && actDate.compareTo(to) <= 0) {
+				resultDate = CommonUtils.formatDateToString(actDate, "yyyyMMdd", "JST");
+			} else {
+				resultDate = CommonUtils.formatDateToString(nowDate, "yyyyMMdd", "JST");
+			}
+			log.info("acceptanceDate: " + resultDate.toString() + " from: " + from.toString() + " to: " + to.toString());
+		} else {
+			// 当月月初、月末を取得
+			Date from = CommonUtils.getPastMonthDateFrom(0);
+			Date to = CommonUtils.getPastMonthDateTo(0);
+			log.info("compareToFrom: " + String.valueOf(actDate.compareTo(from)));
+			log.info("compareToTo: " + String.valueOf(actDate.compareTo(to)));
+			// 納品日が当月1日〜当月末であれば納品日をそのまま利用する,それ以外であれば処理日を利用する
+			if (actDate.compareTo(from) >= 0 && actDate.compareTo(to) <= 0) {
+				resultDate = CommonUtils.formatDateToString(actDate, "yyyyMMdd", "JST");
+			} else {
+				resultDate = CommonUtils.formatDateToString(nowDate, "yyyyMMdd", "JST");
+			}
+			log.info("acceptanceDate: " + resultDate.toString() + " from: " + from.toString() + " to: " + to.toString());
 		}
-		log.info("today: " + today.toString() + " acceptanceDate: " + resultDate.toString() + " from: " + from.toString() + " to: " + to.toString());
 		return resultDate;
 	}
 

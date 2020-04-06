@@ -403,7 +403,7 @@ public class BillingCheckListService {
 		// yosanFlg: 1:本体発注, 2:S発注, 3:A発注, 4:B発注, 5:C発注
 		// c発注のみ「追加」と出力する
 		String yosanType = "";
-		if (Objects.nonNull(order.getYosanFlg()) && order.getYosanFlg() == 5) {
+		if (Objects.nonNull(order.getYosanFlg()) && order.getYosanFlg() != 1) {
 			yosanType = "追加";
 		}
 		//発注グループ
@@ -834,9 +834,9 @@ public class BillingCheckListService {
 	private int createParentColumn(Sheet sheet, Row row, String summaryKey, VOrderStatusEntity order, int colnum, CellStyle style_str,CellStyle style_int,CellStyle style_postnum) {
 		Cell cell = null;
 		// yosanFlg: 1:本体発注, 2:S発注, 3:A発注, 4:B発注, 5:C発注
-		// c発注のみ「追加」と出力する
+		// 本体発注以外「追加」と出力する
 		String yosanType = "";
-		if (Objects.nonNull(order.getYosanFlg()) && order.getYosanFlg() == 5) {
+		if (Objects.nonNull(order.getYosanFlg()) && order.getYosanFlg() != 1) {
 			yosanType = "追加";
 		}
 
