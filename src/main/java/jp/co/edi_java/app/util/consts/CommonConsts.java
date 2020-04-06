@@ -22,6 +22,8 @@ public class CommonConsts {
 	public static String V_ORDER_LAST_GET_TIME = "V_ORDER_LAST_GET_TIME";
 	// 定数マスタ用キー 排他制御により更新できなかった発注番号
 	public static String V_ORDER_LOCK_FAIL_ORDER_NUMBERS = "V_ORDER_LOCK_FAIL_ORDER_NUMBERS";
+	// 定数マスタ用キー アーカイブ対象年月
+	public static String T_ARCHIVE_FILES_YEAR_MONTH = "T_ARCHIVE_FILES_YEAR_MONTH";
 
 	/*EDI登録図書コード*/
 	public static String FILE_TOSHO_CODE = "09";
@@ -86,5 +88,34 @@ public class CommonConsts {
 	public static String FILE_NO_INSPECTION_RECEIPT = "01";
 
 	public static String OUTPUT_FILE_DIR = "/home/web/edi_php/tmp/downloadFile/";
+
+	/* GoogleDrive 連携 受注明細一覧、支払明細、検収明細 */
+	// 受注明細一覧 ローカルの保存先
+	public static String OUTPUT_BILLING_CHECK_LIST_DIR = "/home/web/edi_php/tmp/billing/";
+
+	// 支払明細 ローカルの保存先
+	public static String OUTPUT_PAYMENT_DETAIL_DIR = "/home/web/edi_php/tmp/payment/";
+
+	// 検収明細 ローカルの保存先
+	public static String OUTPUT_INSPECTION_RECEIPT_DIR = "/home/web/edi_php/tmp/inspection/";
+
+	// 発注書
+	public static String DOCUMENT_TYPE_ORDER = "10";
+
+	// 納品書
+	public static String DOCUMENT_TYPE_DELIVERY = "20";
+
+	// 出来高報告書
+	public static String DOCUMENT_TYPE_WORK_REPORT = "30";
+
+	// 受注一覧、受注明細一覧
+	public static String DOCUMENT_TYPE_BILLING_CHECK_LIST = "40";
+
+	// 検収明細
+	public static String DOCUMENT_TYPE_INSPECTION_RECEIPT = "50";
+
+	// 支払明細
+	public static String DOCUMENT_TYPE_PAYMENT_DETAIL = "60";
+
 
 }

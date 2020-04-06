@@ -182,8 +182,6 @@ public class MailExUtils {
         Session session = Session.getDefaultInstance(mailProps, null);
         MimeMessage mimeMessage = new MimeMessage(session);
         try {
-        	//mailTo = "shinji-yamaguchi@tamahome.jp";
-        	//mailCc = "";
 
         	//from
         	InternetAddress from = new InternetAddress(mailFromAddress, mailFromSign, MAIL_ENCODING);

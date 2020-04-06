@@ -1,0 +1,1 @@
+delete from T_ARCHIVE_FOLDER where REPORT_YEAR = /*year*/'2020' and REPORT_MONTH = /*month*/'01';

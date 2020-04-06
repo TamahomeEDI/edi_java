@@ -1,0 +1,1 @@
+delete from T_ARCHIVE_FOLDER where FOLDER_ID = /*folderId*/'2020';

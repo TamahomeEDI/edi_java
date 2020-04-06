@@ -5,9 +5,9 @@
 # http://www.sequelpro.com/
 # https://github.com/sequelpro/sequelpro
 #
-# ホスト: order.tamahome.jp (MySQL 5.7.28)
+# ホスト: 10.201.3.39 (MySQL 5.7.28)
 # データベース: edi
-# 作成時刻: 2020-01-14 08:26:42 +0000
+# 作成時刻: 2020-04-06 01:05:57 +0000
 # ************************************************************
 
 
@@ -363,7 +363,8 @@ CREATE TABLE `FILE_ORDER_REL` (
   `DELETE_USER` varchar(50) DEFAULT NULL,
   `DELETE_FLG` char(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`),
-  UNIQUE KEY `FILE_ORDER_REL_IX1` (`ID`)
+  UNIQUE KEY `FILE_ORDER_REL_IX1` (`ID`),
+  KEY `idx_fo_order_number` (`ORDER_NUMBER`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -637,6 +638,64 @@ CREATE TABLE `M_TEXT` (
 
 
 
+# テーブルのダンプ T_ARCHIVE_FILE
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `T_ARCHIVE_FILE`;
+
+CREATE TABLE `T_ARCHIVE_FILE` (
+  `ID` bigint(20) NOT NULL AUTO_INCREMENT,
+  `FILE_ID` varchar(50) NOT NULL,
+  `PARENT_FOLDER_ID` varchar(50) NOT NULL,
+  `FILE_NAME` varchar(50) NOT NULL,
+  `FILE_PATH` varchar(260) NOT NULL,
+  `INSERT_DATE` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `INSERT_USER` varchar(50) NOT NULL DEFAULT 'SYSTEM',
+  `UPDATE_DATE` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `UPDATE_USER` varchar(50) NOT NULL DEFAULT 'SYSTEM',
+  `DELETE_DATE` timestamp NULL DEFAULT NULL,
+  `DELETE_USER` varchar(50) DEFAULT NULL,
+  `DELETE_FLG` char(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`ID`),
+  UNIQUE KEY `T_ARCHIVE_FILE_IX1` (`FILE_ID`),
+  KEY `idx_arcfi_parent_folder_id` (`PARENT_FOLDER_ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+# テーブルのダンプ T_ARCHIVE_FOLDER
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `T_ARCHIVE_FOLDER`;
+
+CREATE TABLE `T_ARCHIVE_FOLDER` (
+  `ID` bigint(20) NOT NULL AUTO_INCREMENT,
+  `FOLDER_ID` varchar(50) NOT NULL,
+  `FOLDER_NAME` varchar(50) NOT NULL,
+  `FOLDER_PATH` varchar(260) NOT NULL,
+  `GYOUSYA_CODE` varchar(10) NOT NULL,
+  `REPORT_TYPE` varchar(2) NOT NULL DEFAULT '',
+  `REPORT_YEAR` varchar(4) NOT NULL DEFAULT '',
+  `REPORT_MONTH` varchar(2) NOT NULL DEFAULT '',
+  `REPORT_YEAR_MONTH` varchar(6) NOT NULL DEFAULT '',
+  `INSERT_DATE` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `INSERT_USER` varchar(50) NOT NULL DEFAULT 'SYSTEM',
+  `UPDATE_DATE` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `UPDATE_USER` varchar(50) NOT NULL DEFAULT 'SYSTEM',
+  `DELETE_DATE` timestamp NULL DEFAULT NULL,
+  `DELETE_USER` varchar(50) DEFAULT NULL,
+  `DELETE_FLG` char(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`ID`),
+  UNIQUE KEY `T_ARCHIVE_FOLDER_IX1` (`FOLDER_ID`),
+  KEY `idx_arcf_gyousya_code` (`GYOUSYA_CODE`),
+  KEY `idx_arcf_report_type` (`REPORT_TYPE`),
+  KEY `idx_arcf_report_year` (`REPORT_YEAR`),
+  KEY `idx_arcf_report_month` (`REPORT_MONTH`),
+  KEY `idx_arcf_report_ym` (`REPORT_YEAR_MONTH`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
 # テーブルのダンプ T_CLOUD_SIGN
 # ------------------------------------------------------------
 
@@ -659,7 +718,9 @@ CREATE TABLE `T_CLOUD_SIGN` (
   `GROUP_ORDER_NUMBER` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`ID`,`FILE_ID`),
   UNIQUE KEY `T_CLOUD_SIGN_IX1` (`ID`),
-  KEY `idx_tcs_order_number` (`ORDER_NUMBER`)
+  KEY `idx_tcs_order_number` (`ORDER_NUMBER`),
+  KEY `idx_tcs_application_date` (`APPLICATION_DATE`),
+  KEY `idx_tcs_group_order_num` (`GROUP_ORDER_NUMBER`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -704,7 +765,11 @@ CREATE TABLE `T_DELIVERY` (
   KEY `idx_del_gyousya_code` (`GYOUSYA_CODE`),
   KEY `idx_del_saimoku_kousyu_code` (`SAIMOKU_KOUSYU_CODE`),
   KEY `idx_del_insert_date` (`INSERT_DATE`),
-  KEY `idx_del_order_number` (`ORDER_NUMBER`)
+  KEY `idx_del_order_number` (`ORDER_NUMBER`),
+  KEY `idx_del_remand_flg` (`REMAND_FLG`),
+  KEY `idx_del_remand_date` (`REMAND_DATE`),
+  KEY `idx_del_manager_flg` (`MANAGER_RECEIPT_FLG`),
+  KEY `idx_del_manager_date` (`MANAGER_RECEIPT_DATE`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -819,6 +884,33 @@ CREATE TABLE `T_EXCLUSIVE` (
   KEY `idx_te_exclusive_object_and_key` (`EXCLUSIVE_OBJECT_NAME`,`EXCLUSIVE_OBJECT_KEY`),
   KEY `idx_te_exclusive_session_id` (`EXCLUSIVE_SESSION_ID`),
   KEY `idx_te_exclusive_limit_date` (`EXCLUSIVE_LIMIT_DATE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+# テーブルのダンプ T_GOOGLE_DRIVE
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `T_GOOGLE_DRIVE`;
+
+CREATE TABLE `T_GOOGLE_DRIVE` (
+  `ID` bigint(20) NOT NULL AUTO_INCREMENT,
+  `FILE_ID` varchar(50) NOT NULL,
+  `FILE_NAME` varchar(50) NOT NULL,
+  `FOLDER_PATH` varchar(260) NOT NULL,
+  `FILE_PATH` varchar(260) NOT NULL,
+  `FILE_TYPE` char(1) NOT NULL DEFAULT '0',
+  `PARENT_FILE_ID` varchar(50) DEFAULT NULL,
+  `INSERT_DATE` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `INSERT_USER` varchar(50) NOT NULL DEFAULT 'SYSTEM',
+  `UPDATE_DATE` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `UPDATE_USER` varchar(50) NOT NULL DEFAULT 'SYSTEM',
+  `DELETE_DATE` timestamp NULL DEFAULT NULL,
+  `DELETE_USER` varchar(50) DEFAULT NULL,
+  `DELETE_FLG` char(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`ID`),
+  UNIQUE KEY `T_GOOGLE_DRIVE_IX1` (`FILE_ID`),
+  UNIQUE KEY `T_GOOGLE_DRIVE_IX2` (`FILE_PATH`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -938,6 +1030,37 @@ CREATE TABLE `T_KAIKEI_KIJUN` (
 
 
 
+# テーブルのダンプ T_LOCAL_DOCUMENT_LIST
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `T_LOCAL_DOCUMENT_LIST`;
+
+CREATE TABLE `T_LOCAL_DOCUMENT_LIST` (
+  `ID` bigint(20) NOT NULL AUTO_INCREMENT,
+  `FILE_NAME` varchar(50) NOT NULL,
+  `FILE_PATH` varchar(260) NOT NULL,
+  `GYOUSYA_CODE` varchar(10) NOT NULL,
+  `REPORT_YEAR` varchar(4) NOT NULL DEFAULT '',
+  `REPORT_MONTH` varchar(2) NOT NULL DEFAULT '',
+  `REPORT_YEAR_MONTH` varchar(6) NOT NULL DEFAULT '',
+  `DOCUMENT_TYPE` varchar(2) NOT NULL DEFAULT '',
+  `COMPLETE_FLG` varchar(1) NOT NULL DEFAULT '0',
+  `INSERT_DATE` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `INSERT_USER` varchar(50) NOT NULL DEFAULT 'SYSTEM',
+  `UPDATE_DATE` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `UPDATE_USER` varchar(50) NOT NULL DEFAULT 'SYSTEM',
+  `DELETE_DATE` timestamp NULL DEFAULT NULL,
+  `DELETE_USER` varchar(50) DEFAULT NULL,
+  `DELETE_FLG` char(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`ID`),
+  KEY `idx_ldl_gyousya_code` (`GYOUSYA_CODE`),
+  KEY `idx_ldl_report_year` (`REPORT_YEAR`),
+  KEY `idx_ldl_report_month` (`REPORT_MONTH`),
+  KEY `idx_ldl_report_ym` (`REPORT_YEAR_MONTH`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
 # テーブルのダンプ T_ORDER
 # ------------------------------------------------------------
 
@@ -980,7 +1103,10 @@ CREATE TABLE `T_ORDER` (
   PRIMARY KEY (`ORDER_NUMBER`),
   UNIQUE KEY `T_ORDER_IX1` (`ORDER_NUMBER`),
   KEY `idx_ord_kouji_code` (`KOUJI_CODE`),
-  KEY `idx_ord_gyousya_code` (`GYOUSYA_CODE`)
+  KEY `idx_ord_gyousya_code` (`GYOUSYA_CODE`),
+  KEY `idx_ord_group_order_num` (`GROUP_ORDER_NUMBER`),
+  KEY `idx_ord_confirm_agree_date` (`CONFIRMATION_AGREE_DATE`),
+  KEY `idx_ord_file_id_order` (`FILE_ID_ORDER`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -1038,20 +1164,6 @@ CREATE TABLE `T_ORDER_KEYWORD` (
   UNIQUE KEY `T_ORDER_KEYWORD_IX1` (`ORDER_NUMBER`),
   FULLTEXT KEY `idx_order_keyword` (`ORDER_KEYWORD`)
 ) ENGINE=Mroonga DEFAULT CHARSET=utf8;
-
-
-
-# テーブルのダンプ T_SAP
-# ------------------------------------------------------------
-
-DROP TABLE IF EXISTS `T_SAP`;
-
-CREATE TABLE `T_SAP` (
-  `ORDER_NUMBER` varchar(30) NOT NULL,
-  `KOUJI_CODE` varchar(24) NOT NULL,
-  PRIMARY KEY (`ORDER_NUMBER`,`KOUJI_CODE`),
-  UNIQUE KEY `T_SAP_IX1` (`ORDER_NUMBER`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -1121,7 +1233,11 @@ CREATE TABLE `T_WORK_REPORT` (
   KEY `idx_wrp_gyousya_code` (`GYOUSYA_CODE`),
   KEY `idx_wrp_saimoku_kousyu_code` (`SAIMOKU_KOUSYU_CODE`),
   KEY `idx_wrp_insert_date` (`INSERT_DATE`),
-  KEY `idx_wrp_order_number` (`ORDER_NUMBER`)
+  KEY `idx_wrp_order_number` (`ORDER_NUMBER`),
+  KEY `idx_wrp_remand_flg` (`REMAND_FLG`),
+  KEY `idx_wrp_remand_date` (`REMAND_DATE`),
+  KEY `idx_wrp_manager_flg` (`MANAGER_RECEIPT_FLG`),
+  KEY `idx_wrp_manager_date` (`MANAGER_RECEIPT_DATE`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 

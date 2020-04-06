@@ -1,7 +1,6 @@
 package jp.co.edi_java.app.service;
 
 import java.sql.Timestamp;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -11,7 +10,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TimeZone;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +31,7 @@ import jp.co.edi_java.app.entity.VOrderStatusEntity;
 import jp.co.edi_java.app.entity.syain.MSyainEntity;
 import jp.co.edi_java.app.form.ExclusiveForm;
 import jp.co.edi_java.app.util.cloudsign.CloudSignApi;
+import jp.co.edi_java.app.util.common.CommonUtils;
 import jp.co.edi_java.app.util.file.FileApi;
 import jp.co.edi_java.app.util.sap.SapApi;
 import jp.co.edi_java.app.util.sap.SapApiAnalyzer;
@@ -104,7 +103,7 @@ public class CloudSignService {
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(nowDate);
 		cal.add(Calendar.DAY_OF_MONTH, -7);
-		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
 		cal.set(Calendar.MINUTE, 0);
 		cal.set(Calendar.SECOND, 0);
 		String applicationDateFrom = sdf.format(cal.getTime());
@@ -547,15 +546,15 @@ public class CloudSignService {
 					String lastUpdateTime = sapObj.get(SapApiConsts.PARAMS_ID_AEZEIT).toString();
 					log.info("before setOrderNumberByUkeshoJyuryou: " + koujiCode + " " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime);
 					// Sapへ請書未受領データの排他制御用変更日付、変更時間がEnglishロケールフォーマットのため変換が必要
-					Date updateDate = parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
-					Date updateTime = parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+					Date updateDate = CommonUtils.parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+					Date updateTime = CommonUtils.parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
 					if (Objects.nonNull(updateDate)) {
 						// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
-						lastUpdateDate = formatDateToString(updateDate, "yyyyMMdd", "JST");
+						lastUpdateDate = CommonUtils.formatDateToString(updateDate, "yyyyMMdd", "JST");
 					}
 					if (Objects.nonNull(updateTime)) {
 						// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
-						lastUpdateTime = formatDateToString(updateTime, "HH:mm:ss", "JST");
+						lastUpdateTime = CommonUtils.formatDateToString(updateTime, "HH:mm:ss", "JST");
 					}
 					log.info("setOrderNumberByUkeshoJyuryou: " + orderNumber + " " + lastUpdateDate + " " + lastUpdateTime);
 					Map<String, Object> result = SapApi.setOrderNumberByUkeshoJyuryou(orderNumber, lastUpdateDate, lastUpdateTime);
@@ -568,22 +567,6 @@ public class CloudSignService {
 				}
 			}
 		}
-	}
-
-	private Date parseDateStringToDate(String date, String format, Locale loc) {
-		Date ret = null;
-		try {
-			SimpleDateFormat sdf = new SimpleDateFormat(format, loc);
-			ret = sdf.parse(date);
-		} catch (ParseException e) {
-			log.info(e.getMessage());
-		}
-		return ret;
-	}
-	private String formatDateToString(Date date, String format, String timezone) {
-		SimpleDateFormat sdf = new SimpleDateFormat(format);
-		sdf.setTimeZone(TimeZone.getTimeZone(timezone));
-		return sdf.format(date);
 	}
 
 	/* ■■■■■■■■■■■■■■■■■■■■■■■■ 単発処理 ■■■■■■■■■■■■■■■■■■■■■■■ */

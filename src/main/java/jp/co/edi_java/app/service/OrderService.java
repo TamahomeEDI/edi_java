@@ -124,17 +124,17 @@ public class OrderService {
 		return orderInfoList;
 	}
 
-	/** V_ORDER_STATUSの情報を取得する。※ JTMから発注情報を取得する前提 */
+	/** V_ORDER_STATUSの情報を取得する。※ 元になるT_OrderのデータはJTMから取得する前提 */
 	public VOrderStatusEntity getVOrder(String orderNumber) {
 		return vOrderStatusDao.select(orderNumber);
 	}
 
-	/** V_ORDER_STATUSの情報を複数取得する。一括発注で利用する。※ JTMから発注情報を取得する前提 */
+	/** V_ORDER_STATUSの情報を複数取得する。一括発注で利用する。※ 元になるT_OrderのデータはJTMから取得する前提 */
 	public List<VOrderStatusEntity> getMultiVOrder(List<String> orderNumberList) {
 		return vOrderStatusDao.selectList(orderNumberList);
 	}
 
-	/** T_ORDER_ITEMの情報を複数取得する。※ JTMから発注情報を取得する前提 */
+	/** T_ORDER_ITEMの情報を複数取得する。※ 元になるT_OrderのデータはJTMから取得する前提 */
 	public List<TOrderItemEntity> selectOrderItem(String orderNumber) {
 		return tOrderItemDao.selectAll(orderNumber);
 	}
@@ -155,6 +155,9 @@ public class OrderService {
 		Map<String, Object> data = SapApi.orderDetail(orderNumber);
 		//基本情報取得
 		SapOrderDto ret = getHeader(data, orderNumber);
+		if (Objects.isNull(ret)) {
+			return ret;
+		}
 		//明細一覧取得
 		List<SapOrderDetailDto> itemList = getItemList(data);
 		ret.setItemList(itemList);
@@ -167,12 +170,14 @@ public class OrderService {
 	/** SAPの発注情報のヘッダ情報を取得する。 ※ JCOから発注情報を取得する前提 */
 	@SuppressWarnings("unchecked")
 	public SapOrderDto getHeader(Map<String, Object> data, String orderNumber) {
-
+		SapOrderDto ret = null;
 		Map<String, Object> retDetail = getSapData(data);
-
+		if (Objects.isNull(retDetail)) {
+			return ret;
+		}
 		//表示に必要な情報を取得
 		TOrderEntity orderInfo = tOrderDao.select(orderNumber);
-		SapOrderDto ret = getSapOrderDto(retDetail, orderInfo);
+		ret = getSapOrderDto(retDetail, orderInfo);
 
 		return ret;
 	}
@@ -269,6 +274,9 @@ public class OrderService {
 		for (String orderNumber : orderNumberList) {
 			Map<String, Object> data = SapApi.orderDetail(orderNumber);
 			Map<String, Object> retDetail = getSapData(data);
+			if (Objects.isNull(retDetail)) {
+				continue;
+			}
 			TOrderEntity orderInfo = orderInfoMap.get(orderNumber);
 
 			SapOrderDto ret = getSapOrderDto(retDetail, orderInfo);
@@ -680,9 +688,14 @@ public class OrderService {
 	 * @return Map<Strign, Object>
 	 */
 	private Map<String, Object> getSapData(Map<String, Object> data) {
-		//発注詳細は1件の場合と複数件の場合がある（複数件の場合はマイナス発注有）
-		Object sapObj = data.get(SapApiConsts.PARAMS_KEY_T_E_01004);
 		Map<String, Object> retDetail = null;
+		Object sapObj = null;
+		//発注詳細は1件の場合と複数件の場合がある（複数件の場合はマイナス発注有）
+		if (data.containsKey(SapApiConsts.PARAMS_KEY_T_E_01004)) {
+			sapObj = data.get(SapApiConsts.PARAMS_KEY_T_E_01004);
+		} else {
+			return retDetail;
+		}
 		//オブジェクトがListの場合
 		if(sapObj instanceof List){
 			List<Map<String, Object>> retDetailList = (List<Map<String, Object>>) sapObj;
@@ -721,7 +734,11 @@ public class OrderService {
 	 * @return SapOrderDto
 	 */
 	private SapOrderDto getSapOrderDto(Map<String, Object> retDetail, TOrderEntity orderInfo) {
-		SapOrderDto ret = new SapOrderDto();
+		SapOrderDto ret = null;
+		if (Objects.isNull(retDetail)) {
+			return ret;
+		}
+		ret = new SapOrderDto();
 		String orderDate = retDetail.get(SapApiConsts.PARAMS_ID_ZORDDT).toString();
 		ret.setOrderNumber(retDetail.get(SapApiConsts.PARAMS_ID_SEBELN).toString());
 		ret.setDeliveryStatus(retDetail.get(SapApiConsts.PARAMS_ID_ZNKFLG).toString());

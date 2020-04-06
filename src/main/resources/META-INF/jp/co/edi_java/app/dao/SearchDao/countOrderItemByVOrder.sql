@@ -1,11 +1,10 @@
 select count(*) from T_ORDER_ITEM oi
 where
 oi.DELETE_FLG = '0'
-and exists(
-select * from V_ORDER_STATUS os
+and oi.ORDER_NUMBER in (
+select os.ORDER_NUMBER from V_ORDER_STATUS os
 where
-os.ORDER_NUMBER = oi.ORDER_NUMBER
-and os.DELETE_FLG = '0'
+os.DELETE_FLG = '0'
 and os.GYOUSYA_CODE in (select GYOUSYA_CODE from T_GYOUSYA_ACCOUNT where AUTH_FLG = '1' and DELETE_FLG = '0')
 /*%if (params.isAdmin != "1" && params.userId == null)*/
 and 1os.=2

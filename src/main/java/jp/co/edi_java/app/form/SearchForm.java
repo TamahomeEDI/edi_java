@@ -137,4 +137,9 @@ public class SearchForm extends BaseForm {
 
 	public String fileName;
 
+	public String applicationDateFrom;
+
+	public String applicationDateTo;
+
+	public String gyousyaCode;
 }

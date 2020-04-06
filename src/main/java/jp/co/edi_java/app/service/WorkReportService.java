@@ -2,8 +2,6 @@ package jp.co.edi_java.app.service;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -12,7 +10,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TimeZone;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +38,7 @@ import jp.co.edi_java.app.entity.TWorkReportItemEntity;
 import jp.co.edi_java.app.entity.gyousya.MGyousyaEntity;
 import jp.co.edi_java.app.entity.syain.MSyainEntity;
 import jp.co.edi_java.app.form.WorkReportForm;
+import jp.co.edi_java.app.util.common.CommonUtils;
 import jp.co.edi_java.app.util.consts.CommonConsts;
 import jp.co.edi_java.app.util.crypto.CipherUtils;
 import jp.co.edi_java.app.util.file.FileApi;
@@ -269,7 +267,7 @@ public class WorkReportService {
 		Date nowDate = new Date();
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(nowDate);
-		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
 		cal.set(Calendar.MINUTE, 0);
 		cal.set(Calendar.SECOND, 0);
 		// 当日
@@ -279,7 +277,7 @@ public class WorkReportService {
 		// 昨日が納品日のものを検索するため昨日取得
 		cal.add(Calendar.DATE, -1);
 		Date workReportDate = cal.getTime();
-		String workReportDateStr = formatDateToString(workReportDate, "yyyy/MM/dd", "JST");
+		String workReportDateStr = CommonUtils.formatDateToString(workReportDate, "yyyy/MM/dd", "JST");
 		// 月末日のDateを取得
 		cal.set(Calendar.DATE, endDay);
 		Date endDateMonth = cal.getTime();
@@ -538,7 +536,7 @@ public class WorkReportService {
 						Objects.equals(entity.getRemandFlg(), CommonConsts.REMAND_FLG_OFF)) {
 					//Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 					String approveDate = form.getApproveDate() + " " + form.getApproveDateTime();
-					Date receiptDate = parseDateStringToDate(approveDate, "yyyyMMdd HHmmss", Locale.ENGLISH);
+					Date receiptDate = CommonUtils.parseDateStringToDate(approveDate, "yyyyMMdd HHmmss", Locale.ENGLISH);
 					Timestamp timestamp = new Timestamp(receiptDate.getTime());
 					log.info("approveDate: " + approveDate);
 					entity.setManagerReceiptFlg(CommonConsts.RECEIPT_FLG_ON);
@@ -559,37 +557,52 @@ public class WorkReportService {
 		Calendar cal = Calendar.getInstance();
 		String resultDate = "";
 		// 納品日
-		Date actTmp = parseDateStringToDate(acceptanceDate, "yyyy/MM/dd", Locale.ENGLISH);
+		Date actTmp = CommonUtils.parseDateStringToDate(acceptanceDate, "yyyy/MM/dd", Locale.ENGLISH);
 		cal.setTime(actTmp);
 		Date actDate = cal.getTime();
 		log.info("acceptanceDate: " + acceptanceDate + " ,actdate: " + actDate.toString());
+		// 先月会計期間を取得
+		int prevcount = 1;
+		Date lastAcMonthDateFrom = CommonUtils.getPastAccountingMonthDateFrom(prevcount);
+		Date lastAcMonthDateTo = CommonUtils.getPastAccountingMonthDateTo(prevcount);
+
 		// 本日の日付を取得
 		Date nowDate = new Date();
 		cal.setTime(nowDate);
-		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
 		cal.set(Calendar.MINUTE, 0);
 		cal.set(Calendar.SECOND, 0);
+
 		// 当日
 		Date today = cal.getTime();
-		// 月初日
-		int startDay = cal.getActualMinimum(Calendar.DATE);
-		// 月末日
-		int endDay = cal.getActualMaximum(Calendar.DATE);
-		//当月1日を取得
-		cal.set(Calendar.DATE, startDay);
-		Date from = cal.getTime();
-		// 月末日の翌日を取得
-		cal.set(Calendar.DATE, endDay+1);
-		Date to = cal.getTime();
-
-		// 受入日の算出
-		resultDate = formatDateToString(nowDate, "yyyyMMdd", "JST");
-		log.info("compareToFrom: " + String.valueOf(actDate.compareTo(from)));
-		log.info("compareToTo: " + String.valueOf(actDate.compareTo(to)));
-		if (actDate.compareTo(from) > 0 && actDate.compareTo(to) <= 0) {
-			resultDate = formatDateToString(actDate, "yyyyMMdd", "JST");
+		log.info("today: " + today.toString() + "accounting from: " + lastAcMonthDateFrom.toString() + "accounting to: " + lastAcMonthDateTo.toString());
+		// 本日が先月の会計期間内か？（月初の締め前か？）
+		if (today.compareTo(lastAcMonthDateFrom) >= 0 && today.compareTo(lastAcMonthDateTo) <= 0) {
+			Date from = CommonUtils.getPastMonthDateFrom(prevcount);
+			Date to = CommonUtils.getPastMonthDateTo(prevcount);
+			log.info("compareToFrom: " + String.valueOf(actDate.compareTo(from)));
+			log.info("compareToTo: " + String.valueOf(actDate.compareTo(to)));
+			// 納品日が先月1日〜先月末であれば納品日をそのまま利用する,それ以外であれば処理日を利用する
+			if (actDate.compareTo(from) >= 0 && actDate.compareTo(to) <= 0) {
+				resultDate = CommonUtils.formatDateToString(actDate, "yyyyMMdd", "JST");
+			} else {
+				resultDate = CommonUtils.formatDateToString(nowDate, "yyyyMMdd", "JST");
+			}
+			log.info("acceptanceDate: " + resultDate.toString() + " from: " + from.toString() + " to: " + to.toString());
+		} else {
+			// 当月月初、月末を取得
+			Date from = CommonUtils.getPastMonthDateFrom(0);
+			Date to = CommonUtils.getPastMonthDateTo(0);
+			log.info("compareToFrom: " + String.valueOf(actDate.compareTo(from)));
+			log.info("compareToTo: " + String.valueOf(actDate.compareTo(to)));
+			// 納品日が当月1日〜当月末であれば納品日をそのまま利用する,それ以外であれば処理日を利用する
+			if (actDate.compareTo(from) >= 0 && actDate.compareTo(to) <= 0) {
+				resultDate = CommonUtils.formatDateToString(actDate, "yyyyMMdd", "JST");
+			} else {
+				resultDate = CommonUtils.formatDateToString(nowDate, "yyyyMMdd", "JST");
+			}
+			log.info("acceptanceDate: " + resultDate.toString() + " from: " + from.toString() + " to: " + to.toString());
 		}
-		log.info("today: " + today.toString() + " acceptanceDate: " + resultDate.toString() + " from: " + from.toString() + " to: " + to.toString());
 		return resultDate;
 	}
 
@@ -643,15 +656,15 @@ public class WorkReportService {
 				String lastUpdateTime = targetObj.get(SapApiConsts.PARAMS_ID_AEZEIT).toString();
 				log.info("before date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime);
 				// Sapへ請書未受領データの排他制御用変更日付、変更時間がEnglishロケールフォーマットのため変換が必要
-				Date updateDate = parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
-				Date updateTime = parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+				Date updateDate = CommonUtils.parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+				Date updateTime = CommonUtils.parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
 				if (Objects.nonNull(updateDate)) {
 					// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
-					lastUpdateDate = formatDateToString(updateDate, "yyyyMMdd", "JST");
+					lastUpdateDate = CommonUtils.formatDateToString(updateDate, "yyyyMMdd", "JST");
 				}
 				if (Objects.nonNull(updateTime)) {
 					// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
-					lastUpdateTime = formatDateToString(updateTime, "HH:mm:ss", "JST");
+					lastUpdateTime = CommonUtils.formatDateToString(updateTime, "HH:mm:ss", "JST");
 				}
 				log.info("after date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime);
 				// ■■■■■■■■■■■■■ 受入入力レコードの上書き
@@ -681,20 +694,20 @@ public class WorkReportService {
 
 			log.info("before date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime + " " + recordDate);
 			// Sapへ請書未受領データの排他制御用変更日付、変更時間がEnglishロケールフォーマットのため変換が必要
-			Date updateDate = parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
-			Date updateTime = parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
-			Date registDate = parseDateStringToDate(recordDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+			Date updateDate = CommonUtils.parseDateStringToDate(lastUpdateDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+			Date updateTime = CommonUtils.parseDateStringToDate(lastUpdateTime, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
+			Date registDate = CommonUtils.parseDateStringToDate(recordDate, "EEE MMM dd HH:mm:ss Z yyyy", Locale.ENGLISH);
 			if (Objects.nonNull(updateDate)) {
 				// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
-				lastUpdateDate = formatDateToString(updateDate, "yyyyMMdd", "JST");
+				lastUpdateDate = CommonUtils.formatDateToString(updateDate, "yyyyMMdd", "JST");
 			}
 			if (Objects.nonNull(updateTime)) {
 				// 排他制御用変更日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
-				lastUpdateTime = formatDateToString(updateTime, "HH:mm:ss", "JST");
+				lastUpdateTime = CommonUtils.formatDateToString(updateTime, "HH:mm:ss", "JST");
 			}
 			if (Objects.nonNull(registDate)) {
 				// レコード登録日付、変更時間がJSTのため、UTCエポックで9時間マイナスと時間がずれてしまうためタイムゾーン指定
-				recordDate = formatDateToString(registDate, "yyyyMMdd", "JST");
+				recordDate = CommonUtils.formatDateToString(registDate, "yyyyMMdd", "JST");
 			}
 			log.info("after date formatting: " + wfNumber + " " + orderNumber + " " + wfSeqNo + " " + lastUpdateDate + " " + lastUpdateTime + " " + recordDate);
 
@@ -922,23 +935,6 @@ public class WorkReportService {
 			}
 		}
 		return targetObj;
-	}
-
-	private Date parseDateStringToDate(String date, String format, Locale loc) {
-		Date ret = null;
-		try {
-			SimpleDateFormat sdf = new SimpleDateFormat(format, loc);
-			ret = sdf.parse(date);
-		} catch (ParseException e) {
-			log.info(e.getMessage());
-		}
-		return ret;
-	}
-
-	private String formatDateToString(Date date, String format, String timezone) {
-		SimpleDateFormat sdf = new SimpleDateFormat(format);
-		sdf.setTimeZone(TimeZone.getTimeZone(timezone));
-		return sdf.format(date);
 	}
 
 	/** ジョブカン否認 */

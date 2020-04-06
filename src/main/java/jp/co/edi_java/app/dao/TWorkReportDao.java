@@ -41,6 +41,9 @@ public interface TWorkReportDao {
 	@Select
 	List<TWorkReportEntity> selectUnconfirmListBySyain(String eigyousyoCode, String syainCode);
 
+	@Select
+    List<TWorkReportEntity> selectListForArchive(String gyousyaCode, String from, String to, String remandFlg);
+
 	@Insert(excludeNull = true)
     int insert(TWorkReportEntity entity);
 

@@ -1,0 +1,1 @@
+select count(*) from T_ARCHIVE_FILE where DELETE_FLG = '0' and FILE_PATH = /*filePath*/'google';

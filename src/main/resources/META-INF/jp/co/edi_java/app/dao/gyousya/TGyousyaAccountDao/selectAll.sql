@@ -1,0 +1,1 @@
+select * from T_GYOUSYA_ACCOUNT where DELETE_FLG = '0';

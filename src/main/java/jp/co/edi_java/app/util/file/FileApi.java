@@ -18,7 +18,9 @@ import jp.co.keepalive.springbootfw.util.http.HttpRequestHeaders;
 import jp.co.keepalive.springbootfw.util.http.HttpRequestParams;
 import jp.co.keepalive.springbootfw.util.http.HttpUtil;
 import jp.co.keepalive.springbootfw.util.lang.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 public class FileApi {
 
@@ -98,11 +100,25 @@ public class FileApi {
 			outputFilePath = folderPath + fileId + "." + fileType;
 		}
 		String url = BASE_URL + koujiCode + "/" + toshoCode + "/" + fileCode + "/" + fileNo + "/" + fileId;
-		try {
-			CommonHttpClient.getFileContent(url, headers.getParams(), null, outputFilePath, CommonHttpClient.METHOD_GET, true);
-		} catch (Exception e) {
-			// TODO 自動生成された catch ブロック
-			throw new CoreRuntimeException(e.getMessage());
+		for (int i=0; i<5; i++) {
+			try {
+				CommonHttpClient.getFileContent(url, headers.getParams(), null, outputFilePath, CommonHttpClient.METHOD_GET, true);
+				break;
+			} catch (Exception e) {
+				log.info("get file count: " +(i+1));
+				log.info(e.getMessage());
+				if (i+1 < 5) {
+					try {
+						Thread.sleep(5000L);
+					} catch (InterruptedException interrupted) {
+						log.info(interrupted.getMessage());
+					}
+				} else {
+					throw new CoreRuntimeException(e.getMessage());
+				}
+				// TODO 自動生成された catch ブロック
+				//throw new CoreRuntimeException(e.getMessage());
+			}
 		}
 		return outputFilePath;
 	}

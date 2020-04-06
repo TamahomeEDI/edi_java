@@ -92,6 +92,16 @@ public class CommonHttpClient{
         return analyzeResponseDoc((HttpUtil.post(uri, headers, params, HttpUtil.CODE_CHECK_FLG_FALSE)));
     }
 
+    public static Document postXMLWithThrowException(String uri, List<NameValuePair> headers, Object params) throws Exception {
+    	Document doc = null;
+    	try {
+    		doc = analyzeResponseDoc(HttpUtil.post(uri, headers, params, HttpUtil.CODE_CHECK_FLG_FALSE));
+    	} catch (Exception e) {
+    		throw new Exception(e);
+    	}
+        return doc;
+    }
+
     /*
      * PUT
      *

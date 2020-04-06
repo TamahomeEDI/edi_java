@@ -3,29 +3,39 @@ package jp.co.edi_java.app.controller;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jp.co.edi_java.app.dao.MConstantsDao;
 import jp.co.edi_java.app.dao.TCloudSignDao;
+import jp.co.edi_java.app.entity.MConstantsEntity;
 import jp.co.edi_java.app.entity.TCloudSignEntity;
 import jp.co.edi_java.app.entity.TDeliveryEntity;
 import jp.co.edi_java.app.entity.TWorkReportEntity;
+import jp.co.edi_java.app.service.BillingCheckListService;
 import jp.co.edi_java.app.service.CloudSignService;
 import jp.co.edi_java.app.service.DeliveryService;
+import jp.co.edi_java.app.service.GoogleDriveService;
+import jp.co.edi_java.app.service.InspectionReceiptService;
 import jp.co.edi_java.app.service.JtmService;
 import jp.co.edi_java.app.service.MailService;
 import jp.co.edi_java.app.service.OrderService;
+import jp.co.edi_java.app.service.PaymentDetailService;
 import jp.co.edi_java.app.service.WorkReportService;
 import jp.co.edi_java.app.util.cloudsign.CloudSignApi;
+import jp.co.edi_java.app.util.consts.CommonConsts;
 import jp.co.edi_java.app.util.mail.MailContents;
 import jp.co.edi_java.app.util.mail.MailExUtils;
 import jp.co.keepalive.springbootfw.controller.BaseController;
 import jp.co.keepalive.springbootfw.entity.ResponseEntity;
 import jp.co.keepalive.springbootfw.util.logging.SystemLoggingUtil;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @Scope("request")
 @RequestMapping("batch")
@@ -36,6 +46,15 @@ public class BatchController extends BaseController {
 
 	@Autowired
 	public CloudSignService cloudSignService;
+
+	@Autowired
+	public GoogleDriveService googleDriveService;
+
+	@Autowired
+	public InspectionReceiptService inspectionReceiptService;
+
+	@Autowired
+	public PaymentDetailService paymentDetailService;
 
 	@Autowired
     public TCloudSignDao tCloudSignDao;
@@ -52,6 +71,13 @@ public class BatchController extends BaseController {
 	@Autowired
 	public MailService mailService;
 
+	@Autowired
+	public BillingCheckListService billingCheckListService;
+
+	//定数マスタ
+	@Autowired
+	public MConstantsDao mConstantsDao;
+
 	private String adminEmail = "t-iida@tamahome.jp, to-suzuki@tamahome.jp, shinji-yamaguchi@tamahome.jp";
 	//private String adminEmail = "shinji-yamaguchi@tamahome.jp";
 
@@ -62,7 +88,7 @@ public class BatchController extends BaseController {
 			long start = System.currentTimeMillis();
 			//バックアップ処理
 //			jtmService.backupEigyousyo();
-			jtmService.truncateEigyousyo();;
+			jtmService.truncateEigyousyo();
 
 			//Insert処理
 //			Map<String, Object> countMap = jtmService.insertEigyousyoAll();
@@ -180,8 +206,8 @@ public class BatchController extends BaseController {
 			jtmService.backupKouji();
 
 			//Insert処理
-			Map<String, Object> countMap = jtmService.insertKoujiAll();	//指定
-//			Map<String, Object> countMap = jtmService.insertKoujiAll2();	//全件
+			Map<String, Object> countMap = jtmService.insertKoujiAll(); //指定
+//			Map<String, Object> countMap = jtmService.insertKoujiAll2(); //全件
 
 			long end = System.currentTimeMillis();
 			super.setResponseData("ret",countMap);
@@ -432,6 +458,429 @@ public class BatchController extends BaseController {
 		return super.response();
 	}
 
+	/**
+	 *
+	 * GoogleDrive report archive all
+	 *
+	 */
+	@RequestMapping("/archiveReportFiles")
+	public ResponseEntity archiveReportFiles() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 格納フォルダの作成
+			googleDriveService.initializeGoogleDrive(yearMonth);
+			// 請書のアーカイブ
+			googleDriveService.createArchiveReport("order", yearMonth);
+			// 納品書のアーカイブ
+			googleDriveService.createArchiveReport("delivery", yearMonth);
+			// 出来高報告書のアーカイブ
+			googleDriveService.createArchiveReport("workReport", yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * GoogleDrive initialize only
+	 *
+	 */
+	@RequestMapping("/initializeGoogleDrive")
+	public ResponseEntity initializeGoogleDrive() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 格納フォルダの作成
+			googleDriveService.initializeGoogleDrive(yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * GoogleDrive archive order only
+	 *
+	 */
+	@RequestMapping("/createArchiveOrder")
+	public ResponseEntity createArchiveOrder() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 請書のアーカイブ
+			googleDriveService.createArchiveReport("order", yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * GoogleDrive archive delivery only
+	 *
+	 */
+	@RequestMapping("/createArchiveDelivery")
+	public ResponseEntity createArchiveDelivery() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 請書のアーカイブ
+			googleDriveService.createArchiveReport("delivery", yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * GoogleDrive archive work report only
+	 *
+	 */
+	@RequestMapping("/createArchiveWorkReport")
+	public ResponseEntity createArchiveWorkReport() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 請書のアーカイブ
+			googleDriveService.createArchiveReport("workReport", yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * Local server create billing check list
+	 *
+	 */
+	@RequestMapping("/createBillingCheckList")
+	public ResponseEntity createBillingCheckList() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			billingCheckListService.createCheckListBatch(yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * GoogleDrive archive 受注一覧、受注明細一覧
+	 *
+	 */
+	@RequestMapping("/createArchiveBillingCheckList")
+	public ResponseEntity createArchiveBillingCheckList() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 受注一覧、受注明細一覧のアーカイブ
+			googleDriveService.createArchiveLocalDocument("billingCheckList", yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * 検収明細書のファイルパスリスト作成
+	 *
+	 */
+	@RequestMapping("/createInspectionReceiptList")
+	public ResponseEntity createInspectionReceiptList() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 検収明細書のファイルパスリスト作成
+			inspectionReceiptService.createInspectionReceiptList(yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * 支払明細書のファイルパスリスト作成
+	 *
+	 */
+	@RequestMapping("/createPaymentDetailList")
+	public ResponseEntity createPaymentDetailList() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 支払明細書のファイルパスリスト作成
+			paymentDetailService.createPaymentDetailList(yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * GoogleDrive archive 検収明細
+	 *
+	 */
+	@RequestMapping("/createArchiveInspectionReceipt")
+	public ResponseEntity createArchiveInspectionReceipt() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 検収明細のアーカイブ
+			googleDriveService.createArchiveLocalDocument("inspectionReceipt", yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
+	/**
+	 *
+	 * GoogleDrive archive 支払明細
+	 *
+	 */
+	@RequestMapping("/createArchivePaymentDetail")
+	public ResponseEntity createArchivePaymentDetail() {
+		try {
+			long start = System.currentTimeMillis();
+			// 定数マスタで年月指定時は指定した年月を処理する
+			String yearMonth = null;
+			MConstantsEntity mConstants = mConstantsDao.select(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+			if (Objects.isNull(mConstants)) {
+				mConstants = new MConstantsEntity();
+				mConstants.setConstantsKey(CommonConsts.T_ARCHIVE_FILES_YEAR_MONTH);
+				mConstantsDao.insert(mConstants);
+			} else if (Objects.nonNull(mConstants.getConstantsValue())) {
+				yearMonth = mConstants.getConstantsValue().trim();
+				if (yearMonth == "") {
+					yearMonth = null;
+				}
+			}
+			// 支払明細のアーカイブ
+			googleDriveService.createArchiveLocalDocument("paymentDetail", yearMonth);
+
+			mConstants.setConstantsValue(null);
+			mConstantsDao.update(mConstants);
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+
 	/* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 以下単発実行のバッチ処理 ※ データメンテナンス等 ■■■■■■■■■■■■■■■■■■■■■■■■■■■■ */
 	/**
 	 *
@@ -458,7 +907,6 @@ public class BatchController extends BaseController {
 
 	/**
 	 * 請書のファイルIDリフレッシュ
-	 * ('4505576864','4505577036')
 	 *
 	 */
 	@RequestMapping("/refreshOrderReport")

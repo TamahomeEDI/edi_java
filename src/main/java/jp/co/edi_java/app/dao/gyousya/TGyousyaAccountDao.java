@@ -20,6 +20,9 @@ public interface TGyousyaAccountDao {
     }
 
 	@Select
+	List<TGyousyaAccountEntity> selectAll();
+
+	@Select
 	TGyousyaAccountEntity select(String gyousyaCode);
 
 	@Select

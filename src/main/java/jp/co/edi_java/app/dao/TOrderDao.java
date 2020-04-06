@@ -32,6 +32,8 @@ public interface TOrderDao {
 	@Select
 	List<TOrderEntity> selectListByGroupOrder(String groupOrderNumber);
 
+	@Select
+	List<TOrderEntity> selectListForArchive(String gyousyaCode, String from, String to);
 
 //	@Select
 //	TOrderEntity search(String orderNumber, String cancelKbn);
