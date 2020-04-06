@@ -37,19 +37,21 @@ sudo crontab -e
 
 #AM0時45分 テンポラリファイル削除
 45 0 * * * /opt/ediapp/bat/tmpClear.sh
+#AM0時45分 月次テンポラリファイル削除
+50 0 2 * * /opt/ediapp/bat/tmpClear.sh
 #AM1時00分 GoogleDrive initialize
 0 1 2 * * /opt/ediapp/bat/initializeGoogleDrive.sh
 #AM1時10分 受注明細CSVファイルの作成
 10 1 2 * * /opt/ediapp/bat/createBillingCheckList.sh
 #AM1時20分 検収明細書ファイルの作成
 20 1 2 * * /opt/ediapp/bat/createInspectionReceiptList.sh
-#AM1時30分 支払明細書ファイルの作成
+#AM1時30分 支払通知書ファイルの作成
 30 1 2 * * /opt/ediapp/bat/createPaymentDetailList.sh
 #AM1時40分 受注明細CSVファイルのアップロード
 40 1 2 * * /opt/ediapp/bat/createArchiveBillingCheckList.sh
 #AM1時50分 検収明細書ファイルのアップロード
 50 1 2 * * /opt/ediapp/bat/createArchiveInspectionReceipt.sh
-#AM2時00分 支払明細書ファイルのアップロード
+#AM2時00分 支払通知書ファイルのアップロード
 0 2 2 * * /opt/ediapp/bat/createArchivePaymentDetail.sh
 #AM2時10分 発注書兼請書ファイルのアップロード
 10 2 2 * * /opt/ediapp/bat/createArchiveOrder.sh
