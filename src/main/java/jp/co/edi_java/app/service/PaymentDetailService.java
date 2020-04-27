@@ -122,8 +122,9 @@ public class PaymentDetailService {
 						}
 
 						if (!Objects.equals(gyousyaCode, "")) {
-							File moveTo = new File(moveToPath + fileName);
-							f.renameTo(moveTo);
+							String moveTo = moveToPath + fileName;
+							String[] mvCommand = {"bash", "-c", "mv " + fileName + " " + moveTo};
+							CommonUtils.processDone(mvCommand, fromDir, timeOutSec, Locale.JAPAN);
 						}
 					}
 					// 移動元フォルダ内のファイル削除
