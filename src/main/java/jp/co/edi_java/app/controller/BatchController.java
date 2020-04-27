@@ -728,7 +728,50 @@ public class BatchController extends BaseController {
 		}
 		return super.response();
 	}
+	/**
+	 *
+	 * 検収明細書のファイルパスリスト作成
+	 *
+	 */
+	@RequestMapping("/getInspectionReceiptFiles")
+	public ResponseEntity getInspectionReceiptFiles() {
+		try {
+			long start = System.currentTimeMillis();
 
+			// 検収明細書のファイルパスリスト作成
+			inspectionReceiptService.getInspectionReceiptFiles();
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
+	/**
+	 *
+	 * 支払明細書のファイルパスリスト作成
+	 *
+	 */
+	@RequestMapping("/getPaymentDetailFiles")
+	public ResponseEntity getPaymentDetailFiles() {
+		try {
+			long start = System.currentTimeMillis();
+
+			// 支払明細書のファイルパスリスト作成
+			paymentDetailService.getPaymentDetailFiles();
+
+			long end = System.currentTimeMillis();
+
+			super.setResponseData("time",(end - start)  + "ms");
+		} catch (Exception e) {
+			String msg = SystemLoggingUtil.getStackTraceString(e);
+			MailExUtils.sendMail(adminEmail, MailService.MAIL_ADDR_FROM, MailService.MAIL_SIGN_FROM, MailContents.getSystemBatchErrSubject(), msg);
+		}
+		return super.response();
+	}
 	/**
 	 *
 	 * 検収明細書のファイルパスリスト作成

@@ -35,53 +35,57 @@ sudo crontab -e
 #毎日8時台から23時台の12分毎にJTMをチェック(クラウドサインチェックとなるべく被らないように)
 */12 8-23 * * * /opt/ediapp/bat/getOrderAll.sh
 
-#AM0時45分 テンポラリファイル削除
-45 0 * * * /opt/ediapp/bat/tmpClear.sh
-#AM0時45分 月次テンポラリファイル削除
-50 0 2 * * /opt/ediapp/bat/tmpClear.sh
-#AM1時00分 GoogleDrive initialize
-0 1 2 * * /opt/ediapp/bat/initializeGoogleDrive.sh
-#AM1時10分 受注明細CSVファイルの作成
-10 1 2 * * /opt/ediapp/bat/createBillingCheckList.sh
-#AM1時20分 検収明細書ファイルの作成
+#AM0時30分 テンポラリファイル削除
+30 0 * * * /opt/ediapp/bat/tmpClear.sh
+#毎月2日AM0時35分 月次テンポラリファイル削除
+35 0 2 * * /opt/ediapp/bat/tmpClearMonthly.sh
+#毎月2日AM0時40分 GoogleDrive initialize
+40 0 2 * * /opt/ediapp/bat/initializeGoogleDrive.sh
+#毎月2日AM1時00分 受注明細CSVファイルの作成
+0 1 2 * * /opt/ediapp/bat/createBillingCheckList.sh
+#毎月2日AM1時05分 検収明細書ファイルの取得
+5 1 2 * * /opt/ediapp/bat/getInspectionReceiptFiles.sh
+#毎月2日AM1時10分 支払通知書ファイルの取得
+10 1 2 * * /opt/ediapp/bat/getPaymentDetailFiles.sh
+#毎月2日AM1時20分 検収明細書ファイルの作成
 20 1 2 * * /opt/ediapp/bat/createInspectionReceiptList.sh
-#AM1時30分 支払通知書ファイルの作成
+#毎月2日AM1時30分 支払通知書ファイルの作成
 30 1 2 * * /opt/ediapp/bat/createPaymentDetailList.sh
-#AM1時40分 受注明細CSVファイルのアップロード
+#毎月2日AM1時40分 受注明細CSVファイルのアップロード
 40 1 2 * * /opt/ediapp/bat/createArchiveBillingCheckList.sh
-#AM1時50分 検収明細書ファイルのアップロード
+#毎月2日AM1時50分 検収明細書ファイルのアップロード
 50 1 2 * * /opt/ediapp/bat/createArchiveInspectionReceipt.sh
-#AM2時00分 支払通知書ファイルのアップロード
+#毎月2日AM2時00分 支払通知書ファイルのアップロード
 0 2 2 * * /opt/ediapp/bat/createArchivePaymentDetail.sh
-#AM2時10分 発注書兼請書ファイルのアップロード
+#毎月2日AM2時10分 発注書兼請書ファイルのアップロード
 10 2 2 * * /opt/ediapp/bat/createArchiveOrder.sh
 
-#AM5時30分 発注情報のコピー
-30 5 * * * /opt/ediapp/bat/getOrderBackUp.sh
-#AM6時 支店マスタ
-0 6 * * * /opt/ediapp/bat/getEigyousyoAll.sh
-#AM6時5分 地区本部マスタ
-5 6 * * * /opt/ediapp/bat/getEigyousyoGroupAll.sh
-#AM6時10分 業者マスタ
-10 6 * * * /opt/ediapp/bat/getGyousyaAll.sh
-#AM6時15分 業者支店マスタ
-15 6 * * * /opt/ediapp/bat/getGyousyaEigyousyoAll.sh
-#AM6時45分 業者細目
-45 6 * * * /opt/ediapp/bat/getGyousyaSaimokuAll.sh
-#AM7時 家歴
-0 7 * * * /opt/ediapp/bat/getKarekiAll.sh
-#AM7時5分 工事マスタ
-5 7 * * * /opt/ediapp/bat/getKoujiAll.sh
+#AM6時10分 発注情報のコピー
+10 6 * * * /opt/ediapp/bat/getOrderBackUp.sh
+#AM6時20分 支店マスタ
+20 6 * * * /opt/ediapp/bat/getEigyousyoAll.sh
+#AM6時30分 地区本部マスタ
+30 6 * * * /opt/ediapp/bat/getEigyousyoGroupAll.sh
+#AM6時40分 業者マスタ
+40 6 * * * /opt/ediapp/bat/getGyousyaAll.sh
+#AM6時50分 業者支店マスタ
+50 6 * * * /opt/ediapp/bat/getGyousyaEigyousyoAll.sh
+#AM7時00分 業者細目
+0 7 * * * /opt/ediapp/bat/getGyousyaSaimokuAll.sh
+#AM7時10分 家歴
+10 7 * * * /opt/ediapp/bat/getKarekiAll.sh
+#AM7時15分 工事マスタ
+15 7 * * * /opt/ediapp/bat/getKoujiAll.sh
 #AM7時35分 細目工種
 35 7 * * * /opt/ediapp/bat/getSaimokuKousyuAll.sh
-#AM7時40分 社員マスタ
-40 7 * * * /opt/ediapp/bat/getSyainAll.sh
-#AM7時45分 社員所属支店
-45 7 * * * /opt/ediapp/bat/getSyainEigyousyoAll.sh
-#AM7時50分 クラウドサインリマインドメール
-50 7 * * * /opt/ediapp/bat/remindCloudSign.sh
-#AM7時55分 納品書・出来高報告書確認リマインドメール
-55 7 * * * /opt/ediapp/bat/remindDeliveryAcceptance.sh
-#AM7時55分 納品書・出来高報告書確認リマインドメール(未受入対象一覧)
-0 8 * * * /opt/ediapp/bat/remindDeliveryAcceptanceList.sh
+#AM7時45分 社員マスタ
+45 7 * * * /opt/ediapp/bat/getSyainAll.sh
+#AM7時55分 社員所属支店
+55 7 * * * /opt/ediapp/bat/getSyainEigyousyoAll.sh
+#AM8時5分 クラウドサインリマインドメール
+5 8 * * * /opt/ediapp/bat/remindCloudSign.sh
+#AM8時15分 納品書・出来高報告書確認リマインドメール
+15 8 * * * /opt/ediapp/bat/remindDeliveryAcceptance.sh
+#AM8時25分 納品書・出来高報告書確認リマインドメール(未受入対象一覧)
+25 8 * * * /opt/ediapp/bat/remindDeliveryAcceptanceList.sh
 

@@ -135,7 +135,7 @@ public class FileService {
 			String[] zipCommand = {"zip", "-r", zipFileName, zipFolder};
 			long timeOutSec = 5 * 60;
 			// zipコマンド
-			CommonUtils.processDone(zipCommand, curdir, timeOutSec);
+			CommonUtils.processDone(zipCommand, curdir, timeOutSec, null);
 		}
 		return zipFilePath;
 	}

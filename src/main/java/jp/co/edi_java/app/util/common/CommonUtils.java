@@ -2,8 +2,6 @@ package jp.co.edi_java.app.util.common;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -11,6 +9,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -462,11 +461,11 @@ public class CommonUtils {
 	 * @param dir File
 	 * @param long timeOutSec
 	 */
-	public static void processDone(String[] Command,  File dir, long timeOutSec) {
+	public static void processDone(String[] Command,  File dir, long timeOutSec, Locale locale) {
 		boolean isFinished = false;
 		// 1回リトライ
 		for (int i = 0; i<2; i++) {
-			isFinished = processDoneAux(Command, dir, timeOutSec);
+			isFinished = processDoneAux(Command, dir, timeOutSec, locale);
 			if (isFinished) {
 				break;
 			}
@@ -480,7 +479,7 @@ public class CommonUtils {
 	 * @param dir File
 	 * @param long timeOutSec
 	 */
-	public static boolean processDoneAux(String[] Command, File dir, long timeOutSec) {
+	public static boolean processDoneAux(String[] Command, File dir, long timeOutSec, Locale locale) {
 		List<String> cmdArray = Arrays.asList(Command);
 		log.info("process call: " + String.join(" ", cmdArray));
 		ProcessBuilder builder = new ProcessBuilder(cmdArray);
@@ -488,6 +487,18 @@ public class CommonUtils {
 		builder.directory(dir);
 		// エラーを標準出力ストリームへ統合
 		builder.redirectErrorStream(true);
+		// 標準ログへ出力
+		builder.inheritIO();
+
+		if (Objects.nonNull(locale)) {
+			Map<String, String> envMap = builder.environment();
+			if (Objects.equals(locale, Locale.JAPAN)) {
+				envMap.put("LANG", "ja_JP.UTF-8");
+				envMap.put("LC_CTYPE", "ja_JP.UTF-8");
+			} else if (Objects.equals(locale, Locale.ENGLISH)) {
+				envMap.put("LANG", "C");
+			}
+		}
 
 		Process p;
 		boolean isFinished = false;
@@ -498,13 +509,14 @@ public class CommonUtils {
         }
 
         try {
-        	new Thread(() -> {
-        		try (InputStream is = p.getInputStream()) {
-        			while (is.read() >= 0);
-        		} catch (IOException e) {
-        			throw new UncheckedIOException(e);
-        		}
-        	} ).start();
+        	// 標準ログへ出力するように変更したためコメントアウト
+//        	new Thread(() -> {
+//        		try (InputStream is = p.getInputStream()) {
+//        			while (is.read() >= 0);
+//        		} catch (IOException e) {
+//        			throw new UncheckedIOException(e);
+//        		}
+//        	} ).start();
 
         	isFinished = p.waitFor(timeOutSec, TimeUnit.SECONDS); // プロセスが正常終了するまで待機
 
