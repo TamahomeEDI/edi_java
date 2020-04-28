@@ -269,7 +269,7 @@ public class BillingCheckListService {
 			String[] zipCommand = {"zip", "-r", zipFileName, zipFolder};
 			long timeOutSec = 5 * 60;
 			// zipコマンド
-			CommonUtils.processDone(zipCommand, curdir, timeOutSec);
+			CommonUtils.processDone(zipCommand, curdir, timeOutSec, null);
 		}
 		File zipfile = new File(folderPath + zipFileName);
 		if (!zipfile.exists()) {

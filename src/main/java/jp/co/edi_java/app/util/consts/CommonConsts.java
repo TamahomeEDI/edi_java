@@ -93,11 +93,17 @@ public class CommonConsts {
 	// 受注明細一覧 ローカルの保存先
 	public static String OUTPUT_BILLING_CHECK_LIST_DIR = "/home/web/edi_php/tmp/billing/";
 
-	// 支払明細 ローカルの保存先
+	// 支払通知書 ローカルの保存先
 	public static String OUTPUT_PAYMENT_DETAIL_DIR = "/home/web/edi_php/tmp/payment/";
 
 	// 検収明細 ローカルの保存先
 	public static String OUTPUT_INSPECTION_RECEIPT_DIR = "/home/web/edi_php/tmp/inspection/";
+
+	// 支払通知書 吸い上げ先
+	public static String INPUT_PAYMENT_DETAIL_DIR = "/home/web/edi_php/tmp/winmedia/payment/";
+
+	// 検収明細書 吸い上げ先
+	public static String INPUT_INSPECTION_RECEIPT_DIR = "/home/web/edi_php/tmp/winmedia/inspection/";
 
 	// 発注書
 	public static String DOCUMENT_TYPE_ORDER = "10";
@@ -114,7 +120,7 @@ public class CommonConsts {
 	// 検収明細
 	public static String DOCUMENT_TYPE_INSPECTION_RECEIPT = "50";
 
-	// 支払明細
+	// 支払通知書
 	public static String DOCUMENT_TYPE_PAYMENT_DETAIL = "60";
 
 

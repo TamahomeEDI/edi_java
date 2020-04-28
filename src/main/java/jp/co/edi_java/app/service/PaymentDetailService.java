@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -34,6 +35,106 @@ public class PaymentDetailService {
 	@Autowired
     public TLocalDocumentListDao tLocalDocumentListDao;
 
+    /**
+     * 支払通知書ファイルの存在チェックを行い、GoogleDriveアップロード用フォルダへ移動する
+     *
+     */
+    public void getPaymentDetailFiles() {
+    	String moveToPath = CommonConsts.OUTPUT_PAYMENT_DETAIL_DIR;
+    	FileApi.createDirectories(moveToPath);
+    	// マウント済である前提
+    	String baseFolderPath = CommonConsts.INPUT_PAYMENT_DETAIL_DIR;
+    	File fromDir = new File(baseFolderPath);
+    	File toDir = new File(moveToPath);
+    	if (!fromDir.exists() || !fromDir.isDirectory()) {
+    		log.info("not exists : " + baseFolderPath);
+    		return;
+    	}
+    	// 業者コード長
+    	int gyousyaCodeLen = 7;
+    	// タイムアウト設定
+    	long timeOutSec = 2 * 60;
+    	// 移動先フォルダのファイル削除
+    	File [] toDirFileList = toDir.listFiles();
+    	if (Objects.nonNull(toDirFileList)) {
+			for (int i=0; i < toDirFileList.length; i++) {
+				File f = toDirFileList[i];
+				if (Objects.nonNull(f)) {
+					if (f.isFile()) {
+						f.delete();
+					}
+				}
+			}
+    	}
+    	// ファイル名の文字コード変換
+    	File [] beforeList = fromDir.listFiles();
+		if (Objects.nonNull(beforeList)) {
+			for (int i=0; i < beforeList.length; i++) {
+				File f = beforeList[i];
+				if (Objects.nonNull(f)) {
+					log.info("file name: " + f.getName());
+
+					String fileName = f.getName();
+					String reg = "[^a-zA-Z0-9*-_.]+";
+					String wildcard = fileName.replaceAll(reg, "*");
+					log.info("wild card: " + wildcard);
+
+					String gyousyaCode = "";
+					String reg2 = "^A[0-9]{6}";
+					Pattern p = Pattern.compile(reg2);
+					Matcher m = p.matcher(fileName);
+					// ファイル名の先頭が業者コード
+					if (fileName.length() >= gyousyaCodeLen && m.find()) {
+						gyousyaCode = fileName.substring(0, gyousyaCodeLen);
+					}
+					String extension = "";
+					if (fileName.lastIndexOf(".") != -1) {
+						extension = fileName.substring(fileName.lastIndexOf("."));
+					}
+
+					UUID uuid = UUID.randomUUID();
+					String newName = gyousyaCode + "_" + uuid.toString() + extension;
+
+					// 文字コード変換せず業者コード以下の文字列をUUIDに置き換え
+					// 基本的に業者コードの重複したファイルは存在しない前提、1業者1ファイル
+					String[] mvCommand = {"bash", "-c", "mv " + wildcard + " " + newName};
+					CommonUtils.processDone(mvCommand, fromDir, timeOutSec, Locale.JAPAN);
+
+				}
+			}
+		}
+		// ファイルの移動
+		File [] afterList = fromDir.listFiles();
+		if (Objects.nonNull(afterList)) {
+			for (int i=0; i < afterList.length; i++) {
+				File f = afterList[i];
+				if (Objects.nonNull(f)) {
+					log.info("move target file name: " + f.getName());
+					if (f.isFile()) {
+						String fileName = f.getName();
+						String gyousyaCode = "";
+						String reg = "^A[0-9]{6}";
+						Pattern p = Pattern.compile(reg);
+						Matcher m = p.matcher(fileName);
+						// ファイル名の先頭が業者コード
+						if (fileName.length() >= gyousyaCodeLen && m.find()) {
+							gyousyaCode = fileName.substring(0, gyousyaCodeLen);
+						}
+
+						if (!Objects.equals(gyousyaCode, "")) {
+							String moveTo = moveToPath + fileName;
+							String[] mvCommand = {"bash", "-c", "mv " + fileName + " " + moveTo};
+							CommonUtils.processDone(mvCommand, fromDir, timeOutSec, Locale.JAPAN);
+						}
+					}
+					// 移動元フォルダ内のファイル削除
+					if (f.exists()) {
+						f.delete();
+					}
+				}
+			}
+		}
+    }
     /**
      * 支払明細書ファイルの存在チェックを行い、GoogleDriveアップロード用タスクデータを生成する
      *
@@ -129,7 +230,10 @@ public class PaymentDetailService {
     				FileApi.createDirectories(subFolderPath);
     				for (int i=0; i < fileList.size(); i++) {
     					File f = fileList.get(i);
-    					String extension = f.getName().substring(f.getName().lastIndexOf("."));
+    					String extension = "";
+    					if (f.getName().lastIndexOf(".") != -1) {
+    						extension = f.getName().substring(f.getName().lastIndexOf("."));
+    					}
     					String fileName = key + "_payment_" + i + "_" + date + extension;
     					File moveTo = new File(subFolderPath + fileName);
     					f.renameTo(moveTo);
@@ -140,7 +244,7 @@ public class PaymentDetailService {
     					String[] zipCommand = {"zip", "-r", zipFileName, zipFolder};
     					long timeOutSec = 2 * 60;
     					// zipコマンド
-    					CommonUtils.processDone(zipCommand, curdir, timeOutSec);
+    					CommonUtils.processDone(zipCommand, curdir, timeOutSec, null);
     				}
     				File zipfile = new File(folderPath + zipFileName);
     				if (zipfile.exists()) {

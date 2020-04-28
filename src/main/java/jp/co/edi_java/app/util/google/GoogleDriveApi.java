@@ -184,7 +184,7 @@ public class GoogleDriveApi {
 				// wgetコマンド 25MB以上：ウィルススキャンエラー画面が取得される想定, 25MB未満：ログイン画面が取得される想定
 				String[] wgetCommand1 = {"wget", "--header", authHeader, "--header", acceptHeader, "--quiet", "--save-cookies", cookiePath, "--keep-session-cookies", "--no-check-certificate", webContentLink , "-O", confirmfileName};
 				long timeOut2m = 2 * 60;
-				CommonUtils.processDone(wgetCommand1, localFolderPath, timeOut2m);
+				CommonUtils.processDone(wgetCommand1, localFolderPath, timeOut2m, null);
 
 				java.io.File confirmFile = new java.io.File(confirmPath);
 				if (confirmFile.exists() && confirmFile.length() > 0) {
@@ -202,7 +202,7 @@ public class GoogleDriveApi {
 						String[] wgetCommand2 = {"wget", "--header", authHeader, "--header", acceptHeader, "--load-cookies", cookiePath, nUrl, "-O", fileName};
 						long timeOut10m = 10 * 60;
 						// wgetコマンド ファイルダウンロード
-						CommonUtils.processDone(wgetCommand2, localFolderPath, timeOut10m);
+						CommonUtils.processDone(wgetCommand2, localFolderPath, timeOut10m, null);
 					} catch (FileNotFoundException e) {
 						log.info(e.getMessage());
 					}
