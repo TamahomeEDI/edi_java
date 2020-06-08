@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CommonExceptionHandler {
 
-	private String adminEmail = "t-iida@tamahome.jp, to-suzuki@tamahome.jp, shinji-yamaguchi@tamahome.jp";
+	private String adminEmail = "t-iida@tamahome.jp, to-suzuki@tamahome.jp, tamahome-edi@asto-system.com";
 	//private String adminEmail = "shinji-yamaguchi@tamahome.jp";
 
     @ExceptionHandler(CoreRuntimeException.class)
